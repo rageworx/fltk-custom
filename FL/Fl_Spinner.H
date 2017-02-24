@@ -215,7 +215,7 @@ private:
   /** Sets the numeric representation in the input field.
    Valid values are FL_INT_INPUT and FL_FLOAT_INPUT.
    Also changes the format() template.
-   Setting a new spinner type via a superclass pointer will nota work.
+   Setting a new spinner type via a superclass pointer will not work.
    \note  type is not a virtual function.
    */
   void		type(uchar v) {
