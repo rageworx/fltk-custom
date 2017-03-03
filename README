@@ -1,5 +1,5 @@
-README - Fast Light Tool Kit (FLTK) Version 1.3.4
--------------------------------------------------
+README - Fast Light Tool Kit (FLTK) Version 1.3.4-1-ts
+------------------------------------------------------
 
 WHAT IS FLTK?
 
@@ -11,6 +11,12 @@ WHAT IS FLTK?
     was originally developed by Mr. Bill Spitzak and is
     currently maintained by a small group of developers across
     the world with a central repository in the US.
+
+
+WHAT IS DIFFERENCE FROM ORIGINAL FLTK-1.3.4-1 ?
+
+    This is a clone project from original FLTK-1.3.4-1 for modify
+	some components and thread-safe. This is not original FLTK.
 
 
 LICENSING
