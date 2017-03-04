@@ -933,6 +933,13 @@ fl_font.o: ../FL/Fl_Group.H ../FL/Fl_Widget.H ../FL/Fl_Bitmap.H
 fl_font.o: ../FL/Fl_Image.H ../FL/Fl_Device.H ../FL/Fl_Plugin.H
 fl_font.o: ../FL/Fl_Preferences.H ../FL/Fl_Image.H ../FL/Fl_Bitmap.H
 fl_font.o: ../FL/Fl_Pixmap.H ../FL/Fl_RGB_Image.H Fl_Font.H fl_font_xft.cxx
+fl_flat.o: ../FL/Fl.H ../FL/Fl_Export.H ../FL/fl_utf8.h ../FL/Fl_Export.H
+fl_flat.o: ../FL/fl_types.h ../FL/Enumerations.H ../FL/abi-version.h
+fl_flat.o: ../FL/fl_draw.H ../FL/x.H ../FL/Fl_Window.H ../FL/Enumerations.H
+fl_flat.o: ../FL/Fl_Window.H ../FL/Fl_Group.H ../FL/Fl_Widget.H
+fl_flat.o: ../FL/Fl_Bitmap.H ../FL/Fl_Image.H ../FL/Fl_Device.H
+fl_flat.o: ../FL/Fl_Plugin.H ../FL/Fl_Preferences.H ../FL/Fl_Image.H
+fl_flat.o: ../FL/Fl_Bitmap.H ../FL/Fl_Pixmap.H ../FL/Fl_RGB_Image.H
 fl_gleam.o: ../FL/Fl.H ../FL/Fl_Export.H ../FL/fl_utf8.h ../FL/Fl_Export.H
 fl_gleam.o: ../FL/fl_types.h ../FL/Enumerations.H ../FL/abi-version.h
 fl_gleam.o: ../FL/fl_draw.H ../FL/x.H ../FL/Fl_Window.H ../FL/Enumerations.H
