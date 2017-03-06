@@ -17,6 +17,7 @@ WHAT IS DIFFERENCE FROM ORIGINAL FLTK-1.3.4-1 ?
 
     This is a clone project from original FLTK-1.3.4-1 for modify
 	some components and thread-safe. This is not original FLTK.
+	See CHANGES.
 
 
 LICENSING

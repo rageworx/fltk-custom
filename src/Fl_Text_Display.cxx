@@ -3762,7 +3762,8 @@ void Fl_Text_Display::draw(void) {
     if (mVScrollBar->visible() && mHScrollBar->visible())
       fl_rectf(mVScrollBar->x(), mHScrollBar->y(),
                mVScrollBar->w(), mHScrollBar->h(),
-               FL_GRAY);
+               //FL_GRAY);
+			   bgcolor); // Fixed : rageworx@gmail.com for fltk-1.3.4-1-ts.
     //draw_line_numbers(true);		// commented out STR# 2621 / LZA
   }
   else if (damage() & (FL_DAMAGE_SCROLL | FL_DAMAGE_EXPOSE)) {
