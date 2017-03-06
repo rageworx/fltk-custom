@@ -43,7 +43,7 @@
   \image latex Fl_Spinner.png "Fl_Spinner widget" width=6cm
 */
 class FL_EXPORT Fl_Spinner : public Fl_Group {
- 
+
   double	value_;			// Current value
   double	minimum_;		// Minimum value
   double	maximum_;		// Maximum value
@@ -237,7 +237,16 @@ private:
   /**
     Change the background color of the spinner widget's input field.
   */
-  void		color(Fl_Color v) { input_.color(v); }
+#if FLTK_ABI_VERSION >= 10303 
+  void		color(Fl_Color v)
+            {
+				input_.color(v);
+				up_button_.color(v);
+				down_button_.color(v);
+			}
+#else
+  void      color(Fl_color v) { input_.color(v); }
+#endif
   /**
     Return the background color of the spinner widget's input field.
   */
@@ -250,6 +259,12 @@ private:
     Return the selection color of the spinner widget's input field.
   */
   Fl_Color	selection_color() const { return input_.selection_color(); }
+
+  /* rageworx's additional methods : */
+  Fl_Boxtype box() const { return input_.box(); }
+  void       box( Fl_Boxtype new_box ) {	input_.box( new_box ); }
+  Fl_Repeat_Button* up_button()   { return &up_button_; }
+  Fl_Repeat_Button* down_button() { return &down_button_; }
 };
 
 #endif // !Fl_Spinner_H
