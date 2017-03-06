@@ -30,7 +30,8 @@ ALL = clipboard$(EXEEXT) \
       tree-custom-draw-items$(EXEEXT) \
       tree-custom-sort$(EXEEXT) \
       tree-of-tables$(EXEEXT) \
-      wizard-simple$(EXEEXT)
+      wizard-simple$(EXEEXT) \
+	  OpenGL3test$(EXEEXT)
 
 # default target -- build everything
 default all: $(ALL)
