@@ -246,7 +246,7 @@ private:
 			}
 #else
   void      color(Fl_color v) { input_.color(v); }
-#endif
+#endif /// of FLTK_ABI_VERSION >= 10303
   /**
     Return the background color of the spinner widget's input field.
   */
@@ -260,11 +260,13 @@ private:
   */
   Fl_Color	selection_color() const { return input_.selection_color(); }
 
+#if FLTK_ABI_VERSION >= 10303
   /* rageworx's additional methods : */
   Fl_Boxtype box() const { return input_.box(); }
   void       box( Fl_Boxtype new_box ) {	input_.box( new_box ); }
   Fl_Repeat_Button* up_button()   { return &up_button_; }
   Fl_Repeat_Button* down_button() { return &down_button_; }
+#endif /// of FLTK_ABI_VERSION >= 10303
 };
 
 #endif // !Fl_Spinner_H
