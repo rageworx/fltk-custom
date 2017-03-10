@@ -224,12 +224,41 @@ static int innards(const char* fmt, va_list ap,
     message->labelsize(FL_NORMAL_SIZE);
   else
     message->labelsize(fl_message_size_);
-  if (b0) {button[0]->show(); button[0]->label(b0); button[1]->position(210,70);}
-  else {button[0]->hide(); button[1]->position(310,70);}
-  if (b1) {button[1]->show(); button[1]->label(b1);}
-  else button[1]->hide();
-  if (b2) {button[2]->show(); button[2]->label(b2);}
-  else button[2]->hide();
+  if (b0) 
+  {
+	  button[0]->show(); 
+	  button[0]->label(b0);
+	  button[0]->labelsize( message->labelsize() );
+	  button[0]->labelfont( message->labelfont() );
+	  button[1]->position(210,70);
+  }
+  else 
+  {
+	  button[0]->hide(); 
+	  button[1]->position(310,70);
+  }
+  if (b1) 
+  {
+	  button[1]->show(); 
+	  button[1]->label(b1);
+	  button[1]->labelsize( message->labelsize() );
+	  button[1]->labelfont( message->labelfont() );
+  }
+  else 
+  {
+  	  button[1]->hide();
+  }
+  if (b2) 
+  {
+  	  button[2]->show(); 
+	  button[2]->label(b2);
+	  button[2]->labelsize( message->labelsize() );
+	  button[2]->labelfont( message->labelfont() );
+  }
+  else 
+  {
+	  button[2]->hide();
+  }
   const char* prev_icon_label = icon->label();
   if (!prev_icon_label) icon->label(iconlabel);
 

@@ -1,16 +1,17 @@
-CHANGES IN FLTK 1.3.4-1-ts				RELEASED: Mar 06 2017
+CHANGES IN FLTK 1.3.4-1-ts              UPDATED: Mar 10 2017
 
-Changes 
+	- Changed fl_ask all window buttons also following fl_message_font
+	  and size.
+
+CHANGES IN FLTK 1.3.4-1-ts				UPDATED: Mar 06 2017
 
 	- Added "flat" scheme for Windows 10 style flat theme.
 	- Fixed Fl_Text_Display draws always gray box between of scrolls.
 	- Improbed Fl_Spinner has some more methods above ABI 10303.
 
-CHANGES IN FLTK 1.3.4-1-ts				RELEASED: Nov 24 2016
+CHANGES IN FLTK 1.3.4-1-ts				UPDATED: Nov 24 2016
 
-Changes 
-
-	Applied some issues from FLTK 1.3.3.(2)-ts.
+	- Applied some issues from FLTK 1.3.3.(2)-ts.
 	
 
 CHANGES IN FLTK 1.3.4-1					RELEASED: Nov 15 2016
