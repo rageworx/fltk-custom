@@ -245,7 +245,7 @@ private:
 				down_button_.color(v);
 			}
 #else
-  void      color(Fl_color v) { input_.color(v); }
+  void      color(Fl_Color v) { input_.color(v); }
 #endif /// of FLTK_ABI_VERSION >= 10303
   /**
     Return the background color of the spinner widget's input field.
