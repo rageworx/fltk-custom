@@ -3351,6 +3351,10 @@
 			>
 		</File>
 		<File
+			RelativePath="..\..\src\fl_flat.cxx"
+			>
+		</File>
+		<File
 			RelativePath="..\..\src\Fl_Help_View.cxx"
 			>
 			<FileConfiguration

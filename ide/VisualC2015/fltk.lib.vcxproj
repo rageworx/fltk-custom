@@ -309,7 +309,6 @@
     <ClInclude Include="..\..\FL\Fl_XPM_Image.H" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\fl_flat.cxx" />
     <ClCompile Include="..\..\src\xutf8\case.c" />
     <ClCompile Include="..\..\src\filename_absolute.cxx">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug Cairo|Win32'">Disabled</Optimization>
@@ -1195,6 +1194,7 @@
     </ClCompile>
     <ClCompile Include="..\..\src\fl_gtk.cxx" />
     <ClCompile Include="..\..\src\fl_gleam.cxx" />
+    <ClCompile Include="..\..\src\fl_flat.cxx" />
     <ClCompile Include="..\..\src\Fl_Help_View.cxx">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug Cairo|Win32'">Disabled</Optimization>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug Cairo|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
