@@ -134,6 +134,22 @@
 /ide/VisualC2010/Release/
 /ide/VisualC2010/Release Cairo/
 
+# /ide/VisualC2015
+/ide/VisualC2015/*.user
+/ide/VisualC2015/*_debug/
+/ide/VisualC2015/*.db
+/ide/VisualC2015/*_release/
+/ide/VisualC2015/fltk.*sdf
+/ide/VisualC2015/fltk.suo
+/ide/VisualC2015/fltkdlld.pdb
+/ide/VisualC2015/fltkdll/
+/ide/VisualC2015/fltkdlld/
+/ide/VisualC2015/Debug/
+/ide/VisualC2015/Debug Cairo/
+/ide/VisualC2015/Release/
+/ide/VisualC2015/Release Cairo/
+
+
 # /ide/Xcode3/
 /ide/Xcode3/build
 
