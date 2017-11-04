@@ -3,6 +3,7 @@
 
 *.o
 *.exe
+*.bak
 
 # /
 /autom4te*.cache
