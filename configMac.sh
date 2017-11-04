@@ -1,11 +1,8 @@
 #! /bin/sh
-# ====================================================================
-# This configMac.sh made for Mac OS X cocoa.
-# ===================================================================
+# --------------------
+# Notice 
+# --------------------
+#   This configure shell script helps doing configure for llvm-gcc if 
+#  your system changed gcc to hpc-gcc.
 
-export CC="llvm-gcc"
-export CXX="llvm-g++"
-# export CFLAGS="-static -static-libstdc++ -static-libgcc"
-# export CXXFLAGS=${CFLAGS}
-
-./configure  --with-abiversion=10304
+./configure CC=llvm-gcc CXX=llvm-g++  --with-abiversion=10304
