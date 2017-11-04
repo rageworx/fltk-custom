@@ -1,23 +1,7 @@
-CHANGES IN FLTK 1.3.4-2-ts              UPDATED: Nov 04 2017
-
-Bug fixes and other improvements
-
-    - Merged fltk-1.3.4-1-ts and 1.3.4-2.
-    - libPNG updated to latest release of 1.6.34
+CHANGES IN FLTK 1.3.4-1-ts              UPDATED: Mar 10 2017
 
 	- Changed fl_ask all window buttons also following fl_message_font
 	  and size.
-
-CHANGES IN FLTK 1.3.4-2					RELEASED: Sep 19 2017
-
-Bug fixes and other improvements
-
-    - Add support for Mac OS 10.13 'High Sierra'
-
-	Note: this is a source tar file update useful to support 
-        Mac OS 10.13 'High Sierra' (and all Mac OS versions since 10.3).
-        Other platforms (MSWindows, Linux, Unix) are unconcerned
-        by this update.
 
 CHANGES IN FLTK 1.3.4-1-ts				UPDATED: Mar 06 2017
 

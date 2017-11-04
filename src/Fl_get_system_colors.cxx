@@ -414,7 +414,7 @@ int Fl::reload_scheme() {
     set_boxtype(FL_THIN_DOWN_BOX,   FL_GLEAM_THIN_DOWN_BOX);
     set_boxtype(_FL_ROUND_UP_BOX,   FL_GLEAM_ROUND_UP_BOX);
     set_boxtype(_FL_ROUND_DOWN_BOX, FL_GLEAM_ROUND_DOWN_BOX);
-
+#if FLTK_ABI_VERSION >= 10303 
     // Use slightly thinner scrollbars...
     Fl::scrollbar_size(15);
   } else if (scheme_ && !fl_ascii_strcasecmp(scheme_, "flat")) {
@@ -434,7 +434,7 @@ int Fl::reload_scheme() {
     set_boxtype(FL_THIN_DOWN_BOX,   FL_FLAT_THIN_DOWN_BOX);
     set_boxtype(_FL_ROUND_UP_BOX,   FL_FLAT_ROUND_UP_BOX);
     set_boxtype(_FL_ROUND_DOWN_BOX, FL_FLAT_ROUND_DOWN_BOX);
-
+#endif /// of FLTK_ABI_VERSION >= 10303 
     // Use slightly thinner scrollbars...
     Fl::scrollbar_size(15);
   } else {

@@ -224,7 +224,7 @@ public:
   
   /**   
    Gets the width/height of the scrollbars.
-   /return width of scrollbars
+   \return width of scrollbars
    */
   int scrollbar_width() const { return scrollbar_width_; }
   
@@ -246,6 +246,7 @@ public:
    */
   void scrollbar_align(Fl_Align a) { scrollbar_align_ = a; }
   
+#if FLTK_ABI_VERSION >= 10303 
   /**
    Sets the scrollbar color.
    \param a new scrollbar color or colors
@@ -258,7 +259,7 @@ public:
    \param a new scrollbar box type
   */
   void scrollbar_box( Fl_Boxtype b );
-  
+#endif /// of FLTK_ABI_VERSION  
   /**
    Moves the insert position to the beginning of the current word.
    \param pos start calculation at this index

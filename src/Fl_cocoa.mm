@@ -1348,7 +1348,7 @@ static FLWindowDelegate *flwindowdelegate_instance = nil;
     if (parent && window->as_gl_window()) parent->redraw();
   }
   resize_from_system = NULL;
-  [nsw recursivelySendToSubwindows:@selector(setSubwindowFrame)];
+  if (fl_mac_os_version < 101000) [nsw recursivelySendToSubwindows:@selector(setSubwindowFrame)];
   [nsw checkSubwindowFrame];
   fl_unlock_function();
 }
@@ -1644,7 +1644,7 @@ static FLWindowDelegate *flwindowdelegate_instance = nil;
 - (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename
 {
   // without the next two statements, the opening of the 1st window is delayed by several seconds
-  // under Mac OS ≥ 10.8 when a file is dragged on the application icon
+  // under Mac OS ??10.8 when a file is dragged on the application icon
   Fl_Window *firstw = Fl::first_window();
   if (firstw) firstw->wait_for_expose();
   if (open_cb) {
