@@ -1,6 +1,7 @@
 # ignore file for git - generated from subversion with:
 # git svn show-ignore
 
+.vs
 *.o
 *.exe
 *.bak
