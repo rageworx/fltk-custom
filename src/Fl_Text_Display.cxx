@@ -1628,6 +1628,7 @@ void Fl_Text_Display::previous_word() {
   insert_position( pos );
 }
 
+#if FLTK_ABI_VERSION >= 10303 
 void Fl_Text_Display::scrollbar_color( Fl_Color c )
 {
 	if ( mHScrollBar != NULL )
@@ -1666,8 +1667,7 @@ void Fl_Text_Display::scrollbar_box( Fl_Boxtype b )
 		mVScrollBar->slider( b );
 	}
 }
-
-
+#endif /// of #if FLTK_ABI_VERSION >= 10303 
 
 /**
  \brief This is called before any characters are deleted.

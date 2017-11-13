@@ -90,7 +90,9 @@ void create_the_forms() {
   choice->add("gtk+");
   choice->add("gleam");
   choice->add("plastic");
+#if FLTK_ABI_VERSION >= 10303   
   choice->add("flat");
+#endif /// of #if FLTK_ABI_VERSION >= 10303 
   choice->callback((Fl_Callback *)doscheme);
   Fl::scheme(NULL);
   if (!Fl::scheme()) choice->value(0);
