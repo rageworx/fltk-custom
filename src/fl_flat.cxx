@@ -23,9 +23,7 @@
 static void up_frame(int x, int y, int w, int h, Fl_Color c) 
 {
 	Fl_Color co = fl_color();
-	//Fl_Color cl = fl_color_average(c, FL_WHITE, .25f);
-	//fl_color( cl );
-	fl_color( fl_darker( c ) );
+	fl_color( fl_lighter( c ) );
 	fl_rect( x, y, w, h );
 	fl_color( co );
 }
@@ -33,8 +31,6 @@ static void up_frame(int x, int y, int w, int h, Fl_Color c)
 static void up_box(int x, int y, int w, int h, Fl_Color c) 
 {
 	Fl_Color co = fl_color();
-	//Fl_Color cl = fl_color_average(c, FL_WHITE, .05f);
-	//Fl::set_box_color( cl );
 	fl_color( c );
 	fl_rectf( x, y, w, h );
 	fl_color( fl_lighter( c ) );
@@ -45,8 +41,6 @@ static void up_box(int x, int y, int w, int h, Fl_Color c)
 static void thin_up_box(int x, int y, int w, int h, Fl_Color c) 
 {
 	Fl_Color co = fl_color();
-	//Fl_Color cl = fl_color_average(c, FL_WHITE, .45f);
-	//fl_color( cl );
 	fl_color( c );
 	fl_rectf( x, y, w, h );
 	fl_color( fl_lighter( c ) );
@@ -57,8 +51,6 @@ static void thin_up_box(int x, int y, int w, int h, Fl_Color c)
 static void down_frame(int x, int y, int w, int h, Fl_Color c) 
 {
 	Fl_Color co = fl_color();
-	//Fl_Color cl = fl_darker(c);
-	//fl_color( cl );
 	fl_color( fl_darker ( c ) );
 	fl_rect( x, y, w, h );
 	fl_color( co );
@@ -67,8 +59,6 @@ static void down_frame(int x, int y, int w, int h, Fl_Color c)
 static void down_box(int x, int y, int w, int h, Fl_Color c) 
 {
 	Fl_Color co = fl_color();
-	//Fl_Color cl = fl_darker(c);
-	//Fl::set_box_color( cl );
 	fl_color( c );
 	fl_rectf( x, y, w, h );
 	fl_color( fl_darker( c ) );
@@ -79,11 +69,9 @@ static void down_box(int x, int y, int w, int h, Fl_Color c)
 static void thin_down_box(int x, int y, int w, int h, Fl_Color c) 
 {
 	Fl_Color co = fl_color();
-	//Fl_Color cl = fl_darker(c);
-	//fl_color( cl );
 	fl_color( c );
 	fl_rectf( x, y, w, h );
-	fl_color( fl_lighter( c ) );
+	fl_color( fl_darker( c ) );
 	fl_rect( x, y, w, h );
 	fl_color( co );
 }
