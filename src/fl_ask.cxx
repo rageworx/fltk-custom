@@ -54,6 +54,9 @@ static const char *message_title_default;
 Fl_Font fl_message_font_ = FL_HELVETICA;
 Fl_Fontsize fl_message_size_ = -1;
 Fl_Color fl_message_window_color_ = FL_GRAY;
+Fl_Color fl_message_label_color_ = FL_BLACK;
+Fl_Color fl_message_button_color_[3] = {FL_GRAY,FL_GRAY,FL_GRAY};
+Fl_Color fl_message_button_label_color_[3] = {FL_BLACK,FL_BLACK,FL_BLACK};
 static int enableHotspot = 1;
 #ifdef __APPLE__
 extern "C" void NSBeep(void);
@@ -83,6 +86,7 @@ static Fl_Window *makeform() {
  // create a new top level window
  Fl_Window *w = message_form = new Fl_Window(410,103);
   message_form->color( fl_message_window_color_ );
+  message_form->labelcolor( fl_message_label_color_ );
   message_form->callback(button_cb);
  // w->clear_border();
  // w->box(FL_UP_BOX);
@@ -105,6 +109,8 @@ static Fl_Window *makeform() {
      else
        button[b] = new Fl_Button(x, 70, 90, 23);
      button[b]->align(FL_ALIGN_INSIDE|FL_ALIGN_WRAP);
+	 button[b]->color(fl_message_button_color_[b]);
+	 button[b]->labelcolor(fl_message_button_label_color_[b]);
      button[b]->callback(button_cb, b);
    }
  }
