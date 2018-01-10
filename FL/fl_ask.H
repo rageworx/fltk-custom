@@ -58,6 +58,7 @@ FL_EXPORT const char *fl_input(const char *label, const char *deflt = 0, ...) __
 FL_EXPORT const char *fl_password(const char *label, const char *deflt = 0, ...) __fl_attr((__format__ (__printf__, 1, 3)));
 
 FL_EXPORT Fl_Widget *fl_message_icon();
+extern FL_EXPORT Fl_Color fl_message_window_color_;
 extern FL_EXPORT Fl_Font fl_message_font_;
 extern FL_EXPORT Fl_Fontsize fl_message_size_;
 inline void fl_message_font(Fl_Font f, Fl_Fontsize s) {

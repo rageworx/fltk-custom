@@ -53,6 +53,7 @@ static const char *iconlabel = "?";
 static const char *message_title_default;
 Fl_Font fl_message_font_ = FL_HELVETICA;
 Fl_Fontsize fl_message_size_ = -1;
+Fl_Color fl_message_window_color_ = FL_GRAY;
 static int enableHotspot = 1;
 #ifdef __APPLE__
 extern "C" void NSBeep(void);
@@ -81,6 +82,7 @@ static Fl_Window *makeform() {
  Fl_Group::current(0);
  // create a new top level window
  Fl_Window *w = message_form = new Fl_Window(410,103);
+  message_form->color( fl_message_window_color_ );
   message_form->callback(button_cb);
  // w->clear_border();
  // w->box(FL_UP_BOX);

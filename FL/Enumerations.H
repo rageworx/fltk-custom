@@ -197,6 +197,12 @@
 
 #define FLTK_ABI_VERSION FL_ABI_VERSION
 
+/*
+  FLTK_EXT_VERSION is for identifying customized version for
+  rageworx's github repository.
+*/
+#define FLTK_EXT_VERSION 2
+
 /*@}*/	// group: Version Numbers
 
 /**

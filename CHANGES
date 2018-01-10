@@ -1,3 +1,11 @@
+CHANGES IN FLTK 1.3.4-2-ts ( ext-2 )    UPDATED: Jan 10 2018
+
+Some changes for improvements
+
+    - FLTK_EXT_VERSION in Enumeration.H for checking customized version.
+	- fl_message_widow_color_ for changing fl_ask widget window backgrou
+	  nd color when it creating.
+
 CHANGES IN FLTK 1.3.4-2-ts              UPDATED: Nov 04 2017
 
 Bug fixes and other improvements
