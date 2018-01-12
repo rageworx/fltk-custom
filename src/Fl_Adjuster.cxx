@@ -166,6 +166,9 @@ Fl_Adjuster::Fl_Adjuster(int X, int Y, int W, int H, const char* l)
   selection_color(FL_SELECTION_COLOR);
   drag = 0;
   soft_ = 1;
+#ifdef FLTK_EXT_VERISON
+  if (Fl::is_scheme("flat")) box(FL_DOWN_BOX);
+#endif /// of FLTK_EXT_VERSION
 }
 
 //
