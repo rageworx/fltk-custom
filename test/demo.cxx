@@ -90,18 +90,18 @@ void create_the_forms() {
   choice->add("gtk+");
   choice->add("gleam");
   choice->add("plastic");
-#if FLTK_ABI_VERSION >= 10303   
+#ifdef FLTK_EXT_VERSION
   choice->add("flat");
-#endif /// of #if FLTK_ABI_VERSION >= 10303 
+#endif /// of #if FLTK_EXT_VERSION
   choice->callback((Fl_Callback *)doscheme);
   Fl::scheme(NULL);
   if (!Fl::scheme()) choice->value(0);
   else if (!strcmp(Fl::scheme(), "gtk+")) choice->value(1);
   else if (!strcmp(Fl::scheme(), "gleam")) choice->value(2);
   else if (!strcmp(Fl::scheme(), "plastic")) choice->value(3);
-#if FLTK_ABI_VERSION >= 10303   
+#ifdef FLTK_EXT_VERSION
   else if (!strcmp(Fl::scheme(), "flat")) choice->value(4);
-#endif /// of #if FLTK_ABI_VERSION >= 10303 
+#endif /// of #if FLTK_EXT_VERSION
   else choice->value(0);
   obj = new Fl_Button(10,15,330,380); obj->type(FL_HIDDEN_BUTTON);
   obj->callback(doback);

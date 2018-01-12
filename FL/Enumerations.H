@@ -201,7 +201,7 @@
   FLTK_EXT_VERSION is for identifying customized version for
   rageworx's github repository.
 */
-#define FLTK_EXT_VERSION 2
+#define FLTK_EXT_VERSION 3
 
 /*@}*/	// group: Version Numbers
 

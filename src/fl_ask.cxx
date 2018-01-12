@@ -109,7 +109,8 @@ static Fl_Window *makeform() {
      else
        button[b] = new Fl_Button(x, 70, 90, 23);
      button[b]->align(FL_ALIGN_INSIDE|FL_ALIGN_WRAP);
-	 button[b]->color(fl_message_button_color_[b]);
+	 button[b]->color(fl_message_button_color_[b], 
+			          fl_darker(fl_message_button_color_[b]));
 	 button[b]->labelcolor(fl_message_button_label_color_[b]);
      button[b]->callback(button_cb, b);
    }
