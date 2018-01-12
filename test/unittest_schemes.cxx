@@ -148,6 +148,7 @@ public:
 	  } // Fl_Scrollbar* o
 	  { Fl_Value_Slider* o = new Fl_Value_Slider(115, 161, 25, 155);
 	    o->box(FL_DOWN_BOX);
+		o->tooltip("Fl_Value_Slider with down box");
 	  } // Fl_Value_Slider* o
 	  { Fl_Value_Output* o = new Fl_Value_Output(240, 265, 75, 25);
 	    o->box(FL_DOWN_BOX);
