@@ -150,29 +150,29 @@ void Fl_Slider::draw(int X, int Y, int W, int H) {
 
   draw_bg(X, Y, W, H);
 
-  Fl_Color box_c_fg = color();
-  Fl_Color box_c_bg = selection_color();
+  Fl_Color box_c1 = color(); /// was FL_GRAY
+  Fl_Color box_c2 = selection_color();
   Fl_Boxtype box1 = slider();
-  if (!box1) {box1 = (Fl_Boxtype)(box()&-2); if (!box1) box1 = FL_UP_BOX;}
 #ifdef FLTK_EXT_VERSION
-  if (Fl::is_scheme("flat"))
-  {
-	  if ( color() == selection_color() )
-	  {
-		  box_c_fg = fl_darker( selection_color() );
-	  }
+  if ( Fl::is_scheme("flat") ) {
+    box_c1 = fl_color_average( box_c1, fl_darker( box_c1 ), 0.5f );
+    box_c2 = fl_color_average( box_c2, fl_darker( box_c2 ), 0.5f );
   }
-#endif
+#endif /// of FLTK_EXT_VERSION
+  if (!box1) {
+	box1 = (Fl_Boxtype)(box()&-2); 
+ 	if (!box1) box1 = FL_UP_BOX;
+  }
   if (type() == FL_VERT_NICE_SLIDER) {
-    draw_box(box1, xsl, ysl, wsl, hsl, box_c_bg);
+    draw_box(box1, xsl, ysl, wsl, hsl, box_c1);
     int d = (hsl-4)/2;
-    draw_box(FL_THIN_DOWN_BOX, xsl+2, ysl+d, wsl-4, hsl-2*d,box_c_fg);
+    draw_box(FL_THIN_DOWN_BOX, xsl+2, ysl+d, wsl-4, hsl-2*d,box_c2);
   } else if (type() == FL_HOR_NICE_SLIDER) {
-    draw_box(box1, xsl, ysl, wsl, hsl, box_c_bg);
+    draw_box(box1, xsl, ysl, wsl, hsl, box_c1);
     int d = (wsl-4)/2;
-    draw_box(FL_THIN_DOWN_BOX, xsl+d, ysl+2, wsl-2*d, hsl-4,box_c_fg);
+    draw_box(FL_THIN_DOWN_BOX, xsl+d, ysl+2, wsl-2*d, hsl-4,box_c2);
   } else {
-    if (wsl>0 && hsl>0) draw_box(box1, xsl, ysl, wsl, hsl, box_c_fg);
+    if (wsl>0 && hsl>0) draw_box(box1, xsl, ysl, wsl, hsl, box_c2);
 
     if (type() != FL_HOR_FILL_SLIDER && type() != FL_VERT_FILL_SLIDER &&
         Fl::is_scheme("gtk+")) {
