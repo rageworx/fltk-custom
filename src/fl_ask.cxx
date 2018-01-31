@@ -229,6 +229,7 @@ static int innards(const char* fmt, va_list ap,
   }
 
   message->labelfont(fl_message_font_);
+  message->labelcolor(fl_message_label_color_);
   if (fl_message_size_ == -1)
     message->labelsize(FL_NORMAL_SIZE);
   else
