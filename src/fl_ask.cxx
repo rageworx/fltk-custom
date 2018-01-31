@@ -57,9 +57,9 @@ Fl_Color fl_message_window_color_ = FL_GRAY;
 Fl_Color fl_message_label_color_ = FL_BLACK;
 Fl_Color fl_message_button_color_[3] = {FL_GRAY,FL_GRAY,FL_GRAY};
 Fl_Color fl_message_button_label_color_[3] = {FL_BLACK,FL_BLACK,FL_BLACK};
-Fl_Color fl_input_color_ = FL_WHITE;
-Fl_Color fl_input_text_color_ = FL_BLACK;
-Fl_Font fl_input_text_font_ = FL_HELVETICA;
+Fl_Color fl_message_input_color_ = FL_WHITE;
+Fl_Color fl_message_input_text_color_ = FL_BLACK;
+Fl_Font fl_message_input_text_font_ = FL_HELVETICA;
 static int enableHotspot = 1;
 #ifdef __APPLE__
 extern "C" void NSBeep(void);
@@ -181,11 +181,11 @@ static void resizeform() {
   if (input->visible())
   {
 	text_height = message_h + 25;
-	input->color( fl_input_color_ );
+	input->color( fl_message_input_color_ );
 	input->labelfont( fl_message_font_ );
 	input->labelcolor( fl_message_label_color_ );
-	input->textcolor( fl_input_text_color_ );
-	input->textfont( fl_input_text_font_ );
+	input->textcolor( fl_message_input_text_color_ );
+	input->textfont( fl_message_input_text_font_ );
   }
   else text_height = message_h;
 

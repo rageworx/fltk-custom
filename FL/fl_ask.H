@@ -64,9 +64,9 @@ extern FL_EXPORT Fl_Color fl_message_label_color_;
 extern FL_EXPORT Fl_Color fl_message_button_label_color_[3];
 extern FL_EXPORT Fl_Font fl_message_font_;
 extern FL_EXPORT Fl_Fontsize fl_message_size_;
-extern FL_EXPORT Fl_Color fl_input_color_;
-extern FL_EXPORT Fl_Color fl_input_text_color_;
-extern FL_EXPORT Fl_Font fl_input_text_font_;
+extern FL_EXPORT Fl_Color fl_message_input_color_;
+extern FL_EXPORT Fl_Color fl_message_input_text_color_;
+extern FL_EXPORT Fl_Font fl_message_input_text_font_;
 inline void fl_message_font(Fl_Font f, Fl_Fontsize s) {
   fl_message_font_ = f; fl_message_size_ = s;}
 
