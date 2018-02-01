@@ -242,9 +242,16 @@ static int innards(const char* fmt, va_list ap,
   message->labelfont(fl_message_font_);
   message->labelcolor(fl_message_label_color_);
   if (fl_message_size_ == -1)
+  {
     message->labelsize(FL_NORMAL_SIZE);
+	input->textsize(FL_NORMAL_SIZE);
+  }
   else
-    message->labelsize(fl_message_size_);
+  {
+	message->labelsize(fl_message_size_);
+	input->textsize(fl_message_size_);
+  }
+
   if (b0) 
   {
 	  button[0]->show(); 
