@@ -186,6 +186,7 @@ static void resizeform() {
 	input->labelcolor( fl_message_label_color_ );
 	input->textcolor( fl_message_input_text_color_ );
 	input->textfont( fl_message_input_text_font_ );
+	input->cursor_color( fl_message_input_text_color_ );
   }
   else text_height = message_h;
 
