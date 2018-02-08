@@ -6,12 +6,14 @@ As for today, FLTK 1.3 officially supports
 the following integrated environments (1):
 
 ------------------------------------------------------------------------
-distrib subdir 	|   supported products
+distrib subdir 	        |  supported products
 ------------------------------------------------------------------------
-ide/VisualC6	|   Microsoft Visual C++ 6 and 2005 (2)
-ide/VisualC2008	|   Microsoft Visual C++ 2008
-ide/VisualC2010	|   Microsoft Visual C++ 2010 and later (3)
-ide/Xcode4 	|   Apple Xcode 3.x and up (see ../README.OSX.txt)
+ide/VisualC6	        |  Microsoft Visual C++ 6 and 2005 (2)
+ide/VisualC2008	        |  Microsoft Visual C++ 2008
+ide/VisualC2010	        |  Microsoft Visual C++ 2010 
+ide/VisualC2015         |  Microsoft Visual C++ 2015 and later (3)
+ide/VisaulC2015static64 |  Microsoft Visual C++ 2015 static x86.64 (4)
+ide/Xcode4 	            |  Apple Xcode 3.x and up (see ../README.OSX.txt)
 
 Notes :
 -------
@@ -24,6 +26,7 @@ Notes :
 (3) When first using the project file (ide/VisualC2010/fltk.sln) with
     a later version of Visual C++ you may be asked to convert the project
     to the newer format.
+(4) It provides static build for x86 64bit library.
 
 
 Further notes about Microsoft IDE project files (Dec. 2010, Nov. 2016):
