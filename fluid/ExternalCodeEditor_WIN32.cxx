@@ -13,6 +13,14 @@
 
 #include "ExternalCodeEditor_WIN32.h"
 
+// fixing _spnprintf() refernece :
+#ifndef _snprintf
+#include <cstring>
+#include <string>
+	#define _snprintf std::snprintf
+#endif /// of _spnprintf
+// -------------------------------
+
 extern int G_debug;     // defined in fluid.cxx
 
 // Static local data
