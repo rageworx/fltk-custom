@@ -5,4 +5,7 @@
 #   This configure shell script helps doing configure for llvm-gcc if 
 #  your system changed gcc to hpc-gcc.
 
-./configure CC=llvm-gcc CXX=llvm-g++  --with-abiversion=10304
+COMPILER="CC=llvm-gcc CXX=llvm-g++"
+FEATURES="--enable-localjpeg  --enable-localzlib --enable-localpng"
+
+./configure ${FEATURES} ${COMPILER} --with-abiversion=10304
