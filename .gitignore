@@ -185,6 +185,7 @@
 
 # /test/
 /test/*.pdb
+/test/*.app
 /test/CubeView
 /test/CubeViewUI.cxx
 /test/CubeViewUI.h
