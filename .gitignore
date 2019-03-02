@@ -96,6 +96,7 @@
 
 # /fluid/
 /fluid/fluid
+/fluid/*.app
 /fluid/fluid-shared
 /fluid/*.bck
 /fluid/*.exe
