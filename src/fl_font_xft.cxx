@@ -1,5 +1,5 @@
 //
-// "$Id: fl_font_xft.cxx 11094 2016-01-31 02:49:56Z AlbrechtS $"
+// "$Id$"
 //
 // Xft font code for the Fast Light Tool Kit (FLTK).
 //
@@ -497,9 +497,14 @@ static XFontStruct* load_xfont_for_xft2(Fl_Graphics_Driver *driver) {
     snprintf(xlfd, 128, "-*-helvetica-*-%c-*--*-%d-*-*-*-*-*-*", slant, (size*10));
     xgl_font = XLoadQueryFont(fl_display, xlfd);
   }
+  // If that still didn't work, try courier with resquested weight and slant
+  if(!xgl_font && weight != wt_med) {
+    snprintf(xlfd, 128, "-*-courier*-%s-%c-*--*-%d-*-*-*-*-*-*", weight, slant, (size*10));
+    xgl_font = XLoadQueryFont(fl_display, xlfd);
+  }
   // If that still didn't work, try this instead
   if(!xgl_font) {
-    snprintf(xlfd, 128, "-*-courier-medium-%c-*--*-%d-*-*-*-*-*-*", slant, (size*10));
+    snprintf(xlfd, 128, "-*-courier*-medium-%c-*--*-%d-*-*-*-*-*-*", slant, (size*10));
     xgl_font = XLoadQueryFont(fl_display, xlfd);
   }
 //printf("glf: %d\n%s\n%s\n", size, xlfd, fl_fonts[fl_font_].name);
@@ -695,5 +700,5 @@ void Fl_Xlib_Graphics_Driver::rtl_draw(const char* c, int n, int x, int y) {
 #endif
 
 //
-// End of "$Id: fl_font_xft.cxx 11094 2016-01-31 02:49:56Z AlbrechtS $"
+// End of "$Id$"
 //

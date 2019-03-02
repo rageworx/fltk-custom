@@ -8,4 +8,4 @@
 COMPILER="CC=llvm-gcc CXX=llvm-g++"
 FEATURES="--enable-localjpeg  --enable-localzlib --enable-localpng"
 
-./configure ${FEATURES} ${COMPILER} --with-abiversion=10304
+./configure ${FEATURES} ${COMPILER} --with-abiversion=10305

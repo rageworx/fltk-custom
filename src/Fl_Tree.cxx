@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Tree.cxx 11986 2016-09-26 19:29:03Z greg.ercolano $"
+// "$Id$"
 //
 
 #include <stdio.h>
@@ -1078,6 +1078,12 @@ Fl_Tree_Item* Fl_Tree::insert_above(Fl_Tree_Item *above, const char *name) {
 
 /// Insert a new item \p 'name' into \p 'item's children at position \p 'pos'.
 ///
+/// If \p pos is out of range the new item is
+///  - prepended if \p pos \< 0 or
+///  - appended  if \p pos \> item->children().
+///
+/// Note: \p pos == children() is not considered out of range: the item is
+/// appended to the child list.
 /// Example:
 /// \code
 /// tree->add("Aaa/000");       // "000" is index 0 in Aaa's children
@@ -2954,5 +2960,5 @@ void Fl_Tree::recalc_tree() {
 }
 
 //
-// End of "$Id: Fl_Tree.cxx 11986 2016-09-26 19:29:03Z greg.ercolano $".
+// End of "$Id$".
 //

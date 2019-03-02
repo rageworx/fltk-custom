@@ -1,5 +1,5 @@
 #
-# "$Id: CMakeLists.txt 10720 2015-04-25 21:42:51Z AlbrechtS $"
+# "$Id$"
 #
 # CMakeLists.txt to build docs for the FLTK project using CMake (www.cmake.org)
 #

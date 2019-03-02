@@ -1,5 +1,5 @@
 //
-// "$Id: fl_font_mac.cxx 11943 2016-09-13 11:51:24Z manolo $"
+// "$Id$"
 //
 // MacOS font selection routines for the Fast Light Tool Kit (FLTK).
 //
@@ -31,7 +31,7 @@ static CFMutableDictionaryRef attributes = NULL;
 
 const int Fl_X::CoreText_threshold = 100500; // this represents Mac OS 10.5
 // condition when the ATSU API is available at compile time
-#define HAS_ATSU (!defined(__LP64__) || !__LP64__) && MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_11
+#define HAS_ATSU (!__LP64__) && MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_11
 
 Fl_Font_Descriptor::Fl_Font_Descriptor(const char* name, Fl_Fontsize Size) {
   next = 0;
@@ -582,5 +582,5 @@ void Fl_Quartz_Graphics_Driver::rtl_draw(const char* c, int n, int x, int y) {
 }
 
 //
-// End of "$Id: fl_font_mac.cxx 11943 2016-09-13 11:51:24Z manolo $".
+// End of "$Id$".
 //

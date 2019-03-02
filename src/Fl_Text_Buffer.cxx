@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Text_Buffer.cxx 10083 2014-01-25 23:47:44Z AlbrechtS $"
+// "$Id$"
 //
 // Copyright 2001-2010 by Bill Spitzak and others.
 // Original code Copyright Mark Edel.  Permission to distribute under
@@ -108,7 +108,7 @@ Fl_Text_Buffer::Fl_Text_Buffer(int requestedSize, int preferredGapSize)
   mPreferredGapSize = preferredGapSize;
   mBuf = (char *) malloc(requestedSize + mPreferredGapSize);
   mGapStart = 0;
-  mGapEnd = mPreferredGapSize;
+  mGapEnd = requestedSize + mPreferredGapSize;
   mTabDist = 8;
   mPrimary.mSelected = 0;
   mPrimary.mStart = mPrimary.mEnd = 0;
@@ -1421,7 +1421,7 @@ void Fl_Text_Buffer::reallocate_with_gap(int newGapStart, int newGapLen)
   mBuf = newBuf;
   mGapStart = newGapStart;
   mGapEnd = newGapEnd;
-  }
+}
 
 
 /*
@@ -1802,5 +1802,5 @@ int Fl_Text_Buffer::utf8_align(int pos) const
 }
 
 //
-// End of "$Id: Fl_Text_Buffer.cxx 10083 2014-01-25 23:47:44Z AlbrechtS $".
+// End of "$Id$".
 //

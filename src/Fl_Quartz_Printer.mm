@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Quartz_Printer.mm 11943 2016-09-13 11:51:24Z manolo $"
+// "$Id$"
 //
 // Mac OS X-specific printing support (objective-c++) for the Fast Light Tool Kit (FLTK).
 //
@@ -339,5 +339,5 @@ void Fl_System_Printer::print_window_part(Fl_Window *win, int x, int y, int w, i
 #endif // __APPLE__
 
 //
-// End of "$Id: Fl_Quartz_Printer.mm 11943 2016-09-13 11:51:24Z manolo $".
+// End of "$Id$".
 //

@@ -1,6 +1,6 @@
 #! /bin/sh
 #
-# $Id: make_pdf 10702 2015-04-13 20:33:46Z AlbrechtS $
+# $Id$
 #
 # Makefile helper script for the Fast Light Tool Kit (FLTK) documentation.
 #
@@ -43,5 +43,5 @@
   cd ..) > pdfall.log 2>&1
 
 #
-# End of "$Id: make_pdf 10702 2015-04-13 20:33:46Z AlbrechtS $".
+# End of "$Id$".
 #

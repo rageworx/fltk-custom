@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Menu.cxx 11321 2016-03-08 16:58:43Z AlbrechtS $"
+// "$Id$"
 //
 // Menu code for the Fast Light Tool Kit (FLTK).
 //
@@ -841,6 +841,10 @@ const Fl_Menu_Item* Fl_Menu_Item::pulldown(
     int menubar) const {
   Fl_Group::current(0); // fix possible user error...
 
+  // track the Fl_Menu_ widget to make sure we notice if it gets
+  // deleted while the menu is open (STR #3503)
+  Fl_Widget_Tracker wp((Fl_Widget *)pbutton);
+
   button = pbutton;
   if (pbutton && pbutton->window()) {
     for (Fl_Window* w = pbutton->window(); w; w = w->window()) {
@@ -877,7 +881,8 @@ const Fl_Menu_Item* Fl_Menu_Item::pulldown(
   initial_item = pp.current_item;
   if (initial_item) goto STARTUP;
 
-  // the main loop, runs until p.state goes to DONE_STATE:
+  // the main loop: runs until p.state goes to DONE_STATE or the menu
+  // widget is deleted (e.g. from a timer callback, see STR #3503):
   for (;;) {
 
     // make sure all the menus are shown:
@@ -894,6 +899,8 @@ const Fl_Menu_Item* Fl_Menu_Item::pulldown(
     {
       const Fl_Menu_Item* oldi = pp.current_item;
       Fl::wait();
+      if (pbutton && wp.deleted()) // menu widget has been deleted (STR #3503)
+	break;
       if (pp.state == DONE_STATE) break; // done.
       if (pp.current_item == oldi) continue;
     }
@@ -980,7 +987,7 @@ const Fl_Menu_Item* Fl_Menu_Item::pulldown(
       }
     }
   }
-  const Fl_Menu_Item* m = pp.current_item;
+  const Fl_Menu_Item* m = (pbutton && wp.deleted()) ? NULL : pp.current_item;
   delete pp.fakemenu;
   while (pp.nummenus>1) delete pp.p[--pp.nummenus];
   mw.hide();
@@ -1077,5 +1084,5 @@ const Fl_Menu_Item* Fl_Menu_Item::test_shortcut() const {
 }
 
 //
-// End of "$Id: Fl_Menu.cxx 11321 2016-03-08 16:58:43Z AlbrechtS $".
+// End of "$Id$".
 //

@@ -1,5 +1,5 @@
 //
-// "$Id: gl_start.cxx 10548 2015-02-02 13:08:51Z manolo $"
+// "$Id$"
 //
 // OpenGL context routines for the Fast Light Tool Kit (FLTK).
 //
@@ -68,7 +68,7 @@ void gl_start() {
   }
   fl_set_gl_context(Fl_Window::current(), context);
 #ifdef __APPLE__
-  Fl_X::GLcontext_update(context); // supports window resizing
+  Fl_X::gl_start(context);
 #elif !defined(WIN32)
   glXWaitX();
 #endif
@@ -120,5 +120,5 @@ int Fl::gl_visual(int mode, int *alist) {
 #endif
 
 //
-// End of "$Id: gl_start.cxx 10548 2015-02-02 13:08:51Z manolo $".
+// End of "$Id$".
 //

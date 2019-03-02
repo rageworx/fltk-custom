@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Sys_Menu_Bar.mm 11786 2016-06-18 00:32:18Z greg.ercolano $"
+// "$Id$"
 //
 // MacOS system menu bar widget for the Fast Light Tool Kit (FLTK).
 //
@@ -303,7 +303,7 @@ static void createSubMenu( NSMenu *mh, pFl_Menu_Item &mm,  const Fl_Menu_Item *m
     miCnt = [FLMenuItem addNewItem:mm menu:submenu action:selector];
     setMenuFlags( submenu, miCnt, mm );
     setMenuShortcut( submenu, miCnt, mm );
-    if ( mm->flags & FL_MENU_INACTIVE || (mitem && (mitem->flags & FL_MENU_INACTIVE))) {
+    if (mitem && (mm->flags & FL_MENU_INACTIVE || mitem->flags & FL_MENU_INACTIVE)) {
       NSMenuItem *item = [submenu itemAtIndex:miCnt];
       [item setEnabled:NO];
     }
@@ -538,5 +538,5 @@ void Fl_Mac_App_Menu::custom_application_menu_items(const Fl_Menu_Item *m)
 #endif /* __APPLE__ */
 
 //
-// End of "$Id: Fl_Sys_Menu_Bar.mm 11786 2016-06-18 00:32:18Z greg.ercolano $".
+// End of "$Id$".
 //

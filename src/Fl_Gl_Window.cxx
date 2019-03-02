@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Gl_Window.cxx 11787 2016-06-22 05:44:14Z manolo $"
+// "$Id$"
 //
 // OpenGL window code for the Fast Light Tool Kit (FLTK).
 //
@@ -297,6 +297,14 @@ void Fl_Gl_Window::flush() {
 #if HAVE_GL_OVERLAY && defined(WIN32)
   uchar save_valid_f = valid_f_;
 #endif
+  
+#ifdef __APPLE__
+  Fl_X *i = Fl_X::i(this);
+  if (i->wait_for_expose) {
+    Fl_X::GLcontext_update((GLContext)context());
+    i->wait_for_expose = 0;
+  }
+#endif
 
 #if HAVE_GL_OVERLAY && defined(WIN32)
 
@@ -551,5 +559,5 @@ int Fl_Gl_Window::gl_plugin_linkage() {
 }
 
 //
-// End of "$Id: Fl_Gl_Window.cxx 11787 2016-06-22 05:44:14Z manolo $".
+// End of "$Id$".
 //

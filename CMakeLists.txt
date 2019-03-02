@@ -1,5 +1,5 @@
 #
-# "$Id: CMakeLists.txt 11742 2016-05-16 14:43:37Z AlbrechtS $"
+# "$Id$"
 #
 # Main CMakeLists.txt to build the FLTK project using CMake (www.cmake.org)
 # Written by Michael Surette

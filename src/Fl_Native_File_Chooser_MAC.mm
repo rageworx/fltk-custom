@@ -1,4 +1,4 @@
-// "$Id: Fl_Native_File_Chooser_MAC.mm 12055 2016-10-27 15:43:09Z manolo $"
+// "$Id$"
 //
 // FLTK native OS file chooser widget
 //
@@ -663,5 +663,5 @@ int Fl_Native_File_Chooser::post() {
 #endif // __APPLE__
 
 //
-// End of "$Id: Fl_Native_File_Chooser_MAC.mm 12055 2016-10-27 15:43:09Z manolo $".
+// End of "$Id$".
 //

@@ -1,5 +1,5 @@
 #
-# "$Id: Makefile 10762 2015-06-16 13:18:28Z AlbrechtS $"
+# "$Id$"
 #
 # Makefile for the Fast Light Tool Kit (FLTK) documentation.
 #
@@ -190,5 +190,5 @@ src/fltk-book.tex: src/fltk-book.tex.in
 	< $< > $@
 
 #
-# End of "$Id: Makefile 10762 2015-06-16 13:18:28Z AlbrechtS $".
+# End of "$Id$".
 #

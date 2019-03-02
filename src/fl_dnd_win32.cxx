@@ -1,5 +1,5 @@
 //
-// "$Id: fl_dnd_win32.cxx 11131 2016-02-07 10:10:52Z AlbrechtS $"
+// "$Id$"
 //
 // Drag & Drop code for the Fast Light Tool Kit (FLTK).
 //
@@ -80,6 +80,18 @@ public:
   }
   HRESULT STDMETHODCALLTYPE DragEnter( IDataObject *pDataObj, DWORD /*grfKeyState*/, POINTL pt, DWORD *pdwEffect) {
     if( !pDataObj ) return E_INVALIDARG;
+    /* Tricky point here: Not DPI-aware applications use different units for the 'POINTL pt' argument
+     of the DragEnter, DragOver, and Drop member functions.
+     DragEnter receives the mouse coordinates in unscaled screen units,
+     whereas DragOver and Drop receive the mouse coordinates in scaled units.
+     This looks like a Windows bug because these apps are supposed to always receive
+     scaled units from the OS.
+     Therefore, we ask here for the mouse coordinates.
+    */
+    POINT mp;
+    GetCursorPos(&mp);
+    pt.x = mp.x; pt.y = mp.y;
+    
     // set e_modifiers here from grfKeyState, set e_x and e_root_x
     // check if FLTK handles this drag and return if it can't (i.e. BMP drag without filename)
     POINT ppt;
@@ -548,5 +560,5 @@ int Fl::dnd()
 }
 
 //
-// End of "$Id: fl_dnd_win32.cxx 11131 2016-02-07 10:10:52Z AlbrechtS $".
+// End of "$Id$".
 //

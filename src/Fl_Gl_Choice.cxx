@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Gl_Choice.cxx 10848 2015-08-31 16:43:41Z manolo $"
+// "$Id$"
 //
 // OpenGL visual selection code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2010 by Bill Spitzak and others.
+// Copyright 1998-2018 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -31,6 +31,63 @@
 void fl_save_dc(HWND, HDC);
 #elif defined(__APPLE__)
 extern void gl_texture_reset();
+#endif
+
+#if defined(USE_X11)
+static XVisualInfo *gl3_getvisual(const int *blist, GLXFBConfig *pbestFB)
+{
+  int glx_major, glx_minor;
+  
+  // FBConfigs were added in GLX version 1.3.
+  if ( !glXQueryVersion( fl_display, &glx_major, &glx_minor ) ||
+      ( ( glx_major == 1 ) && ( glx_minor < 3 ) ) || ( glx_major < 1 ) )
+  {
+    //printf("Invalid GLX version");
+    return NULL;
+  }
+  
+  //printf( "Getting matching framebuffer configs\n" );
+  int fbcount;
+  GLXFBConfig* fbc = glXChooseFBConfig(fl_display, DefaultScreen(fl_display), blist, &fbcount);
+  if (!fbc)
+  {
+    //printf( "Failed to retrieve a framebuffer config\n" );
+    return NULL;
+  }
+  //printf( "Found %d matching FB configs.\n", fbcount );
+  
+  // Pick the FB config/visual with the most samples per pixel
+  int best_fbc = -1, worst_fbc = -1, best_num_samp = -1, worst_num_samp = 999;
+  
+  int i;
+  for (i=0; i<fbcount; ++i)
+  {
+    XVisualInfo *vi = glXGetVisualFromFBConfig( fl_display, fbc[i] );
+    if ( vi )
+    {
+      int samp_buf, samples;
+      glXGetFBConfigAttrib( fl_display, fbc[i], GLX_SAMPLE_BUFFERS, &samp_buf );
+      glXGetFBConfigAttrib( fl_display, fbc[i], GLX_SAMPLES       , &samples  );
+      /*printf( "  Matching fbconfig %d, visual ID 0x%2lx: SAMPLE_BUFFERS = %d, SAMPLES = %d\n",
+       i, vi -> visualid, samp_buf, samples );*/
+      if ( best_fbc < 0 || (samp_buf && samples > best_num_samp) )
+        best_fbc = i, best_num_samp = samples;
+      if ( worst_fbc < 0 || !samp_buf || samples < worst_num_samp )
+        worst_fbc = i, worst_num_samp = samples;
+    }
+    XFree( vi );
+  }
+  
+  GLXFBConfig bestFbc = fbc[ best_fbc ];
+  
+  // Be sure to free the FBConfig list allocated by glXChooseFBConfig()
+  XFree( fbc );
+  
+  // Get a visual
+  XVisualInfo *vi = glXGetVisualFromFBConfig( fl_display, bestFbc );
+  *pbestFB = bestFbc;
+  return vi;
+}
 #endif
 
 static Fl_Gl_Choice *first;
@@ -96,19 +153,37 @@ Fl_Gl_Choice *Fl_Gl_Choice::find(int m, const int *alistp) {
   }
     
   fl_open_display();
-  XVisualInfo *visp = glXChooseVisual(fl_display, fl_screen, (int *)blist);
+  XVisualInfo *visp = NULL;
+  GLXFBConfig best_fb = NULL;
+  if (m & FL_OPENGL3) {
+    visp = gl3_getvisual((const int *)blist, &best_fb);
+  }
   if (!visp) {
+    visp = glXChooseVisual(fl_display, fl_screen, (int *)blist);
+    if (!visp) {
 #    if defined(GLX_VERSION_1_1) && defined(GLX_SGIS_multisample)
-    if (m&FL_MULTISAMPLE) return find(m&~FL_MULTISAMPLE,0);
+      if (m&FL_MULTISAMPLE) return find(m&~FL_MULTISAMPLE,0);
 #    endif
-    return 0;
+      return 0;
+    }
   }
 
 #elif defined(__APPLE_QUARTZ__)
+  fl_open_display();
   NSOpenGLPixelFormat* fmt = Fl_X::mode_to_NSOpenGLPixelFormat(m, alistp);
   if (!fmt) return 0;
   
 #elif defined(WIN32)
+
+// STR #3119: select pixel format with composition support
+// ... and no more than 32 color bits (8 bits/color)
+// Ref: PixelFormatDescriptor Object
+// https://msdn.microsoft.com/en-us/library/cc231189.aspx
+#if !defined(PFD_SUPPORT_COMPOSITION)
+# define PFD_SUPPORT_COMPOSITION (0x8000)
+#endif
+
+#define DEBUG_PFD (0) // 1 = PFD selection debug output, 0 = no debug output
 
   // Replacement for ChoosePixelFormat() that finds one with an overlay
   // if possible:
@@ -127,21 +202,47 @@ Fl_Gl_Choice *Fl_Gl_Choice::find(int m, const int *alistp) {
     if ((!(m & FL_STEREO)) != (!(pfd.dwFlags & PFD_STEREO))) continue;
     if ((m & FL_DEPTH) && !pfd.cDepthBits) continue;
     if ((m & FL_STENCIL) && !pfd.cStencilBits) continue;
+
+#if DEBUG_PFD
+    printf("pfd #%d supports composition: %s\n", i, (pfd.dwFlags & PFD_SUPPORT_COMPOSITION) ? "yes" : "no");
+    printf("    ... & PFD_GENERIC_FORMAT: %s\n", (pfd.dwFlags & PFD_GENERIC_FORMAT) ? "generic" : "accelerated");
+    printf("    ... Overlay Planes      : %d\n", pfd.bReserved & 15);
+    printf("    ... Color & Depth       : %d, %d\n", pfd.cColorBits, pfd.cDepthBits);
+    if (pixelformat)
+      printf("        current pixelformat : %d\n", pixelformat);
+    fflush(stdout);
+#endif // DEBUG_PFD
+
     // see if better than the one we have already:
     if (pixelformat) {
-      // offering non-generic rendering is better (read: hardware accelleration)
+      // offering non-generic rendering is better (read: hardware acceleration)
       if (!(chosen_pfd.dwFlags & PFD_GENERIC_FORMAT) &&
           (pfd.dwFlags & PFD_GENERIC_FORMAT)) continue;
       // offering overlay is better:
       else if (!(chosen_pfd.bReserved & 15) && (pfd.bReserved & 15)) {}
-      // otherwise more bit planes is better:
-      else if (chosen_pfd.cColorBits > pfd.cColorBits) continue;
+      // otherwise prefer a format that supports composition (STR #3119)
+      else if ((chosen_pfd.dwFlags & PFD_SUPPORT_COMPOSITION) &&
+	       !(pfd.dwFlags & PFD_SUPPORT_COMPOSITION)) continue;
+      // otherwise more bit planes is better, but no more than 32 (8 bits per channel):
+      else if (pfd.cColorBits > 32 || chosen_pfd.cColorBits > pfd.cColorBits) continue;
       else if (chosen_pfd.cDepthBits > pfd.cDepthBits) continue;
     }
     pixelformat = i;
     chosen_pfd = pfd;
   }
-  //printf("Chosen pixel format is %d\n", pixelformat);
+
+#if DEBUG_PFD
+  static int bb = 0;
+  if (!bb) {
+    bb = 1;
+    printf("PFD_SUPPORT_COMPOSITION = 0x%x\n", PFD_SUPPORT_COMPOSITION);
+  }
+  printf("Chosen pixel format is %d\n", pixelformat);
+  printf("Color bits = %d, Depth bits = %d\n", chosen_pfd.cColorBits, chosen_pfd.cDepthBits);
+  printf("Pixel format supports composition: %s\n", (chosen_pfd.dwFlags & PFD_SUPPORT_COMPOSITION) ? "yes" : "no");
+  fflush(stdout);
+#endif // DEBUG_PFD
+
   if (!pixelformat) return 0;
 #else
 # error platform unsupported
@@ -155,6 +256,7 @@ Fl_Gl_Choice *Fl_Gl_Choice::find(int m, const int *alistp) {
 
 #if defined(USE_X11)
   g->vis = visp;
+  g->best_fb = best_fb;
 
   if (/*MaxCmapsOfScreen(ScreenOfDisplay(fl_display,fl_screen))==1 && */
       visp->visualid == fl_visual->visualid &&
@@ -203,6 +305,56 @@ static void del_context(GLContext ctx) {
 }
 
 #if defined(USE_X11)
+
+static bool ctxErrorOccurred = false;
+static int ctxErrorHandler( Display *dpy, XErrorEvent *ev )
+{
+  ctxErrorOccurred = true;
+  return 0;
+}
+
+
+GLContext fl_create_gl_context(Fl_Window *window, const Fl_Gl_Choice* g) {
+  GLContext shared_ctx = 0;
+  if (context_list && nContext) shared_ctx = context_list[0];
+  
+  typedef GLContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLContext, Bool, const int*);
+  
+  // It is not necessary to create or make current to a context before calling glXGetProcAddressARB
+  static glXCreateContextAttribsARBProc glXCreateContextAttribsARB =
+  (glXCreateContextAttribsARBProc)glXGetProcAddressARB((const GLubyte *)"glXCreateContextAttribsARB");
+  
+  GLContext ctx = 0;
+  
+  // Check for the GLX_ARB_create_context extension string and the function.
+  // If either is not present, use GLX 1.3 context creation method.
+  const char *glxExts = glXQueryExtensionsString(fl_display, fl_screen);
+  if (g->best_fb && strstr(glxExts, "GLX_ARB_create_context") && glXCreateContextAttribsARB ) {
+    int context_attribs[] =
+    {
+      GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+      GLX_CONTEXT_MINOR_VERSION_ARB, 2,
+      //GLX_CONTEXT_FLAGS_ARB        , GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+      //GLX_CONTEXT_PROFILE_MASK_ARB ,   GLX_CONTEXT_CORE_PROFILE_BIT_ARB ,
+      None
+    };
+    ctxErrorOccurred = false;
+    XErrorHandler oldHandler = XSetErrorHandler(&ctxErrorHandler);
+    ctx = glXCreateContextAttribsARB( fl_display, g->best_fb, shared_ctx, True, context_attribs );
+    // Sync to ensure any errors generated are processed.
+    XSync( fl_display, False );
+    if (ctxErrorOccurred) ctx = 0;
+    XSetErrorHandler(oldHandler);
+  }
+  if (!ctx) { // use OpenGL 1-style context creation
+    ctx = glXCreateContext(fl_display, g->vis, shared_ctx, true);
+  }
+  if (ctx)
+    add_context(ctx);
+//glXMakeCurrent(fl_display, fl_xid(window), ctx);printf("%s\n", glGetString(GL_VERSION));
+  return ctx;
+}
+
 
 GLContext fl_create_gl_context(XVisualInfo* vis) {
   GLContext shared_ctx = 0;
@@ -304,5 +456,5 @@ void fl_delete_gl_context(GLContext context) {
 
 
 //
-// End of "$Id: Fl_Gl_Choice.cxx 10848 2015-08-31 16:43:41Z manolo $".
+// End of "$Id$".
 //

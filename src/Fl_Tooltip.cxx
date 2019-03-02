@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Tooltip.cxx 10850 2015-09-01 14:27:45Z AlbrechtS $"
+// "$Id$"
 //
 // Tooltip source file for the Fast Light Tool Kit (FLTK).
 //
@@ -375,5 +375,5 @@ void Fl_Widget::copy_tooltip(const char *text) {
 }
 
 //
-// End of "$Id: Fl_Tooltip.cxx 10850 2015-09-01 14:27:45Z AlbrechtS $".
+// End of "$Id$".
 //

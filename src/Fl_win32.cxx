@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_win32.cxx 12028 2016-10-14 16:35:44Z AlbrechtS $"
+// "$Id$"
 //
 // WIN32-specific code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2016 by Bill Spitzak and others.
+// Copyright 1998-2018 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -60,6 +60,11 @@
 #include <ole2.h>
 #include <shellapi.h>
 
+// New versions of MinGW (as of Feb 2018) need to include winerror.h to
+// #define S_OK which used to be defined in ole2.h (STR #3454)
+
+#include <winerror.h>
+
 //
 // USE_ASYNC_SELECT - define it if you have WSAAsyncSelect()...
 // USE_ASYNC_SELECT is OBSOLETED in 1.3 for the following reasons:
@@ -100,14 +105,24 @@ static bool initial_clipboard = true;
 // note: winsock2.h has been #include'd in Fl.cxx
 #define WSCK_DLL_NAME "WS2_32.DLL"
 
+// Patch for MinGW (__MINGW32__): see STR #3454 and src/Fl.cxx
+#ifdef __MINGW32__
+typedef int(WINAPI *fl_wsk_fd_is_set_f)(unsigned int, void *);
+#else
+typedef int(WINAPI *fl_wsk_fd_is_set_f)(SOCKET, fd_set *);
+static fl_wsk_fd_is_set_f fl_wsk_fd_is_set = 0;
+#endif
+
 typedef int (WINAPI* fl_wsk_select_f)(int, fd_set*, fd_set*, fd_set*, const struct timeval*);
-typedef int (WINAPI* fl_wsk_fd_is_set_f)(SOCKET, fd_set *);
 
 static HMODULE s_wsock_mod = 0;
 static fl_wsk_select_f s_wsock_select = 0;
-static fl_wsk_fd_is_set_f fl_wsk_fd_is_set = 0;
 
+#ifdef __MINGW32__
+static void * get_wsock_mod() {
+#else
 static HMODULE get_wsock_mod() {
+#endif
   if (!s_wsock_mod) {
     s_wsock_mod = LoadLibrary(WSCK_DLL_NAME);
     if (s_wsock_mod==NULL)
@@ -498,11 +513,7 @@ public:
     fl_free_fonts();        // do some WIN32 cleanup
     fl_cleanup_pens();
     OleUninitialize();
-	// A Alt exit pathed.
-    if ( fl_graphics_driver != NULL )
-	{
-		fl_brush_action(1);
-	}
+    fl_brush_action(1);
     fl_cleanup_dc_list();
     // This is actually too late in the cleanup process to remove the
     // clipboard notifications, but we have no earlier hook so we try
@@ -700,17 +711,18 @@ void Fl::paste(Fl_Widget &receiver, int clipboard, const char *type) {
       Fl::e_text = 0; 
       return;
     }
-    Fl::e_text = new char[fl_selection_length[clipboard]+1];
-    char *o = Fl::e_text;
+    char *clip_text = new char[fl_selection_length[clipboard]+1];
+    char *o = clip_text;
     while (*i) { // Convert \r\n -> \n
       if ( *i == '\r' && *(i+1) == '\n') i++;
       else *o++ = *i++;
     }
     *o = 0;
+    Fl::e_text = clip_text;
     Fl::e_length = (int) (o - Fl::e_text);
     Fl::e_clipboard_type = Fl::clipboard_plain_text;
     receiver.handle(FL_PASTE);
-    delete [] Fl::e_text;
+    delete [] clip_text;
     Fl::e_text = 0;
   } else if (clipboard) {
     HANDLE h;
@@ -719,21 +731,22 @@ void Fl::paste(Fl_Widget &receiver, int clipboard, const char *type) {
       if ((h = GetClipboardData(CF_UNICODETEXT))) { // there's text in the clipboard
 	wchar_t *memLock = (wchar_t*) GlobalLock(h);
 	size_t utf16_len = wcslen(memLock);
-	Fl::e_text = new char[utf16_len * 4 + 1];
-	unsigned utf8_len = fl_utf8fromwc(Fl::e_text, (unsigned) (utf16_len * 4), memLock, (unsigned) utf16_len);
-	*(Fl::e_text + utf8_len) = 0;
+	char *clip_text = new char[utf16_len * 4 + 1];
+	unsigned utf8_len = fl_utf8fromwc(clip_text, (unsigned) (utf16_len * 4), memLock, (unsigned) utf16_len);
+	*(clip_text + utf8_len) = 0;
 	GlobalUnlock(h);
 	LPSTR a,b;
-	a = b = Fl::e_text;
+	a = b = clip_text;
 	while (*a) { // strip the CRLF pairs ($%$#@^)
 	  if (*a == '\r' && a[1] == '\n') a++;
 	  else *b++ = *a++;
 	}
 	*b = 0;
+        Fl::e_text = clip_text;
 	Fl::e_length = (int) (b - Fl::e_text);
 	Fl::e_clipboard_type = Fl::clipboard_plain_text;  // indicates that the paste event is for plain UTF8 text
 	receiver.handle(FL_PASTE); // send the FL_PASTE event to the widget
-	delete[] Fl::e_text;
+	delete[] clip_text;
 	Fl::e_text = 0;
 	}
       }
@@ -767,7 +780,7 @@ void Fl::paste(Fl_Widget &receiver, int clipboard, const char *type) {
 	    }
 	  }
 	  else { // the system will decode a complex DIB
-	    void *pDIBBits = (void*)(lpBI->bmiColors); 
+	    void *pDIBBits = (void*)(lpBI->bmiColors + 256); 
 	    if (lpBI->bmiHeader.biCompression == BI_BITFIELDS) pDIBBits = (void*)(lpBI->bmiColors + 3);
 	    else if (lpBI->bmiHeader.biClrUsed > 0) pDIBBits = (void*)(lpBI->bmiColors + lpBI->bmiHeader.biClrUsed);
 	    Fl_Offscreen off = fl_create_offscreen(width, height);
@@ -2222,10 +2235,6 @@ static HICON image_to_icon(const Fl_RGB_Image *image, bool is_icon,
   HDC hdc;
 
   hdc = GetDC(NULL);
-
-  if ( hdc == NULL )
-	return NULL;
-
   bitmap = CreateDIBSection(hdc, (BITMAPINFO*)&bi, DIB_RGB_COLORS, (void**)&bits, NULL, 0);
   ReleaseDC(NULL, hdc);
 
@@ -2568,14 +2577,12 @@ HDC fl_GetDC(HWND w) {
     if (fl_window) fl_release_dc(fl_window, fl_gc); // ReleaseDC
   }
   fl_gc = GetDC(w);
-  if ( fl_gc != NULL )
-  {
-    fl_save_dc(w, fl_gc);
-    fl_window = w;
-    // calling GetDC seems to always reset these: (?)
-    SetTextAlign(fl_gc, TA_BASELINE|TA_LEFT);
-    SetBkMode(fl_gc, TRANSPARENT);
-  }
+  fl_save_dc(w, fl_gc);
+  fl_window = w;
+  // calling GetDC seems to always reset these: (?)
+  SetTextAlign(fl_gc, TA_BASELINE|TA_LEFT);
+  SetBkMode(fl_gc, TRANSPARENT);
+
   return fl_gc;
 }
 
@@ -2647,9 +2654,6 @@ struct Win_DC_List {      // linked list
 static Win_DC_List * win_DC_list = 0;
 
 void fl_save_dc( HWND w, HDC dc) {
-  if ( ( w == NULL ) || ( dc == NULL ) )
-    return;
-
   Win_DC_List * t;
   t = new Win_DC_List;
   t->window = w;
@@ -2663,9 +2667,6 @@ void fl_save_dc( HWND w, HDC dc) {
 }
 
 void fl_release_dc(HWND w, HDC dc) {
-  if ( ( w == NULL ) || ( dc == NULL ) )
-    return;
-
   Win_DC_List * t= win_DC_list;
   Win_DC_List * prev = 0;
   if (!t)
@@ -2893,5 +2894,5 @@ void preparePrintFront(void)
 #endif // FL_DOXYGEN
 
 //
-// End of "$Id: Fl_win32.cxx 12028 2016-10-14 16:35:44Z AlbrechtS $".
+// End of "$Id$".
 //
