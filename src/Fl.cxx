@@ -794,7 +794,20 @@ void Fl::redraw() {
   it should instead call Fl::awake() to get the main thread to process the
   event queue.
 */
+
+// A simple mutex for thread safe (but unstable to flushing graphics)
+static int grp_flushing = 0;
+
 void Fl::flush() {
+
+  // Simply added ugly mutex, but it is effective!
+  if (grp_flushing)
+  {
+    return;
+  }
+
+  grp_flushing = 1;
+
   if (damage()) {
     damage_ = 0;
     for (Fl_X* i = Fl_X::first; i; i = i->next) {
@@ -816,6 +829,7 @@ void Fl::flush() {
 #else
 # error unsupported platform
 #endif
+  grp_flushing = 0;
 }
 
 

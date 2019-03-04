@@ -513,7 +513,10 @@ public:
     fl_free_fonts();        // do some WIN32 cleanup
     fl_cleanup_pens();
     OleUninitialize();
-    fl_brush_action(1);
+    if ( fl_graphics_driver != NULL )
+	{
+        fl_brush_action(1);
+	}
     fl_cleanup_dc_list();
     // This is actually too late in the cleanup process to remove the
     // clipboard notifications, but we have no earlier hook so we try
@@ -2235,6 +2238,10 @@ static HICON image_to_icon(const Fl_RGB_Image *image, bool is_icon,
   HDC hdc;
 
   hdc = GetDC(NULL);
+
+  if ( hdc == NULL )
+	return NULL;
+
   bitmap = CreateDIBSection(hdc, (BITMAPINFO*)&bi, DIB_RGB_COLORS, (void**)&bits, NULL, 0);
   ReleaseDC(NULL, hdc);
 
@@ -2577,12 +2584,14 @@ HDC fl_GetDC(HWND w) {
     if (fl_window) fl_release_dc(fl_window, fl_gc); // ReleaseDC
   }
   fl_gc = GetDC(w);
+  if ( fl_gc != NULL )
+  {
   fl_save_dc(w, fl_gc);
   fl_window = w;
   // calling GetDC seems to always reset these: (?)
   SetTextAlign(fl_gc, TA_BASELINE|TA_LEFT);
   SetBkMode(fl_gc, TRANSPARENT);
-
+  }
   return fl_gc;
 }
 
@@ -2654,6 +2663,9 @@ struct Win_DC_List {      // linked list
 static Win_DC_List * win_DC_list = 0;
 
 void fl_save_dc( HWND w, HDC dc) {
+  if ( ( w == NULL ) || ( dc == NULL ) )
+    return;
+
   Win_DC_List * t;
   t = new Win_DC_List;
   t->window = w;
@@ -2667,6 +2679,9 @@ void fl_save_dc( HWND w, HDC dc) {
 }
 
 void fl_release_dc(HWND w, HDC dc) {
+  if ( ( w == NULL ) || ( dc == NULL ) )
+    return;
+
   Win_DC_List * t= win_DC_list;
   Win_DC_List * prev = 0;
   if (!t)

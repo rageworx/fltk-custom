@@ -53,6 +53,13 @@ static const char *iconlabel = "?";
 static const char *message_title_default;
 Fl_Font fl_message_font_ = FL_HELVETICA;
 Fl_Fontsize fl_message_size_ = -1;
+Fl_Color fl_message_window_color_ = FL_GRAY;
+Fl_Color fl_message_label_color_ = FL_BLACK;
+Fl_Color fl_message_button_color_[3] = {FL_GRAY,FL_GRAY,FL_GRAY};
+Fl_Color fl_message_button_label_color_[3] = {FL_BLACK,FL_BLACK,FL_BLACK};
+Fl_Color fl_message_input_color_ = FL_WHITE;
+Fl_Color fl_message_input_text_color_ = FL_BLACK;
+Fl_Font fl_message_input_text_font_ = FL_HELVETICA;
 static int enableHotspot = 1;
 #ifdef __APPLE__
 extern "C" void NSBeep(void);
@@ -81,6 +88,8 @@ static Fl_Window *makeform() {
  Fl_Group::current(0);
  // create a new top level window
  Fl_Window *w = message_form = new Fl_Window(410,103);
+  message_form->color( fl_message_window_color_ );
+  message_form->labelcolor( fl_message_label_color_ );
   message_form->callback(button_cb);
  // w->clear_border();
  // w->box(FL_UP_BOX);
@@ -103,6 +112,9 @@ static Fl_Window *makeform() {
      else
        button[b] = new Fl_Button(x, 70, 90, 23);
      button[b]->align(FL_ALIGN_INSIDE|FL_ALIGN_WRAP);
+	 button[b]->color(fl_message_button_color_[b], 
+			          fl_darker(fl_message_button_color_[b]));
+	 button[b]->labelcolor(fl_message_button_label_color_[b]);
      button[b]->callback(button_cb, b);
    }
  }
@@ -166,7 +178,16 @@ static void resizeform() {
         max_h = button_h[i];
     }
 
-  if (input->visible()) text_height = message_h + 25;
+  if (input->visible())
+  {
+	text_height = message_h + 25;
+	input->color( fl_message_input_color_ );
+	input->labelfont( fl_message_font_ );
+	input->labelcolor( fl_message_label_color_ );
+	input->textcolor( fl_message_input_text_color_ );
+	input->textfont( fl_message_input_text_font_ );
+	input->cursor_color( fl_message_input_text_color_ );
+  }
   else text_height = message_h;
 
   max_w = message_w + 10 + icon_size;
@@ -220,16 +241,53 @@ static int innards(const char* fmt, va_list ap,
   }
 
   message->labelfont(fl_message_font_);
+  message->labelcolor(fl_message_label_color_);
   if (fl_message_size_ == -1)
+  {
     message->labelsize(FL_NORMAL_SIZE);
+	input->textsize(FL_NORMAL_SIZE);
+  }
   else
+  {
     message->labelsize(fl_message_size_);
-  if (b0) {button[0]->show(); button[0]->label(b0); button[1]->position(210,70);}
-  else {button[0]->hide(); button[1]->position(310,70);}
-  if (b1) {button[1]->show(); button[1]->label(b1);}
-  else button[1]->hide();
-  if (b2) {button[2]->show(); button[2]->label(b2);}
-  else button[2]->hide();
+	input->textsize(fl_message_size_);
+  }
+
+  if (b0) 
+  {
+	  button[0]->show(); 
+	  button[0]->label(b0);
+	  button[0]->labelsize( message->labelsize() );
+	  button[0]->labelfont( message->labelfont() );
+	  button[1]->position(210,70);
+  }
+  else 
+  {
+	  button[0]->hide(); 
+	  button[1]->position(310,70);
+  }
+  if (b1) 
+  {
+	  button[1]->show(); 
+	  button[1]->label(b1);
+	  button[1]->labelsize( message->labelsize() );
+	  button[1]->labelfont( message->labelfont() );
+  }
+  else 
+  {
+  	  button[1]->hide();
+  }
+  if (b2) 
+  {
+  	  button[2]->show(); 
+	  button[2]->label(b2);
+	  button[2]->labelsize( message->labelsize() );
+	  button[2]->labelfont( message->labelfont() );
+  }
+  else 
+  {
+	  button[2]->hide();
+  }
   const char* prev_icon_label = icon->label();
   if (!prev_icon_label) icon->label(iconlabel);
 
