@@ -26,7 +26,8 @@
 // button: it draws the text of the current pick and a down-arrow.
 
 void Fl_Choice::draw() {
-  Fl_Boxtype btype = FL_DOWN_BOX;
+  Fl_Boxtype btype = Fl::scheme() ? FL_UP_BOX		// non-default uses up box
+                                  : FL_DOWN_BOX;	// default scheme uses down box
 
   if ( Fl::scheme() )
   {

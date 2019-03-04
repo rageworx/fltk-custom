@@ -196,6 +196,7 @@ class Fluid_Table : public Fl_Table {
 public:
   Fluid_Table(int x, int y, int w, int h, const char *l=0L)
   : Fl_Table(x, y, w, h, l) {
+    end();
     for ( int r=0; r<MAX_ROWS; r++ )
       for ( int c=0; c<MAX_COLS; c++ )
         data[r][c] = 1000+(r*1000)+c;
@@ -204,6 +205,7 @@ public:
     row_header(1);              // enable row headers (along left)
     row_height_all(20);         // default height of rows
     row_resize(0);              // disable row resizing                                // Cols
+    // Cols
     cols(MAX_COLS);             // how many columns
     col_header(1);              // enable column headers (along top)
     col_width_all(80);          // default width of columns

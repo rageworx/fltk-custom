@@ -635,6 +635,7 @@ HLINKS
 GLLIB
 XPROP
 FTCONFIG
+PKGCONFIG
 X_EXTRA_LIBS
 X_LIBS
 X_PRE_LIBS
@@ -741,6 +742,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -839,6 +841,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE}'
@@ -1091,6 +1094,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1228,7 +1240,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1381,6 +1393,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -3628,7 +3641,7 @@ esac
 
 FL_MAJOR_VERSION=1
 FL_MINOR_VERSION=3
-FL_PATCH_VERSION=4
+FL_PATCH_VERSION=5
 FL_DSO_VERSION=${FL_MAJOR_VERSION}.${FL_MINOR_VERSION}
 FL_ABI_VERSION=${FL_MAJOR_VERSION}.${FL_MINOR_VERSION}.0
 FL_VERSION=${FL_MAJOR_VERSION}.${FL_MINOR_VERSION}.${FL_PATCH_VERSION}
@@ -3669,7 +3682,7 @@ fi
     darwin*)
 	if test x$enable_x11 = xyes; then
 		host_os_gui="X11"
-		OPTIM="-U__APPLE__ $OPTIM"
+		OPTIM="-U__APPLE__ -mmacosx-version-min=10.3 $OPTIM"
 	fi
 	;;
    *)
@@ -7696,7 +7709,57 @@ fi
 
 	xft_found=no
 	if test x$enable_xft != xno; then
-	    # Extract the first word of "freetype-config", so it can be a program name with args.
+            # Try pkg-config first (freetype2 deprecated freetype-config from some version on)
+            # Extract the first word of "pkg-config", so it can be a program name with args.
+set dummy pkg-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_PKGCONFIG+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $PKGCONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_PKGCONFIG="$PKGCONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_PKGCONFIG="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+PKGCONFIG=$ac_cv_path_PKGCONFIG
+if test -n "$PKGCONFIG"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PKGCONFIG" >&5
+$as_echo "$PKGCONFIG" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+            FT_FLAGS=""
+            if test "x$PKGCONFIG" != x; then
+                FT_FLAGS="`$PKGCONFIG --cflags xft`"
+                if test "x$FT_FLAGS" = x; then
+                    FT_FLAGS="`$PKGCONFIG --cflags freetype2`"
+                fi
+            fi
+            # if that failed, try freetype-config
+            if test "x$FT_FLAGS" = x; then
+                # Extract the first word of "freetype-config", so it can be a program name with args.
 set dummy freetype-config; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
@@ -7736,13 +7799,20 @@ $as_echo "no" >&6; }
 fi
 
 
+                if test "x$FTCONFIG" != x; then
+                    FT_FLAGS="`$FTCONFIG --cflags`"
+                else
+                    # abort if both methods failed
+                    { $as_echo "$as_me:${as_lineno-$LINENO}: please install pkg-config or use 'configure --disable-xft'." >&5
+$as_echo "$as_me: please install pkg-config or use 'configure --disable-xft'." >&6;}
+                    as_fn_error $? "Aborting." "$LINENO" 5
+                fi
+            fi
+            CPPFLAGS="$FT_FLAGS $CPPFLAGS"
+            CXXFLAGS="$FT_FLAGS $CXXFLAGS"
+            CFLAGS="$FT_FLAGS $CFLAGS"
 
-	    if test "x$FTCONFIG" != x; then
-		CPPFLAGS="`$FTCONFIG --cflags` $CPPFLAGS"
-		CFLAGS="`$FTCONFIG --cflags` $CFLAGS"
-		CXXFLAGS="`$FTCONFIG --cflags` $CXXFLAGS"
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for FcPatternCreate in -lfontconfig" >&5
+            { $as_echo "$as_me:${as_lineno-$LINENO}: checking for FcPatternCreate in -lfontconfig" >&5
 $as_echo_n "checking for FcPatternCreate in -lfontconfig... " >&6; }
 if ${ac_cv_lib_fontconfig_FcPatternCreate+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -7787,7 +7857,7 @@ _ACEOF
 
 fi
 
-		ac_fn_c_check_header_mongrel "$LINENO" "X11/Xft/Xft.h" "ac_cv_header_X11_Xft_Xft_h" "$ac_includes_default"
+            ac_fn_c_check_header_mongrel "$LINENO" "X11/Xft/Xft.h" "ac_cv_header_X11_Xft_Xft_h" "$ac_includes_default"
 if test "x$ac_cv_header_X11_Xft_Xft_h" = xyes; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for XftDrawCreate in -lXft" >&5
 $as_echo_n "checking for XftDrawCreate in -lXft... " >&6; }
@@ -7835,7 +7905,6 @@ fi
 fi
 
 
-	    fi
 	fi
 
 			if test x$enable_xft != xno -a x$xft_found != xyes; then

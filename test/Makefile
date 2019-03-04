@@ -1,9 +1,9 @@
 #
-# "$Id: Makefile 11918 2016-09-03 08:14:43Z manolo $"
+# "$Id$"
 #
 # Test/example program makefile for the Fast Light Tool Kit (FLTK).
 #
-# Copyright 1998-2010 by Bill Spitzak and others.
+# Copyright 1998-2019 by Bill Spitzak and others.
 #
 # This library is free software. Distribution and use rights are outlined in
 # the file "COPYING" which should have been included with this file.  If this
@@ -19,9 +19,8 @@
 include ../makeinclude
 
 CPPFILES =\
-	unittests.cxx \
-	animated.cxx \
 	adjuster.cxx \
+	animated.cxx \
 	arc.cxx \
 	ask.cxx \
 	bitmap.cxx \
@@ -49,6 +48,7 @@ CPPFILES =\
 	fonts.cxx \
 	forms.cxx \
 	fractals.cxx \
+	fracviewer.cxx \
 	fullscreen.cxx \
 	gl_overlay.cxx \
 	glpuzzle.cxx \
@@ -77,7 +77,6 @@ CPPFILES =\
 	pixmap_browser.cxx \
 	pixmap.cxx \
 	preferences.cxx \
-	device.cxx \
 	radio.cxx \
 	resizebox.cxx \
 	resize.cxx \
@@ -94,8 +93,9 @@ CPPFILES =\
 	tiled_image.cxx \
 	tree.cxx \
 	twowin.cxx \
-	valuators.cxx \
+	unittests.cxx \
 	utf8.cxx \
+	valuators.cxx \
 	windowfocus.cxx
 
 ALL =	\
@@ -286,7 +286,7 @@ unittests$(EXEEXT): unittests.o
 
 unittests.o: unittests.cxx unittest_about.cxx unittest_points.cxx unittest_lines.cxx unittest_circles.cxx \
 	unittest_rects.cxx unittest_text.cxx unittest_symbol.cxx unittest_viewport.cxx unittest_images.cxx \
-	unittest_schemes.cxx
+	unittest_schemes.cxx unittest_scrollbarsize.cxx
 
 adjuster$(EXEEXT): adjuster.o
 
@@ -309,11 +309,15 @@ buttons$(EXEEXT): buttons.o
 blocks$(EXEEXT): blocks.o
 	echo Linking $@...
 	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(LDFLAGS) blocks.o -o $@ $(AUDIOLIBS) $(LINKFLTK) $(LDLIBS)
+	$(OSX_ONLY) $(RM) -r -f blocks.app/Contents/MacOS
+	$(OSX_ONLY) mkdir blocks.app/Contents/MacOS
 	$(OSX_ONLY) $(INSTALL_BIN) blocks$(EXEEXT) blocks.app/Contents/MacOS
 
 checkers$(EXEEXT): checkers.o
 	echo Linking $@...
 	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(LDFLAGS) checkers.o -o $@ $(LINKFLTK) $(LDLIBS)
+	$(OSX_ONLY) $(RM) -r -f checkers.app/Contents/MacOS
+	$(OSX_ONLY) mkdir checkers.app/Contents/MacOS
 	$(OSX_ONLY) $(INSTALL_BIN) checkers$(EXEEXT) checkers.app/Contents/MacOS
 
 clock$(EXEEXT): clock.o
@@ -464,6 +468,8 @@ subwindow$(EXEEXT): subwindow.o
 sudoku: sudoku.o
 	echo Linking $@...
 	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(LDFLAGS) sudoku.o -o $@ $(AUDIOLIBS) $(LINKFLTKIMG) $(LDLIBS)
+	$(OSX_ONLY) $(RM) -r -f sudoku.app/Contents/MacOS
+	$(OSX_ONLY) mkdir sudoku.app/Contents/MacOS
 	$(OSX_ONLY) $(INSTALL_BIN) sudoku$(EXEEXT) sudoku.app/Contents/MacOS
 
 sudoku.exe: sudoku.o sudoku.rc
@@ -546,5 +552,5 @@ cairo_test$(EXEEXT): cairo_test.o
 	$(OSX_ONLY) ../fltk-config --post $@
 
 #
-# End of "$Id: Makefile 11918 2016-09-03 08:14:43Z manolo $".
+# End of "$Id$".
 #
