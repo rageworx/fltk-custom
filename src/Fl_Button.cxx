@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Button.cxx 10386 2014-10-19 20:17:17Z AlbrechtS $"
+// "$Id$"
 //
 // Button widget for the Fast Light Tool Kit (FLTK).
 //
@@ -248,5 +248,5 @@ Fl_Toggle_Button::Fl_Toggle_Button(int X,int Y,int W,int H,const char *L)
 
 
 //
-// End of "$Id: Fl_Button.cxx 10386 2014-10-19 20:17:17Z AlbrechtS $".
+// End of "$Id$".
 //

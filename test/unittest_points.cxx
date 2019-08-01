@@ -1,5 +1,5 @@
 //
-// "$Id: unittest_points.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $:
+// "$Id$:
 //
 // Unit tests for the Fast Light Tool Kit (FLTK).
 //
@@ -56,5 +56,5 @@ public:
 UnitTest points("drawing points", PointTest::create);
 
 //
-// End of "$Id: unittest_points.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// End of "$Id$"
 //

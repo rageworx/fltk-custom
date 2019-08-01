@@ -1,5 +1,5 @@
 //
-// "$Id: tree-custom-sort.cxx 11870 2016-08-11 12:37:30Z AlbrechtS $"
+// "$Id$"
 //
 //	Simple Fl_Tree custom (numeric) sort example. - erco 12/16/2013
 //      Demonstrates custom sorting of Fl_Tree items.
@@ -77,5 +77,5 @@ int main(int argc, char *argv[]) {
 }
 
 //
-// End of "$Id: tree-custom-sort.cxx 11870 2016-08-11 12:37:30Z AlbrechtS $".
+// End of "$Id$".
 //

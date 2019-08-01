@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Single_Window.cxx 9637 2012-07-24 04:37:22Z matt $"
+// "$Id$"
 //
 // Single-buffered window for the Fast Light Tool Kit (FLTK).
 //
@@ -50,5 +50,5 @@ Fl_Single_Window::Fl_Single_Window(int X, int Y, int W, int H, const char *l)
 
 
 //
-// End of "$Id: Fl_Single_Window.cxx 9637 2012-07-24 04:37:22Z matt $".
+// End of "$Id$".
 //

@@ -1,5 +1,5 @@
 //
-// "$Id: forms_free.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // Forms free widget routines for the Fast Light Tool Kit (FLTK).
 //
@@ -101,5 +101,5 @@ int Fl_Free::handle(int e) {
 }
 
 //
-// End of "$Id: forms_free.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

@@ -1,5 +1,5 @@
 /*
- * "$Id: fl_call_main.c 9984 2013-09-22 17:20:48Z greg.ercolano $"
+ * "$Id$"
  *
  * Copyright 1998-2010 by Bill Spitzak and others.
  *
@@ -129,6 +129,6 @@ typedef int dummy;
 #endif /* WIN32 && !FL_DLL && !__GNUC__ */
 
 /*
- * End of "$Id: fl_call_main.c 9984 2013-09-22 17:20:48Z greg.ercolano $".
+ * End of "$Id$".
  */
 

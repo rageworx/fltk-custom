@@ -1,5 +1,5 @@
 //
-// "$Id: fl_read_image.cxx 10436 2014-11-06 16:48:57Z manolo $"
+// "$Id$"
 //
 // X11 image reading routines for the Fast Light Tool Kit (FLTK).
 //
@@ -631,5 +631,5 @@ static uchar *read_win_rectangle(uchar *p, int X, int Y, int w, int h, int alpha
 #endif // !__APPLE__
 
 //
-// End of "$Id: fl_read_image.cxx 10436 2014-11-06 16:48:57Z manolo $".
+// End of "$Id$".
 //

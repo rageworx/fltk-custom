@@ -1,5 +1,5 @@
 //
-// "$Id: unittests.cxx 10565 2015-02-09 18:04:31Z AlbrechtS $"
+// "$Id$"
 //
 // Unit tests for the Fast Light Tool Kit (FLTK).
 //
@@ -199,5 +199,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: unittests.cxx 10565 2015-02-09 18:04:31Z AlbrechtS $".
+// End of "$Id$".
 //

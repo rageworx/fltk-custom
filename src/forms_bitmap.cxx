@@ -1,5 +1,5 @@
 //
-// "$Id: forms_bitmap.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // Forms compatible bitmap function for the Fast Light Tool Kit (FLTK).
 //
@@ -40,5 +40,5 @@ void Fl_FormsBitmap::draw() {
 }
 
 //
-// End of "$Id: forms_bitmap.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

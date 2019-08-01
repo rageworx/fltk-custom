@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_get_key_win32.cxx 9303 2012-03-26 16:54:54Z manolo $"
+// "$Id$"
 //
 // WIN32 keyboard state routines for the Fast Light Tool Kit (FLTK).
 //
@@ -126,5 +126,5 @@ int Fl::get_key(int k) {
 }
 
 //
-// End of "$Id: Fl_get_key_win32.cxx 9303 2012-03-26 16:54:54Z manolo $".
+// End of "$Id$".
 //

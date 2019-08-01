@@ -1,5 +1,5 @@
 //
-// "$Id: fl_font_win32.cxx 11094 2016-01-31 02:49:56Z AlbrechtS $"
+// "$Id$"
 //
 // WIN32 font selection routines for the Fast Light Tool Kit (FLTK).
 //
@@ -444,5 +444,5 @@ void Fl_GDI_Graphics_Driver::rtl_draw(const char* c, int n, int x, int y) {
 }
 #endif
 //
-// End of "$Id: fl_font_win32.cxx 11094 2016-01-31 02:49:56Z AlbrechtS $".
+// End of "$Id$".
 //

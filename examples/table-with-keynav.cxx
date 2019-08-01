@@ -1,5 +1,5 @@
 //
-// "$Id: table-with-keynav.cxx 9848 2013-03-25 23:20:29Z greg.ercolano $"
+// "$Id$"
 //
 //    Example of Fl_Table with keyboard selection navigation - Greg Ercolano 04/14/2012
 //
@@ -178,5 +178,5 @@ int main() {
 }
 
 //
-// End of "$Id: table-with-keynav.cxx 9848 2013-03-25 23:20:29Z greg.ercolano $".
+// End of "$Id$".
 //

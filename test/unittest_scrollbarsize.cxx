@@ -1,5 +1,5 @@
 //
-// "$Id: unittest_scrollbarsize.cxx 9706 2012-11-06 20:46:14Z matt $"
+// "$Id$"
 //
 // Unit tests for the Fast Light Tool Kit (FLTK).
 //
@@ -219,5 +219,5 @@ public:
 UnitTest scrollbarsize("scrollbar size", ScrollBarSizeTest::create);
 
 //
-// End of "$Id: unittest_scrollbarsize.cxx 9706 2012-11-06 20:46:14Z matt $"
+// End of "$Id$"
 //

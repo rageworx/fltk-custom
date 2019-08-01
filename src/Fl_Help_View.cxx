@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Help_View.cxx 11844 2016-07-23 04:25:40Z greg.ercolano $"
+// "$Id$"
 //
 // Fl_Help_View widget routines.
 //
@@ -3714,5 +3714,5 @@ hscrollbar_callback(Fl_Widget *s, void *)
 
 
 //
-// End of "$Id: Fl_Help_View.cxx 11844 2016-07-23 04:25:40Z greg.ercolano $".
+// End of "$Id$".
 //

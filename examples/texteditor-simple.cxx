@@ -1,5 +1,5 @@
 //
-// "$Id: texteditor-simple.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 //	A simple example of Fl_Text_Editor
 //
@@ -49,5 +49,5 @@ int main() {
 }
 
 //
-// End of "$Id: texteditor-simple.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

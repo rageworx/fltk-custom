@@ -1,5 +1,5 @@
 //
-// "$Id: fl_set_fonts_win32.cxx 9326 2012-04-05 14:30:19Z AlbrechtS $"
+// "$Id$"
 //
 // WIN32 font utilities for the Fast Light Tool Kit (FLTK).
 //
@@ -160,5 +160,5 @@ Fl::get_font_sizes(Fl_Font fnum, int*& sizep) {
 
 
 //
-// End of "$Id: fl_set_fonts_win32.cxx 9326 2012-04-05 14:30:19Z AlbrechtS $".
+// End of "$Id$".
 //

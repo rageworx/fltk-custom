@@ -1,5 +1,5 @@
 //
-// "$Id: cursor.cxx 10196 2014-06-16 11:17:57Z ossman $"
+// "$Id$"
 //
 // Cursor test program for the Fast Light Tool Kit (FLTK).
 //
@@ -118,5 +118,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: cursor.cxx 10196 2014-06-16 11:17:57Z ossman $".
+// End of "$Id$".
 //

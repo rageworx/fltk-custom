@@ -1,5 +1,5 @@
 //
-// "$Id: print_panel.h 10619 2015-03-12 15:24:15Z manolo $"
+// "$Id$"
 //
 // Print panel for the Fast Light Tool Kit (FLTK).
 //
@@ -43,5 +43,5 @@ static void print_update_status();
 #endif
 
 //
-// End of "$Id: print_panel.h 10619 2015-03-12 15:24:15Z manolo $".
+// End of "$Id$".
 //

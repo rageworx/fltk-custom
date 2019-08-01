@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_get_key_mac.cxx 10747 2015-06-10 10:53:25Z manolo $"
+// "$Id$"
 //
 // MacOS keyboard state routines for the Fast Light Tool Kit (FLTK).
 //
@@ -275,5 +275,5 @@ int Fl::get_key(int k) {
 }
 
 //
-// End of "$Id: Fl_get_key_mac.cxx 10747 2015-06-10 10:53:25Z manolo $".
+// End of "$Id$".
 //

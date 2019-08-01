@@ -1,5 +1,5 @@
 //
-// "$Id: utf8.cxx 11094 2016-01-31 02:49:56Z AlbrechtS $"
+// "$Id$"
 //
 // UTF-8 test program for the Fast Light Tool Kit (FLTK).
 //
@@ -715,5 +715,5 @@ int main(int argc, char** argv)
 }
 
 //
-// End of "$Id: utf8.cxx 11094 2016-01-31 02:49:56Z AlbrechtS $".
+// End of "$Id$".
 //

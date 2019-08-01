@@ -1,5 +1,5 @@
 //
-// "$Id: textdisplay-with-colors.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 //	How to use Fl_Text_Display with colors. -erco 11/09/2010
 //	Originally from erco's cheat sheet, permission by author.
@@ -55,5 +55,5 @@ int main() {
 }
 
 //
-// End of "$Id: textdisplay-with-colors.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

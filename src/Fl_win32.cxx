@@ -2586,11 +2586,11 @@ HDC fl_GetDC(HWND w) {
   fl_gc = GetDC(w);
   if ( fl_gc != NULL )
   {
-  fl_save_dc(w, fl_gc);
-  fl_window = w;
-  // calling GetDC seems to always reset these: (?)
-  SetTextAlign(fl_gc, TA_BASELINE|TA_LEFT);
-  SetBkMode(fl_gc, TRANSPARENT);
+    fl_save_dc(w, fl_gc);
+    fl_window = w;
+    // calling GetDC seems to always reset these: (?)
+    SetTextAlign(fl_gc, TA_BASELINE|TA_LEFT);
+    SetBkMode(fl_gc, TRANSPARENT);
   }
   return fl_gc;
 }

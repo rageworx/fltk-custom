@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Gl_Overlay.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // OpenGL overlay code for the Fast Light Tool Kit (FLTK).
 //
@@ -235,5 +235,5 @@ void Fl_Gl_Window::hide_overlay() {
 #endif
 
 //
-// End of "$Id: Fl_Gl_Overlay.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

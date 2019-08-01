@@ -1,5 +1,5 @@
 //
-// "$Id: windowfocus.cxx 10594 2015-02-27 14:10:29Z AlbrechtS $"
+// "$Id$"
 //
 // Cross-window show/focus test program for the Fast Light Tool Kit (FLTK).
 //
@@ -60,5 +60,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: windowfocus.cxx 10594 2015-02-27 14:10:29Z AlbrechtS $".
+// End of "$Id$".
 //

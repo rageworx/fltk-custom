@@ -1,5 +1,5 @@
 /*
- * "$Id: flstring.c 9573 2012-06-06 03:38:02Z fabien $"
+ * "$Id$"
  *
  * BSD string functions for the Fast Light Tool Kit (FLTK).
  *
@@ -111,5 +111,5 @@ int fl_ascii_strcasecmp(const char *s, const char *t) {
 }
 
 /*
- * End of "$Id: flstring.c 9573 2012-06-06 03:38:02Z fabien $".
+ * End of "$Id$".
  */

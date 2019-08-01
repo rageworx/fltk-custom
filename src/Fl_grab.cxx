@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_grab.cxx 11094 2016-01-31 02:49:56Z AlbrechtS $"
+// "$Id$"
 //
 // Grab/release code for the Fast Light Tool Kit (FLTK).
 //
@@ -104,5 +104,5 @@ void Fl::grab(Fl_Window* win) {
 }
 
 //
-// End of "$Id: Fl_grab.cxx 11094 2016-01-31 02:49:56Z AlbrechtS $".
+// End of "$Id$".
 //

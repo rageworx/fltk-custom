@@ -1,5 +1,5 @@
 //
-// "$Id: filename_match.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // Pattern matching routines for the Fast Light Tool Kit (FLTK).
 //
@@ -115,5 +115,5 @@ int fl_filename_match(const char *s, const char *p) {
 }
 
 //
-// End of "$Id: filename_match.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

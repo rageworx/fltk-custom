@@ -1,5 +1,5 @@
 //
-// "$Id: fl_font_x.cxx 11977 2016-09-25 11:07:06Z AlbrechtS $"
+// "$Id$"
 //
 // Standard X11 font selection code for the Fast Light Tool Kit (FLTK).
 //
@@ -337,5 +337,5 @@ void Fl_Xlib_Graphics_Driver::rtl_draw(const char* c, int n, int x, int y) {
 }
 #endif // FL_DOXYGEN
 //
-// End of "$Id: fl_font_x.cxx 11977 2016-09-25 11:07:06Z AlbrechtS $".
+// End of "$Id$".
 //

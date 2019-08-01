@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Window_shape.cxx 10809 2015-07-22 11:26:27Z manolo $"
+// "$Id$"
 //
 // Implementation of Fl_Window::shape(Fl_Image*) for the Fast Light Tool Kit (FLTK).
 //
@@ -16,6 +16,7 @@
 //     http://www.fltk.org/str.php
 //
 
+#include <config.h>
 #include <FL/Fl.H>
 #include <FL/fl_draw.H>
 #include <FL/x.H>
@@ -421,5 +422,5 @@ void Fl_Window::draw() {
 
 
 //
-// End of "$Id: Fl_Window_shape.cxx 10809 2015-07-22 11:26:27Z manolo $".
+// End of "$Id$".
 //

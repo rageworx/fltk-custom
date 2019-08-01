@@ -1,5 +1,5 @@
 //
-// "$Id: howto-text-over-image-button.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // 	Simple example of a button with text over an image
 // 	Originally from erco's cheat sheet 10/25/2010, permission by author.
@@ -78,5 +78,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: howto-text-over-image-button.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

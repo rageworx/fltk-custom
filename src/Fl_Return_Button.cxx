@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Return_Button.cxx 10775 2015-06-27 15:20:23Z AlbrechtS $"
+// "$Id$"
 //
 // Return button widget for the Fast Light Tool Kit (FLTK).
 //
@@ -68,5 +68,5 @@ Fl_Return_Button::Fl_Return_Button(int X, int Y, int W, int H,const char *l)
 
 
 //
-// End of "$Id: Fl_Return_Button.cxx 10775 2015-06-27 15:20:23Z AlbrechtS $".
+// End of "$Id$".
 //

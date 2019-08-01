@@ -1,4 +1,4 @@
-// "$Id: Fl_Native_File_Chooser_FLTK.cxx 11923 2016-09-05 19:28:21Z greg.ercolano $"
+// "$Id$"
 //
 // FLTK native file chooser widget wrapper for GTK's GtkFileChooserDialog 
 //
@@ -522,5 +522,5 @@ int Fl_FLTK_File_Chooser::exist_dialog() {
 }
 
 //
-// End of "$Id: Fl_Native_File_Chooser_FLTK.cxx 11923 2016-09-05 19:28:21Z greg.ercolano $".
+// End of "$Id$".
 //

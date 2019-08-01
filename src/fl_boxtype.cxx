@@ -1,5 +1,5 @@
 //
-// "$Id: fl_boxtype.cxx 10781 2015-07-09 00:10:44Z AlbrechtS $"
+// "$Id$"
 //
 // Box drawing code for the Fast Light Tool Kit (FLTK).
 //
@@ -466,5 +466,5 @@ void Fl_Widget::draw_box(Fl_Boxtype t, int X, int Y, int W, int H, Fl_Color c) c
 }
 
 //
-// End of "$Id: fl_boxtype.cxx 10781 2015-07-09 00:10:44Z AlbrechtS $".
+// End of "$Id$".
 //

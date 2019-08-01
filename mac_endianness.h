@@ -1,5 +1,5 @@
 /*
- * "$Id: mac_endianness.h 8864 2011-07-19 04:49:30Z greg.ercolano $"
+ * "$Id$"
  *
  * Mac-specific configuration file for the Fast Light Tool Kit (FLTK).
  *
@@ -25,5 +25,5 @@
 #endif
 
 /*
- * End of "$Id: mac_endianness.h 8864 2011-07-19 04:49:30Z greg.ercolano $".
+ * End of "$Id$".
  */

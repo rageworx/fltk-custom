@@ -1,5 +1,5 @@
 //
-// "$Id: howto-browser-with-icons.cxx 9845 2013-03-23 18:40:53Z greg.ercolano $"
+// "$Id$"
 //
 //    Demonstrate creating an Fl_Browser with icons - Greg Ercolano 10/07/09 (STR#1739)
 //
@@ -182,5 +182,5 @@ int main() {
 } 
 
 //
-// End of "$Id: howto-browser-with-icons.cxx 9845 2013-03-23 18:40:53Z greg.ercolano $".
+// End of "$Id$".
 //

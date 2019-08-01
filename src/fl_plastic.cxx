@@ -1,5 +1,5 @@
 //
-// "$Id: fl_plastic.cxx 10307 2014-09-13 17:04:20Z manolo $"
+// "$Id$"
 //
 // "Plastic" drawing routines for the Fast Light Tool Kit (FLTK).
 //
@@ -368,5 +368,5 @@ Fl_Boxtype fl_define_FL_PLASTIC_UP_BOX() {
 
 
 //
-// End of "$Id: fl_plastic.cxx 10307 2014-09-13 17:04:20Z manolo $".
+// End of "$Id$".
 //

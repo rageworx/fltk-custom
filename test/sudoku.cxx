@@ -1,5 +1,5 @@
 //
-// "$Id: sudoku.cxx 11535 2016-04-05 21:12:49Z AlbrechtS $"
+// "$Id$"
 //
 // Sudoku game using the Fast Light Tool Kit (FLTK).
 //
@@ -1337,5 +1337,5 @@ main(int argc, char *argv[]) {
 
 
 //
-// End of "$Id: sudoku.cxx 11535 2016-04-05 21:12:49Z AlbrechtS $".
+// End of "$Id$".
 //

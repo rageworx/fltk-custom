@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_File_Icon2.cxx 12028 2016-10-14 16:35:44Z AlbrechtS $"
+// "$Id$"
 //
 // Fl_File_Icon system icon routines.
 //
@@ -1014,5 +1014,5 @@ get_kde_val(char       *str,
 
 
 //
-// End of "$Id: Fl_File_Icon2.cxx 12028 2016-10-14 16:35:44Z AlbrechtS $".
+// End of "$Id$".
 //

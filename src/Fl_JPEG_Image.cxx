@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_JPEG_Image.cxx 10743 2015-06-07 06:21:40Z manolo $"
+// "$Id$"
 //
 // Fl_JPEG_Image routines.
 //
@@ -387,5 +387,5 @@ Fl_JPEG_Image::Fl_JPEG_Image(const char *name, const unsigned char *data)
 }
 
 //
-// End of "$Id: Fl_JPEG_Image.cxx 10743 2015-06-07 06:21:40Z manolo $".
+// End of "$Id$".
 //

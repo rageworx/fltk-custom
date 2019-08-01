@@ -1,5 +1,5 @@
 //
-// "$Id: shapedwindow.cxx 11493 2016-03-31 21:50:34Z AlbrechtS $"
+// "$Id$"
 //
 // shapedwindow example source file for the Fast Light Tool Kit (FLTK).
 //
@@ -122,5 +122,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: shapedwindow.cxx 11493 2016-03-31 21:50:34Z AlbrechtS $".
+// End of "$Id$".
 //

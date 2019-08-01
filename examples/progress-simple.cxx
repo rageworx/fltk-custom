@@ -5,7 +5,7 @@
 #include <FL/Fl_Progress.H>
 
 //
-// "$Id: progress-simple.cxx 9256 2012-02-29 05:42:12Z greg.ercolano $"
+// "$Id$"
 //
 // Demonstrate using the Fl_Progress widget in an application - erco 05/02/2005
 //
@@ -74,5 +74,5 @@ int main() {
 }
 
 //
-// End of "$Id: progress-simple.cxx 9256 2012-02-29 05:42:12Z greg.ercolano $".
+// End of "$Id$".
 //

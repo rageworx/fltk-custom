@@ -1,5 +1,5 @@
 //
-// "$Id: fl_read_image_win32.cxx 10436 2014-11-06 16:48:57Z manolo $"
+// "$Id$"
 //
 // WIN32 image reading routines for the Fast Light Tool Kit (FLTK).
 //
@@ -116,5 +116,5 @@ read_win_rectangle(uchar *p,		// I - Pixel buffer or NULL to allocate
 }
 
 //
-// End of "$Id: fl_read_image_win32.cxx 10436 2014-11-06 16:48:57Z manolo $".
+// End of "$Id$".
 //

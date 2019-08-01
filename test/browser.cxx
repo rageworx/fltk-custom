@@ -1,5 +1,5 @@
 //
-// "$Id: browser.cxx 9847 2013-03-23 21:32:34Z greg.ercolano $"
+// "$Id$"
 //
 // Browser test program for the Fast Light Tool Kit (FLTK).
 //
@@ -208,6 +208,6 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: browser.cxx 9847 2013-03-23 21:32:34Z greg.ercolano $".
+// End of "$Id$".
 //
 

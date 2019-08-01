@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Positioner.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // Positioner widget for the Fast Light Tool Kit (FLTK).
 //
@@ -147,5 +147,5 @@ void Fl_Positioner::ybounds(double a, double b) {
 }
 
 //
-// End of "$Id: Fl_Positioner.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

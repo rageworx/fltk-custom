@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_compose.cxx 9966 2013-09-06 09:03:22Z manolo $"
+// "$Id$"
 //
 // Character compose processing for the Fast Light Tool Kit (FLTK).
 //
@@ -147,6 +147,6 @@ void Fl::compose_reset()
 }
 
 //
-// End of "$Id: Fl_compose.cxx 9966 2013-09-06 09:03:22Z manolo $"
+// End of "$Id$"
 //
 

@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_File_Chooser2.cxx 11813 2016-07-15 20:01:08Z AlbrechtS $"
+// "$Id$"
 //
 // More Fl_File_Chooser routines.
 //
@@ -1730,5 +1730,5 @@ get_homedir() {
 
 
 //
-// End of "$Id: Fl_File_Chooser2.cxx 11813 2016-07-15 20:01:08Z AlbrechtS $".
+// End of "$Id$".
 //

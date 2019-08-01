@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Help_Dialog_Dox.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // Fl_Help_Dialog dialog for the Fast Light Tool Kit (FLTK).
 //
@@ -107,5 +107,5 @@
   Delegates call to encapsulated view_ void Fl_Help_View::textsize(Fl_Fontsize s) instance method */
 
 //
-// End of "$Id: Fl_Help_Dialog_Dox.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

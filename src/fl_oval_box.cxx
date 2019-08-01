@@ -1,5 +1,5 @@
 //
-// "$Id: fl_oval_box.cxx 10781 2015-07-09 00:10:44Z AlbrechtS $"
+// "$Id$"
 //
 // Oval box drawing code for the Fast Light Tool Kit (FLTK).
 //
@@ -53,5 +53,5 @@ Fl_Boxtype fl_define_FL_OVAL_BOX() {
 }
 
 //
-// End of "$Id: fl_oval_box.cxx 10781 2015-07-09 00:10:44Z AlbrechtS $".
+// End of "$Id$".
 //

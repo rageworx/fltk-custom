@@ -1,5 +1,5 @@
 //
-// "$Id: filename_expand.cxx 11243 2016-02-27 15:14:42Z AlbrechtS $"
+// "$Id$"
 //
 // Filename expansion routines for the Fast Light Tool Kit (FLTK).
 //
@@ -121,5 +121,5 @@ int fl_filename_expand(char *to,int tolen, const char *from) {
 
 
 //
-// End of "$Id: filename_expand.cxx 11243 2016-02-27 15:14:42Z AlbrechtS $".
+// End of "$Id$".
 //

@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Color_Chooser.cxx 10234 2014-08-21 12:18:32Z cand $"
+// "$Id$"
 //
 // Color chooser for the Fast Light Tool Kit (FLTK).
 //
@@ -619,5 +619,5 @@ int fl_color_chooser(const char* name, uchar& r, uchar& g, uchar& b, int cmode) 
 
 /** @} */
 //
-// End of "$Id: Fl_Color_Chooser.cxx 10234 2014-08-21 12:18:32Z cand $".
+// End of "$Id$".
 //

@@ -1,5 +1,5 @@
 //
-// "$Id: tree-simple.cxx 10015 2013-11-06 20:12:08Z greg.ercolano $"
+// "$Id$"
 //
 //	Simple Fl_Tree widget example. - erco 06/05/2010
 //
@@ -89,5 +89,5 @@ int main(int argc, char *argv[]) {
 }
 
 //
-// End of "$Id: tree-simple.cxx 10015 2013-11-06 20:12:08Z greg.ercolano $".
+// End of "$Id$".
 //

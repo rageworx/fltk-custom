@@ -1,5 +1,5 @@
 //
-// "$Id: fl_draw_image_mac.cxx 11263 2016-03-02 07:51:53Z manolo $"
+// "$Id$"
 //
 // MacOS image drawing code for the Fast Light Tool Kit (FLTK).
 //
@@ -175,5 +175,5 @@ void fl_rectf(int x, int y, int w, int h, uchar r, uchar g, uchar b) {
 }
 
 //
-// End of "$Id: fl_draw_image_mac.cxx 11263 2016-03-02 07:51:53Z manolo $".
+// End of "$Id$".
 //

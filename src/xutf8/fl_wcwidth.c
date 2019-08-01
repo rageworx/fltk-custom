@@ -1,5 +1,5 @@
 /*
- * "$Id: fl_wcwidth.c 8864 2011-07-19 04:49:30Z greg.ercolano $"
+ * "$Id$"
  *
  * wrapper(s) around Markus Kuhn's wcwidth() implementation.
  *
@@ -40,5 +40,5 @@ int fl_wcwidth(unsigned int ucs) {
 }
 
 /*
- * End of "$Id: fl_wcwidth.c 8864 2011-07-19 04:49:30Z greg.ercolano $".
+ * End of "$Id$".
  */

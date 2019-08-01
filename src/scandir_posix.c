@@ -1,5 +1,5 @@
 /*
- * "$Id: scandir_posix.c 9832 2013-03-06 22:15:01Z ianmacarthur $"
+ * "$Id$"
  *
  * This implementation of 'scandir()' is intended to be POSIX.1-2008 compliant.
  * A POSIX.1-1990 compliant system is required as minimum base.
@@ -201,5 +201,5 @@ fl_scandir(const char *dir, struct dirent ***namelist,
 }
 
 /*
- * End of "$Id: scandir_posix.c 9832 2013-03-06 22:15:01Z ianmacarthur $".
+ * End of "$Id$".
  */

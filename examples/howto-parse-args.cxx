@@ -1,5 +1,5 @@
 //
-// "$Id: howto-parse-args.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 //     How to parse command line arguments - Duncan Gibson 2010-10-23
 //     First posted in http://www.fltk.org/newsgroups.php?gfltk.general+v:31449
@@ -89,5 +89,5 @@ int main(int argc, char** argv)
 }
 
 //
-// End of "$Id: howto-parse-args.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

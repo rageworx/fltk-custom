@@ -1,5 +1,5 @@
 //
-// "$Id: native-filechooser.cxx 12080 2016-11-06 10:40:39Z AlbrechtS $"
+// "$Id$"
 //
 // Simple test of the Fl_Native_File_Chooser.
 //
@@ -145,5 +145,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: native-filechooser.cxx 12080 2016-11-06 10:40:39Z AlbrechtS $".
+// End of "$Id$".
 //

@@ -1,5 +1,5 @@
 //
-// "$Id: fullscreen.cxx 11797 2016-06-22 08:46:02Z manolo $"
+// "$Id$"
 //
 
 //
@@ -348,5 +348,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: fullscreen.cxx 11797 2016-06-22 08:46:02Z manolo $".
+// End of "$Id$".
 //

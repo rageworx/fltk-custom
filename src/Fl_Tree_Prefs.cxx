@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Tree_Prefs.cxx 10723 2015-04-28 19:39:53Z greg.ercolano $"
+// "$Id$"
 //
 
 #include <FL/Fl.H>
@@ -204,5 +204,5 @@ Fl_Tree_Prefs::~Fl_Tree_Prefs() {
 #endif
 
 //
-// End of "$Id: Fl_Tree_Prefs.cxx 10723 2015-04-28 19:39:53Z greg.ercolano $".
+// End of "$Id$".
 //

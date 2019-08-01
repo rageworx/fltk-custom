@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_own_colormap.cxx 11757 2016-05-28 15:39:05Z greg.ercolano $"
+// "$Id$"
 //
 // Private colormap support for the Fast Light Tool Kit (FLTK).
 //
@@ -77,5 +77,5 @@ void Fl::own_colormap() {
 #endif
 
 //
-// End of "$Id: Fl_own_colormap.cxx 11757 2016-05-28 15:39:05Z greg.ercolano $".
+// End of "$Id$".
 //

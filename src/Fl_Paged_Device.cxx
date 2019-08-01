@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Paged_Device.cxx 11094 2016-01-31 02:49:56Z AlbrechtS $"
+// "$Id$"
 //
 // implementation of Fl_Paged_Device class for the Fast Light Tool Kit (FLTK).
 //
@@ -295,5 +295,5 @@ const Fl_Paged_Device::page_format Fl_Paged_Device::page_formats[NO_PAGE_FORMATS
 };
 
 //
-// End of "$Id: Fl_Paged_Device.cxx 11094 2016-01-31 02:49:56Z AlbrechtS $".
+// End of "$Id$".
 //

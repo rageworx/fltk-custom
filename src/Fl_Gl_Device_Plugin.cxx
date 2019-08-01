@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Gl_Device_Plugin.cxx 11943 2016-09-13 11:51:24Z manolo $"
+// "$Id$"
 //
 // implementation of class Fl_Gl_Device_Plugin for the Fast Light Tool Kit (FLTK).
 //
@@ -146,5 +146,5 @@ static Fl_Gl_Device_Plugin Gl_Device_Plugin;
 FL_EXPORT int fl_gl_load_plugin = 0;
 
 //
-// End of "$Id: Fl_Gl_Device_Plugin.cxx 11943 2016-09-13 11:51:24Z manolo $".
+// End of "$Id$".
 //

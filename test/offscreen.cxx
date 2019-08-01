@@ -1,5 +1,5 @@
 //
-// "$Id: offscreen.cxx 11287 2016-03-05 00:39:40Z AlbrechtS $"
+// "$Id$"
 //
 // Offscreen drawing test program for the Fast Light Tool Kit (FLTK).
 //
@@ -256,5 +256,5 @@ int main(int argc, char **argv)
 } // main
 
 //
-// End of "$Id: offscreen.cxx 11287 2016-03-05 00:39:40Z AlbrechtS $".
+// End of "$Id$".
 //

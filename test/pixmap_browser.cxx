@@ -1,5 +1,5 @@
 //
-// "$Id: pixmap_browser.cxx 11534 2016-04-05 20:35:29Z AlbrechtS $"
+// "$Id$"
 //
 // A shared image test program for the Fast Light Tool Kit (FLTK).
 //
@@ -135,5 +135,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: pixmap_browser.cxx 11534 2016-04-05 20:35:29Z AlbrechtS $".
+// End of "$Id$".
 //

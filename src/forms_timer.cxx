@@ -1,5 +1,5 @@
 //
-// "$Id: forms_timer.cxx 10413 2014-10-30 09:16:49Z cand $"
+// "$Id$"
 //
 // Forms timer object for the Fast Light Tool Kit (FLTK).
 //
@@ -174,5 +174,5 @@ void Fl_Timer::suspended(char d) {
 }
 
 //
-// End of "$Id: forms_timer.cxx 10413 2014-10-30 09:16:49Z cand $".
+// End of "$Id$".
 //

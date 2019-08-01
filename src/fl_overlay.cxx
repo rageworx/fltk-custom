@@ -1,5 +1,5 @@
 //
-// "$Id: fl_overlay.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // Overlay support for the Fast Light Tool Kit (FLTK).
 //
@@ -116,5 +116,5 @@ void fl_overlay_rect(int x, int y, int w, int h) {
 }
 
 //
-// End of "$Id: fl_overlay.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

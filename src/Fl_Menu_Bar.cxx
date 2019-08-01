@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Menu_Bar.cxx 9637 2012-07-24 04:37:22Z matt $"
+// "$Id$"
 //
 // Menu bar widget for the Fast Light Tool Kit (FLTK).
 //
@@ -71,5 +71,5 @@ Fl_Menu_Bar::Fl_Menu_Bar(int X, int Y, int W, int H,const char *l)
 }
 
 //
-// End of "$Id: Fl_Menu_Bar.cxx 9637 2012-07-24 04:37:22Z matt $".
+// End of "$Id$".
 //

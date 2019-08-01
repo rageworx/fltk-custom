@@ -1,5 +1,5 @@
 //
-// "$Id: menubar-add.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 //	An example of using Fl_Menu_Bar's add() to dynamically create menubars
 //
@@ -80,5 +80,5 @@ int main() {
 }
 
 //
-// End of "$Id: menubar-add.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

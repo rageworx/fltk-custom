@@ -1,4 +1,4 @@
-/* "$Id: utf8Wrap.c 11243 2016-02-27 15:14:42Z AlbrechtS $"
+/* "$Id$"
  *
  * Author: Jean-Marc Lienher ( http://oksid.ch )
  * Copyright 2000-2003 by O'ksi'D.
@@ -1024,5 +1024,5 @@ XFreeUtf8FontStruct(Display 	    *dpy,
 #endif /* X11 only */
 
 /*
- *  End of "$Id: utf8Wrap.c 11243 2016-02-27 15:14:42Z AlbrechtS $".
+ *  End of "$Id$".
  */

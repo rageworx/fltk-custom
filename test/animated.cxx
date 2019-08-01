@@ -1,5 +1,5 @@
 //
-// "$Id: animated.cxx 11534 2016-04-05 20:35:29Z AlbrechtS $"
+// "$Id$"
 //
 // Alpha rendering benchmark program for the Fast Light Tool Kit (FLTK).
 //
@@ -151,5 +151,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: animated.cxx 11534 2016-04-05 20:35:29Z AlbrechtS $".
+// End of "$Id$".
 //

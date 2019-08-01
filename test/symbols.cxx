@@ -1,5 +1,5 @@
 //
-// "$Id: symbols.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // Symbol test program for the Fast Light Tool Kit (FLTK).
 //
@@ -146,5 +146,5 @@ bt("@redo");
 }
 
 //
-// End of "$Id: symbols.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

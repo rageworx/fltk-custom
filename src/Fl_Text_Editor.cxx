@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Text_Editor.cxx 11808 2016-07-14 18:48:43Z greg.ercolano $"
+// "$Id$"
 //
 // Copyright 2001-2010 by Bill Spitzak and others.
 // Original code Copyright Mark Edel.  Permission to distribute under
@@ -822,5 +822,5 @@ int Fl_Text_Editor::tab_nav() const {
 #endif
 
 //
-// End of "$Id: Fl_Text_Editor.cxx 11808 2016-07-14 18:48:43Z greg.ercolano $".
+// End of "$Id$".
 //

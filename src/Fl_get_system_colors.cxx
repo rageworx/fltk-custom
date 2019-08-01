@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_get_system_colors.cxx 10598 2015-03-01 20:16:56Z AlbrechtS $"
+// "$Id$"
 //
 // System color support for the Fast Light Tool Kit (FLTK).
 //
@@ -481,5 +481,5 @@ int Fl::reload_scheme() {
 
 
 //
-// End of "$Id: Fl_get_system_colors.cxx 10598 2015-03-01 20:16:56Z AlbrechtS $".
+// End of "$Id$".
 //

@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Clock.cxx 11849 2016-07-29 09:23:44Z AlbrechtS $"
+// "$Id$"
 //
 // Clock widget for the Fast Light Tool Kit (FLTK).
 //
@@ -219,5 +219,5 @@ Fl_Round_Clock::Fl_Round_Clock(int X,int Y,int W,int H, const char *L)
 
 
 //
-// End of "$Id: Fl_Clock.cxx 11849 2016-07-29 09:23:44Z AlbrechtS $".
+// End of "$Id$".
 //

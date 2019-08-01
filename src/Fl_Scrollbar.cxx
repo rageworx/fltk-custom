@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Scrollbar.cxx 10542 2015-01-29 16:56:12Z AlbrechtS $"
+// "$Id$"
 //
 // Scroll bar widget for the Fast Light Tool Kit (FLTK).
 //
@@ -279,5 +279,5 @@ Fl_Scrollbar::~Fl_Scrollbar() {
 
 
 //
-// End of "$Id: Fl_Scrollbar.cxx 10542 2015-01-29 16:56:12Z AlbrechtS $".
+// End of "$Id$".
 //

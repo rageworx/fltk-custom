@@ -1,5 +1,5 @@
 //
-// "$Id: fl_encoding_latin1.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // Convert MSWindows-1252 (Latin-1) encoded text to the local encoding.
 //
@@ -124,5 +124,5 @@ const char *fl_local_to_latin1(const char *t, int)
 #endif
 
 //
-// End of "$Id: fl_encoding_latin1.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

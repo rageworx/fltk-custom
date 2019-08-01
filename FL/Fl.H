@@ -1,5 +1,5 @@
 //
-// "$Id: Fl.H 11945 2016-09-16 09:11:48Z manolo $"
+// "$Id$"
 //
 // Main header file for the Fast Light Tool Kit (FLTK).
 //
@@ -1416,5 +1416,5 @@ public:
 #endif // !Fl_H
 
 //
-// End of "$Id: Fl.H 11945 2016-09-16 09:11:48Z manolo $".
+// End of "$Id$".
 //

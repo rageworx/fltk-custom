@@ -1,5 +1,5 @@
 #
-# "$Id: fltk.spec.in 10612 2015-03-10 01:41:55Z AlbrechtS $"
+# "$Id$"
 #
 # RPM spec file for FLTK.
 #
@@ -132,5 +132,5 @@ rm -rf $RPM_BUILD_ROOT
 %{prefix}/share/icons/hicolor/*/apps/sudoku.png
 
 #
-# End of "$Id: fltk.spec.in 10612 2015-03-10 01:41:55Z AlbrechtS $".
+# End of "$Id$".
 #

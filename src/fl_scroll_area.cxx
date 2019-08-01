@@ -1,5 +1,5 @@
 //
-// "$Id: fl_scroll_area.cxx 10560 2015-02-08 06:48:19Z manolo $"
+// "$Id$"
 //
 // Scrolling routines for the Fast Light Tool Kit (FLTK).
 //
@@ -158,5 +158,5 @@ void fl_scroll(int X, int Y, int W, int H, int dx, int dy,
 }
 
 //
-// End of "$Id: fl_scroll_area.cxx 10560 2015-02-08 06:48:19Z manolo $".
+// End of "$Id$".
 //

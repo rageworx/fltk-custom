@@ -1,9 +1,9 @@
 //
-// "$Id: Enumerations.H 11803 2016-07-09 18:43:31Z AlbrechtS $"
+// "$Id$"
 //
 // Enumerations for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2016 by Bill Spitzak and others.
+// Copyright 1998-2017 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this

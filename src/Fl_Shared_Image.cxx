@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Shared_Image.cxx 12002 2016-10-01 22:35:37Z AlbrechtS $"
+// "$Id$"
 //
 // Shared image code for the Fast Light Tool Kit (FLTK).
 //
@@ -633,5 +633,5 @@ void Fl_Shared_Image::remove_handler(Fl_Shared_Handler f) {
 
 
 //
-// End of "$Id: Fl_Shared_Image.cxx 12002 2016-10-01 22:35:37Z AlbrechtS $".
+// End of "$Id$".
 //

@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_XColor.H 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // X-specific color definitions for the Fast Light Tool Kit (FLTK).
 //
@@ -33,5 +33,5 @@ extern unsigned char fl_redmask, fl_greenmask, fl_bluemask;
 extern int fl_redshift, fl_greenshift, fl_blueshift, fl_extrashift;
 
 //
-// End of "$Id: Fl_XColor.H 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

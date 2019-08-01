@@ -1,5 +1,5 @@
 //
-// "$Id: howto-add_fd-and-popen.cxx 11870 2016-08-11 12:37:30Z AlbrechtS $"
+// "$Id$"
 //
 //     How to use popen() and Fl::add_fd() - erco 10/04/04
 //     Originally from erco's cheat sheet, permission by author.
@@ -72,5 +72,5 @@ int main(int argc, char *argv[]) {
 }
 
 //
-// End of "$Id: howto-add_fd-and-popen.cxx 11870 2016-08-11 12:37:30Z AlbrechtS $".
+// End of "$Id$".
 //

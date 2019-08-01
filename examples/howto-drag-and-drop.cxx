@@ -1,5 +1,5 @@
 //
-// "$Id: howto-drag-and-drop.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 //     A simple demo of drag+drop with FLTK. 
 //     Originally from erco's cheat sheet, permission by author.
@@ -90,5 +90,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: howto-drag-and-drop.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

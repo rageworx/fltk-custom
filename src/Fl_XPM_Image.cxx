@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_XPM_Image.cxx 12026 2016-10-14 14:33:14Z AlbrechtS $"
+// "$Id$"
 //
 // Fl_XPM_Image routines.
 //
@@ -141,5 +141,5 @@ bad_data:
 
 
 //
-// End of "$Id: Fl_XPM_Image.cxx 12026 2016-10-14 14:33:14Z AlbrechtS $".
+// End of "$Id$".
 //

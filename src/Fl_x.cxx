@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_x.cxx 12028 2016-10-14 16:35:44Z AlbrechtS $"
+// "$Id$"
 //
 // X specific code for the Fast Light Tool Kit (FLTK).
 //
@@ -3156,5 +3156,5 @@ void preparePrintFront(void)
 #endif
 
 //
-// End of "$Id: Fl_x.cxx 12028 2016-10-14 16:35:44Z AlbrechtS $".
+// End of "$Id$".
 //

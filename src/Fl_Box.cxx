@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Box.cxx 9637 2012-07-24 04:37:22Z matt $"
+// "$Id$"
 //
 // Box widget for the Fast Light Tool Kit (FLTK).
 //
@@ -43,5 +43,5 @@ int Fl_Box::handle(int event) {
 
 
 //
-// End of "$Id: Fl_Box.cxx 9637 2012-07-24 04:37:22Z matt $".
+// End of "$Id$".
 //

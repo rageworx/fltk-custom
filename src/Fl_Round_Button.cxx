@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Round_Button.cxx 10386 2014-10-19 20:17:17Z AlbrechtS $"
+// "$Id$"
 //
 // Round button for the Fast Light Tool Kit (FLTK).
 //
@@ -69,5 +69,5 @@ Fl_Radio_Round_Button::Fl_Radio_Round_Button(int X,int Y,int W,int H,const char 
 
 
 //
-// End of "$Id: Fl_Round_Button.cxx 10386 2014-10-19 20:17:17Z AlbrechtS $".
+// End of "$Id$".
 //

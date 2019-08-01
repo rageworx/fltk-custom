@@ -1,5 +1,5 @@
 //
-// "$Id: rotated_text.cxx 8915 2011-08-05 08:43:26Z AlbrechtS $"
+// "$Id$"
 //
 // Label test program for the Fast Light Tool Kit (FLTK).
 //
@@ -215,5 +215,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: rotated_text.cxx 8915 2011-08-05 08:43:26Z AlbrechtS $".
+// End of "$Id$".
 //

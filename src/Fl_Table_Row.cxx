@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Table_Row.cxx 9172 2011-11-13 02:46:10Z greg.ercolano $"
+// "$Id$"
 //
 // Fl_Table_Row -- A row oriented table widget
 //
@@ -323,5 +323,5 @@ int Fl_Table_Row::handle(int event) {
 }
 
 //
-// End of "$Id: Fl_Table_Row.cxx 9172 2011-11-13 02:46:10Z greg.ercolano $".
+// End of "$Id$".
 //

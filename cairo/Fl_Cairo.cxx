@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Cairo.cxx 11980 2016-09-26 09:22:55Z manolo $"
+// "$Id$"
 //
 // Main header file for the Fast Light Tool Kit (FLTK).
 //

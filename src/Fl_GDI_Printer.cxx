@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_GDI_Printer.cxx 10713 2015-04-22 14:40:01Z manolo $"
+// "$Id$"
 //
 // Support for WIN32 printing for the Fast Light Tool Kit (FLTK).
 //
@@ -283,5 +283,5 @@ void Fl_System_Printer::untranslate (void)
 #endif // WIN32
 
 //
-// End of "$Id: Fl_GDI_Printer.cxx 10713 2015-04-22 14:40:01Z manolo $".
+// End of "$Id$".
 //

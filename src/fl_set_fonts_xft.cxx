@@ -1,5 +1,5 @@
 //
-// "$Id: fl_set_fonts_xft.cxx 10041 2014-01-03 16:17:05Z AlbrechtS $"
+// "$Id$"
 //
 // More font utilities for the Fast Light Tool Kit (FLTK).
 //
@@ -380,5 +380,5 @@ int Fl::get_font_sizes(Fl_Font fnum, int*& sizep) {
 }
 
 //
-// End of "$Id: fl_set_fonts_xft.cxx 10041 2014-01-03 16:17:05Z AlbrechtS $".
+// End of "$Id$".
 //

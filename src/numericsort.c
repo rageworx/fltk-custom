@@ -1,5 +1,5 @@
 /*
- * "$Id: numericsort.c 11094 2016-01-31 02:49:56Z AlbrechtS $"
+ * "$Id$"
  *
  * Numeric sorting routine for the Fast Light Tool Kit (FLTK).
  *
@@ -98,5 +98,5 @@ int fl_numericsort(struct dirent **A, struct dirent **B) {
 }
 
 /*
- * End of "$Id: numericsort.c 11094 2016-01-31 02:49:56Z AlbrechtS $".
+ * End of "$Id$".
  */

@@ -1,5 +1,5 @@
 #
-# "$Id: fltk.list.in 10653 2015-03-25 20:06:54Z AlbrechtS $"
+# "$Id$"
 #
 # EPM product list file for the Fast Light Tool Kit (FLTK).
 #
@@ -429,5 +429,5 @@ f 0444 root sys $mandir/man6/checkers.6 documentation/src/checkers.man
 f 0444 root sys $mandir/man6/sudoku.6 documentation/src/sudoku.man
 
 #
-# End of "$Id: fltk.list.in 10653 2015-03-25 20:06:54Z AlbrechtS $".
+# End of "$Id$".
 #

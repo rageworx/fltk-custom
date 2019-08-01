@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Font.H 10248 2014-08-23 08:41:58Z cand $"
+// "$Id$"
 //
 // Font definitions for the Fast Light Tool Kit (FLTK).
 //
@@ -104,5 +104,5 @@ FL_EXPORT char *fl_find_fontsize(char *name);
 #endif
 
 //
-// End of "$Id: Fl_Font.H 10248 2014-08-23 08:41:58Z cand $".
+// End of "$Id$".
 //

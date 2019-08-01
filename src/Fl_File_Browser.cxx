@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_File_Browser.cxx 12047 2016-10-19 05:55:03Z manolo $"
+// "$Id$"
 //
 // Fl_File_Browser routines.
 //
@@ -731,5 +731,5 @@ Fl_File_Browser::filter(const char *pattern)	// I - Pattern string
 
 
 //
-// End of "$Id: Fl_File_Browser.cxx 12047 2016-10-19 05:55:03Z manolo $".
+// End of "$Id$".
 //

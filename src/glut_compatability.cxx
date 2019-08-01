@@ -1,5 +1,5 @@
 //
-// "$Id: glut_compatability.cxx 11787 2016-06-22 05:44:14Z manolo $"
+// "$Id$"
 //
 // GLUT emulation routines for the Fast Light Tool Kit (FLTK).
 //
@@ -515,5 +515,5 @@ void glutIdleFunc(void (*f)())
 #endif // HAVE_GL
 
 //
-// End of "$Id: glut_compatability.cxx 11787 2016-06-22 05:44:14Z manolo $".
+// End of "$Id$".
 //

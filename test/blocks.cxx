@@ -1,5 +1,5 @@
 //
-// "$Id: blocks.cxx 10127 2014-04-27 13:57:09Z manolo $"
+// "$Id$"
 //
 // "Block Attack!" scrolling blocks game using the Fast Light Tool Kit (FLTK).
 //
@@ -1020,5 +1020,5 @@ BlockWindow::timeout_cb(BlockWindow *bw) {
 
 
 //
-// End of "$Id: blocks.cxx 10127 2014-04-27 13:57:09Z manolo $".
+// End of "$Id$".
 //

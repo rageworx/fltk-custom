@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# "$Id: fltk-config.in 11094 2016-01-31 02:49:56Z AlbrechtS $"
+# "$Id$"
 #
 # FLTK configuration utility.
 #
@@ -400,5 +400,5 @@ if test "$echo_includedir" = "yes"; then
 fi
 
 #
-# End of "$Id: fltk-config.in 11094 2016-01-31 02:49:56Z AlbrechtS $".
+# End of "$Id$".
 #

@@ -1,5 +1,5 @@
 //
-// "$Id: tree-of-tables.cxx 10040 2014-01-01 17:13:48Z greg.ercolano $"
+// "$Id$"
 //
 //	Fl_Tree as a container of Fl_Table's. - erco 04/25/2012
 //
@@ -151,5 +151,5 @@ int main(int argc, char *argv[]) {
 #endif
 
 //
-// End of "$Id: tree-of-tables.cxx 10040 2014-01-01 17:13:48Z greg.ercolano $".
+// End of "$Id$".
 //

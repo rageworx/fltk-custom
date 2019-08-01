@@ -1,5 +1,5 @@
 //
-// "$Id: filename_list.cxx 9665 2012-08-14 09:23:22Z manolo $"
+// "$Id$"
 //
 // Filename list routines for the Fast Light Tool Kit (FLTK).
 //
@@ -201,5 +201,5 @@ void fl_filename_free_list(struct dirent ***list, int n)
 
 
 //
-// End of "$Id: filename_list.cxx 9665 2012-08-14 09:23:22Z manolo $".
+// End of "$Id$".
 //

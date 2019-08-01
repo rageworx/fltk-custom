@@ -1,5 +1,5 @@
 /*
- * "$Id: scandir.c 11243 2016-02-27 15:14:42Z AlbrechtS $"
+ * "$Id$"
  *
  * This is a placekeeper stub that pulls in scandir implementations for host
  * systems that do not provide a compatible one natively
@@ -31,5 +31,5 @@
 typedef int dummy;
 
 /*
- * End of "$Id: scandir.c 11243 2016-02-27 15:14:42Z AlbrechtS $".
+ * End of "$Id$".
  */

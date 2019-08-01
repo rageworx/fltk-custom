@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_PNM_Image.cxx 10751 2015-06-14 17:07:31Z AlbrechtS $"
+// "$Id$"
 //
 // Fl_PNM_Image routines.
 //
@@ -205,5 +205,5 @@ Fl_PNM_Image::Fl_PNM_Image(const char *name)	// I - File to read
 
 
 //
-// End of "$Id: Fl_PNM_Image.cxx 10751 2015-06-14 17:07:31Z AlbrechtS $".
+// End of "$Id$".
 //

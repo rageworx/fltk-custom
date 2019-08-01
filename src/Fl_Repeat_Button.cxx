@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Repeat_Button.cxx 9637 2012-07-24 04:37:22Z matt $"
+// "$Id$"
 //
 // Repeat button widget for the Fast Light Tool Kit (FLTK).
 //
@@ -64,5 +64,5 @@ Fl_Repeat_Button::Fl_Repeat_Button(int X,int Y,int W,int H,const char *l)
 
 
 //
-// End of "$Id: Fl_Repeat_Button.cxx 9637 2012-07-24 04:37:22Z matt $".
+// End of "$Id$".
 //

@@ -1,5 +1,5 @@
 //
-// "$Id: fl_set_fonts.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // More font utilities for the Fast Light Tool Kit (FLTK).
 //
@@ -33,5 +33,5 @@
 #endif // WIN32
 
 //
-// End of "$Id: fl_set_fonts.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

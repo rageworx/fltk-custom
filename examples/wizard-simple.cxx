@@ -1,5 +1,5 @@
 //
-// "$Id: wizard-simple.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 //	Simple Fl_Wizard widget example. 
 //	Originally from erco's cheat sheet 06/05/2010, permission by author.
@@ -77,5 +77,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: wizard-simple.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

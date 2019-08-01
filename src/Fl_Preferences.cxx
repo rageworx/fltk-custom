@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Preferences.cxx 10715 2015-04-24 21:25:30Z greg.ercolano $"
+// "$Id$"
 //
 // Preferences methods for the Fast Light Tool Kit (FLTK).
 //
@@ -1763,5 +1763,5 @@ int Fl_Plugin_Manager::loadAll(const char *filepath, const char *pattern) {
 }
 
 //
-// End of "$Id: Fl_Preferences.cxx 10715 2015-04-24 21:25:30Z greg.ercolano $".
+// End of "$Id$".
 //

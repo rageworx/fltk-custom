@@ -1,5 +1,5 @@
 //
-// "$Id: file_chooser.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // File chooser test program.
 //
@@ -377,5 +377,5 @@ show_callback(void)
 
 
 //
-// End of "$Id: file_chooser.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

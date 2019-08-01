@@ -1,5 +1,5 @@
 //
-// "$Id: fl_rect.cxx 11243 2016-02-27 15:14:42Z AlbrechtS $"
+// "$Id$"
 //
 // Rectangle drawing routines for the Fast Light Tool Kit (FLTK).
 //
@@ -731,5 +731,5 @@ int Fl_Graphics_Driver::clip_box(int x, int y, int w, int h, int& X, int& Y, int
 }
 
 //
-// End of "$Id: fl_rect.cxx 11243 2016-02-27 15:14:42Z AlbrechtS $".
+// End of "$Id$".
 //

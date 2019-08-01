@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Overlay_Window.cxx 9201 2011-12-08 09:58:51Z ianmacarthur $"
+// "$Id$"
 //
 // Overlay window code for the Fast Light Tool Kit (FLTK).
 //
@@ -157,5 +157,5 @@ void Fl_Overlay_Window::redraw_overlay() {
 #endif
 
 //
-// End of "$Id: Fl_Overlay_Window.cxx 9201 2011-12-08 09:58:51Z ianmacarthur $".
+// End of "$Id$".
 //

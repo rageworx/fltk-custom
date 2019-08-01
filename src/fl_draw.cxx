@@ -1,5 +1,5 @@
 //
-// "$Id: fl_draw.cxx 11847 2016-07-24 08:53:08Z AlbrechtS $"
+// "$Id$"
 //
 // Label drawing code for the Fast Light Tool Kit (FLTK).
 //
@@ -456,5 +456,5 @@ int fl_height(int font, int size) {
 }
 
 //
-// End of "$Id: fl_draw.cxx 11847 2016-07-24 08:53:08Z AlbrechtS $".
+// End of "$Id$".
 //

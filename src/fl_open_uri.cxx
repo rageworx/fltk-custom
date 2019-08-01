@@ -1,5 +1,5 @@
 //
-// "$Id: fl_open_uri.cxx 9995 2013-10-04 16:48:08Z greg.ercolano $"
+// "$Id$"
 //
 // fl_open_uri() code for FLTK.
 //
@@ -403,5 +403,5 @@ int main(int argc, char **argv) {
 
 
 //
-// End of "$Id: fl_open_uri.cxx 9995 2013-10-04 16:48:08Z greg.ercolano $".
+// End of "$Id$".
 //

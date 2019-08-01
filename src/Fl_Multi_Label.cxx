@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Multi_Label.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // Multi-label widget for the Fast Light Tool Kit (FLTK).
 //
@@ -67,5 +67,5 @@ void Fl_Multi_Label::label(Fl_Menu_Item* o) {
 }
 
 //
-// End of "$Id: Fl_Multi_Label.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

@@ -1,5 +1,5 @@
 //
-// "$Id: fl_set_font.cxx 10726 2015-04-28 22:02:48Z manolo $"
+// "$Id$"
 //
 // Font utilities for the Fast Light Tool Kit (FLTK).
 //
@@ -92,5 +92,5 @@ const char* Fl::get_font(Fl_Font fnum) {
 }
 
 //
-// End of "$Id: fl_set_font.cxx 10726 2015-04-28 22:02:48Z manolo $".
+// End of "$Id$".
 //

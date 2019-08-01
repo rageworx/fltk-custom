@@ -1,5 +1,5 @@
 //
-// "$Id: fltk-versions.cxx 10785 2015-07-12 17:45:13Z AlbrechtS $"
+// "$Id$"
 //
 // Library version test program for the Fast Light Tool Kit (FLTK).
 //
@@ -83,5 +83,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: fltk-versions.cxx 10785 2015-07-12 17:45:13Z AlbrechtS $".
+// End of "$Id$".
 //

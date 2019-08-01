@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Bitmap.cxx 12026 2016-10-14 14:33:14Z AlbrechtS $"
+// "$Id$"
 //
 // Bitmap drawing routines for the Fast Light Tool Kit (FLTK).
 //
@@ -470,5 +470,5 @@ Fl_Image *Fl_Bitmap::copy(int W, int H) {
 
 
 //
-// End of "$Id: Fl_Bitmap.cxx 12026 2016-10-14 14:33:14Z AlbrechtS $".
+// End of "$Id$".
 //

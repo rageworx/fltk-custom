@@ -1,5 +1,5 @@
 /*
- * "$Id: flstring.h 11094 2016-01-31 02:49:56Z AlbrechtS $"
+ * "$Id$"
  *
  * Common string header file for the Fast Light Tool Kit (FLTK).
  *
@@ -97,5 +97,5 @@ FL_EXPORT extern int fl_ascii_strcasecmp(const char *s, const char *t);
 #endif /* !flstring_h */
 
 /*
- * End of "$Id: flstring.h 11094 2016-01-31 02:49:56Z AlbrechtS $".
+ * End of "$Id$".
  */

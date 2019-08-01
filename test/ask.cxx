@@ -1,12 +1,12 @@
 //
-// "$Id: ask.cxx 10805 2015-07-21 12:44:53Z AlbrechtS $"
+// "$Id$"
 //
 // Standard dialog test program for the Fast Light Tool Kit (FLTK).
 //
 // This also demonstrates how to trap attempts by the user to
 // close the last window by overriding Fl::exit
 //
-// Copyright 1998-2015 by Bill Spitzak and others.
+// Copyright 1998-2017 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -130,5 +130,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: ask.cxx 10805 2015-07-21 12:44:53Z AlbrechtS $".
+// End of "$Id$".
 //

@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Browser.cxx 11464 2016-03-29 11:34:10Z AlbrechtS $"
+// "$Id$"
 //
 // Browser widget for the Fast Light Tool Kit (FLTK).
 //
@@ -960,5 +960,5 @@ Fl_Select_Browser::Fl_Select_Browser(int X,int Y,int W,int H,const char *L)
 
 
 //
-// End of "$Id: Fl_Browser.cxx 11464 2016-03-29 11:34:10Z AlbrechtS $".
+// End of "$Id$".
 //

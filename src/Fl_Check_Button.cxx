@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Check_Button.cxx 10386 2014-10-19 20:17:17Z AlbrechtS $"
+// "$Id$"
 //
 // Check button widget for the Fast Light Tool Kit (FLTK).
 //

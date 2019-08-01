@@ -1,5 +1,5 @@
 //
-// "$Id: unittest_schemes.cxx 11807 2016-07-14 18:12:46Z greg.ercolano $"
+// "$Id$"
 //
 // Unit tests for the Fast Light Tool Kit (FLTK).
 //
@@ -310,5 +310,5 @@ public:
 UnitTest schemestest("schemes test", SchemesTest::create);
 
 //
-// End of "$Id: unittest_schemes.cxx 11807 2016-07-14 18:12:46Z greg.ercolano $
+// End of "$Id$
 //

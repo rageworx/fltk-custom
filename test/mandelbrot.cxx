@@ -1,5 +1,5 @@
 //
-// "$Id: mandelbrot.cxx 9325 2012-04-05 05:12:30Z fabien $"
+// "$Id$"
 //
 // Mandelbrot set demo for the Fast Light Tool Kit (FLTK).
 //
@@ -214,5 +214,5 @@ void Drawing_Area::resize(int XX,int YY,int WW,int HH) {
 }
 
 //
-// End of "$Id: mandelbrot.cxx 9325 2012-04-05 05:12:30Z fabien $".
+// End of "$Id$".
 //

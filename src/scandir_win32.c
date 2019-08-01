@@ -1,5 +1,5 @@
 /*
- * "$Id: scandir_win32.c 10082 2014-01-25 23:04:36Z AlbrechtS $"
+ * "$Id$"
  *
  * WIN32 scandir function for the Fast Light Tool Kit (FLTK).
  *
@@ -122,5 +122,5 @@ int fl_scandir(const char *dirname, struct dirent ***namelist,
 #endif
 
 /*
- * End of "$Id: scandir_win32.c 10082 2014-01-25 23:04:36Z AlbrechtS $".
+ * End of "$Id$".
  */

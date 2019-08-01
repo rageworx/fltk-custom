@@ -1,5 +1,5 @@
 //
-// "$Id: screen_xywh.cxx 11889 2016-08-23 16:38:10Z AlbrechtS $"
+// "$Id$"
 //
 // Screen/monitor bounding box API for the Fast Light Tool Kit (FLTK).
 //
@@ -457,5 +457,5 @@ void Fl::screen_dpi(float &h, float &v, int n)
 
 
 //
-// End of "$Id: screen_xywh.cxx 11889 2016-08-23 16:38:10Z AlbrechtS $".
+// End of "$Id$".
 //

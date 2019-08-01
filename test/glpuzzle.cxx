@@ -1,5 +1,5 @@
 //
-// "$Id: glpuzzle.cxx 10498 2014-12-20 07:19:23Z manolo $"
+// "$Id$"
 //
 // OpenGL puzzle demo for the Fast Light Tool Kit (FLTK).
 //
@@ -1474,5 +1474,5 @@ main(int argc, char **argv)
 #endif // added for fltk's distribution
 
 //
-// End of "$Id: glpuzzle.cxx 10498 2014-12-20 07:19:23Z manolo $".
+// End of "$Id$".
 //

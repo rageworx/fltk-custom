@@ -1,5 +1,5 @@
 //
-// "$Id: curve.cxx 10667 2015-04-03 12:31:58Z AlbrechtS $"
+// "$Id$"
 //
 // Curve test program for the Fast Light Tool Kit (FLTK).
 //
@@ -102,5 +102,5 @@ int main(int argc, char** argv) {
 }
 
 //
-// End of "$Id: curve.cxx 10667 2015-04-03 12:31:58Z AlbrechtS $".
+// End of "$Id$".
 //

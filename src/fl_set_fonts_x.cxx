@@ -1,5 +1,5 @@
 //
-// "$Id: fl_set_fonts_x.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // X11 font utilities for the Fast Light Tool Kit (FLTK).
 //
@@ -337,5 +337,5 @@ int Fl::get_font_sizes(Fl_Font fnum, int*& sizep) {
 }
 
 //
-// End of "$Id: fl_set_fonts_x.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

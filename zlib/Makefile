@@ -1,5 +1,5 @@
 #
-# "$Id: Makefile 8864 2011-07-19 04:49:30Z greg.ercolano $"
+# "$Id$"
 #
 # GNU ZIP library makefile for the Fast Light Toolkit (FLTK).
 #
@@ -98,5 +98,5 @@ $(OBJS):	../makeinclude
 
 
 #
-# End of "$Id: Makefile 8864 2011-07-19 04:49:30Z greg.ercolano $".
+# End of "$Id$".
 #

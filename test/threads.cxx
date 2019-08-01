@@ -1,5 +1,5 @@
 //
-// "$Id: threads.cxx 11094 2016-01-31 02:49:56Z AlbrechtS $"
+// "$Id$"
 //
 // Threading example program for the Fast Light Tool Kit (FLTK).
 //
@@ -160,5 +160,5 @@ int main() {
 
 
 //
-// End of "$Id: threads.cxx 11094 2016-01-31 02:49:56Z AlbrechtS $".
+// End of "$Id$".
 //

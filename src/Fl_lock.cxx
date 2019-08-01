@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_lock.cxx 11094 2016-01-31 02:49:56Z AlbrechtS $"
+// "$Id$"
 //
 // Multi-threading support code for the Fast Light Tool Kit (FLTK).
 //
@@ -414,5 +414,5 @@ void* Fl::thread_message() {
 #endif // WIN32
 
 //
-// End of "$Id: Fl_lock.cxx 11094 2016-01-31 02:49:56Z AlbrechtS $".
+// End of "$Id$".
 //

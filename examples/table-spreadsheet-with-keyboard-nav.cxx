@@ -1,5 +1,5 @@
 //
-// "$Id: table-spreadsheet-with-keyboard-nav.cxx 9838 2013-03-18 20:00:04Z greg.ercolano $"
+// "$Id$"
 //
 //	Simple example of an interactive spreadsheet using Fl_Table.
 //	Uses Mr. Satan's technique of instancing an Fl_Input around.
@@ -338,5 +338,5 @@ int main() {
 }
 
 //
-// End of "$Id: table-spreadsheet-with-keyboard-nav.cxx 9838 2013-03-18 20:00:04Z greg.ercolano $".
+// End of "$Id$".
 //

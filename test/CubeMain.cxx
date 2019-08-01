@@ -1,5 +1,5 @@
 //
-// "$Id: CubeMain.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // CubeView class .
 //
@@ -36,5 +36,5 @@ main(int argc, char **argv) {
 
 
 //
-// End of "$Id: CubeMain.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

@@ -1,4 +1,4 @@
-// "$Id: Fl_Native_File_Chooser.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // FLTK native OS file chooser widget
 //
@@ -34,5 +34,5 @@
 const char *Fl_Native_File_Chooser::file_exists_message = "File exists. Are you sure you want to overwrite?";
 
 //
-// End of "$Id: Fl_Native_File_Chooser.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

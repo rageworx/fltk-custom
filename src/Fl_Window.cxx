@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Window.cxx 11881 2016-08-20 17:08:27Z AlbrechtS $"
+// "$Id$"
 //
 // Window widget class for the Fast Light Tool Kit (FLTK).
 //
@@ -507,5 +507,5 @@ void Fl_Window::wait_for_expose() {
 #endif  // ! __APPLE__
 
 //
-// End of "$Id: Fl_Window.cxx 11881 2016-08-20 17:08:27Z AlbrechtS $".
+// End of "$Id$".
 //

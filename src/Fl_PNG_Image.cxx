@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_PNG_Image.cxx 11535 2016-04-05 21:12:49Z AlbrechtS $"
+// "$Id$"
 //
 // Fl_PNG_Image routines.
 //
@@ -235,5 +235,5 @@ void Fl_PNG_Image::load_png_(const char *name_png, const unsigned char *buffer_p
 
 
 //
-// End of "$Id: Fl_PNG_Image.cxx 11535 2016-04-05 21:12:49Z AlbrechtS $".
+// End of "$Id$".
 //

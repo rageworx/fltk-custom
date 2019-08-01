@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Device.cxx 10970 2015-12-16 07:18:34Z manolo $"
+// "$Id$"
 //
 // implementation of Fl_Device class for the Fast Light Tool Kit (FLTK).
 //
@@ -103,5 +103,5 @@ Fl_Surface_Device *Fl_Surface_Device::default_surface()
 Fl_Display_Device *Fl_Display_Device::_display = Fl_Display_Device::display_device();
 
 //
-// End of "$Id: Fl_Device.cxx 10970 2015-12-16 07:18:34Z manolo $".
+// End of "$Id$".
 //

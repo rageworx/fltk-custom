@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_PostScript.cxx 10645 2015-03-21 08:45:42Z manolo $"
+// "$Id$"
 //
 // PostScript device support for the Fast Light Tool Kit (FLTK).
 //
@@ -1655,5 +1655,5 @@ int Fl_PostScript_Printer::start_job(int pages, int *firstpage, int *lastpage) {
 
 
 //
-// End of "$Id: Fl_PostScript.cxx 10645 2015-03-21 08:45:42Z manolo $".
+// End of "$Id$".
 //

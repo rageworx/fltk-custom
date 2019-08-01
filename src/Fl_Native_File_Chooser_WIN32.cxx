@@ -1,4 +1,4 @@
-// "$Id: Fl_Native_File_Chooser_WIN32.cxx 11920 2016-09-05 16:46:59Z greg.ercolano $"
+// "$Id$"
 //
 // FLTK native OS file chooser widget
 //
@@ -976,5 +976,5 @@ static LPCWSTR utf8towchar(const char *in) {
 #endif /*!FL_DOXYGEN*/
 
 //
-// End of "$Id: Fl_Native_File_Chooser_WIN32.cxx 11920 2016-09-05 16:46:59Z greg.ercolano $".
+// End of "$Id$".
 //

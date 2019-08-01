@@ -1,5 +1,5 @@
 //
-// "$Id: filename_setext.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // Filename extension routines for the Fast Light Tool Kit (FLTK).
 //
@@ -47,5 +47,5 @@ char *fl_filename_setext(char *buf, int buflen, const char *ext) {
 
 
 //
-// End of "$Id: filename_setext.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

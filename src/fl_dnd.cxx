@@ -1,5 +1,5 @@
 //
-// "$Id: fl_dnd.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // Drag & Drop code for the Fast Light Tool Kit (FLTK).
 //
@@ -25,5 +25,5 @@
 #endif
 
 //
-// End of "$Id: fl_dnd.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

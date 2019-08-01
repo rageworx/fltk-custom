@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Text_Display.cxx 12000 2016-10-01 21:20:18Z greg.ercolano $"
+// "$Id$"
 //
 // Copyright 2001-2016 by Bill Spitzak and others.
 // Original code Copyright Mark Edel.  Permission to distribute under
@@ -4172,5 +4172,5 @@ double Fl_Text_Display::col_to_x(double col) const
 
 
 //
-// End of "$Id: Fl_Text_Display.cxx 12000 2016-10-01 21:20:18Z greg.ercolano $".
+// End of "$Id$".
 //

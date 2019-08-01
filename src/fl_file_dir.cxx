@@ -1,5 +1,5 @@
 //
-// "$Id: fl_file_dir.cxx 10550 2015-02-02 17:55:22Z AlbrechtS $"
+// "$Id$"
 //
 // File chooser widget for the Fast Light Tool Kit (FLTK).
 //
@@ -196,5 +196,5 @@ fl_dir_chooser(const char *message,	// I - Message for titlebar
 
 
 //
-// End of "$Id: fl_file_dir.cxx 10550 2015-02-02 17:55:22Z AlbrechtS $".
+// End of "$Id$".
 //

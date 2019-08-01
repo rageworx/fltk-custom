@@ -1,5 +1,5 @@
 //
-// "$Id: nativefilechooser-simple-app.cxx 10005 2013-10-22 09:09:53Z manolo $"
+// "$Id$"
 //
 //	An example of how to use Fl_Native_File_Chooser to open & save files.
 //
@@ -148,5 +148,5 @@ int main(int argc, char *argv[]) {
 }
 
 //
-// End of "$Id: nativefilechooser-simple-app.cxx 10005 2013-10-22 09:09:53Z manolo $".
+// End of "$Id$".
 //

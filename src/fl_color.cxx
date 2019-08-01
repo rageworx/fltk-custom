@@ -1,5 +1,5 @@
 //
-// "$Id: fl_color.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // Color functions for the Fast Light Tool Kit (FLTK).
 //
@@ -458,5 +458,5 @@ Fl_Color fl_contrast(Fl_Color fg, Fl_Color bg) {
    @}
 */
 //
-// End of "$Id: fl_color.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

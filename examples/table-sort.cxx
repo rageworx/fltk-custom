@@ -1,5 +1,5 @@
 //
-// "$Id: table-sort.cxx 11493 2016-03-31 21:50:34Z AlbrechtS $"
+// "$Id$"
 //
 //	table-sort -- An example application using a sortable Fl_Table
 //                
@@ -287,5 +287,5 @@ int main() {
 }
 
 //
-// End of "$Id: table-sort.cxx 11493 2016-03-31 21:50:34Z AlbrechtS $".
+// End of "$Id$".
 //

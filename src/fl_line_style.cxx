@@ -1,5 +1,5 @@
 //
-// "$Id: fl_line_style.cxx 10794 2015-07-17 16:16:09Z manolo $"
+// "$Id$"
 //
 // Line style code for the Fast Light Tool Kit (FLTK).
 //
@@ -161,5 +161,5 @@ void Fl_Graphics_Driver::line_style(int style, int width, char* dashes) {
 
 
 //
-// End of "$Id: fl_line_style.cxx 10794 2015-07-17 16:16:09Z manolo $".
+// End of "$Id$".
 //

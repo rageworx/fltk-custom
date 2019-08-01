@@ -1,5 +1,5 @@
 /*
- * "$Id: vsnprintf.c 11243 2016-02-27 15:14:42Z AlbrechtS $"
+ * "$Id$"
  *
  * snprintf() and vsnprintf() functions for the Fast Light Tool Kit (FLTK).
  *
@@ -271,6 +271,6 @@ int fl_snprintf(char* str, size_t size, const char* fmt, ...) {
 #endif
 
 /*
- * End of "$Id: vsnprintf.c 11243 2016-02-27 15:14:42Z AlbrechtS $".
+ * End of "$Id$".
  */
 

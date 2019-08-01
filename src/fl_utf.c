@@ -1,5 +1,5 @@
 /*
- * "$Id: fl_utf.c 11404 2016-03-23 13:36:50Z AlbrechtS $"
+ * "$Id$"
  *
  * This is the utf.c file from fltk2 adapted for use in my fltk1.1 port
  */
@@ -988,5 +988,5 @@ int fl_wcwidth(const char* src) {
 /** @} */
 
 /*
- * End of "$Id: fl_utf.c 11404 2016-03-23 13:36:50Z AlbrechtS $".
+ * End of "$Id$".
  */

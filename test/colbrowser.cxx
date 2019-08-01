@@ -1,5 +1,5 @@
 //
-// "$Id: colbrowser.cxx 11917 2016-09-03 07:45:31Z manolo $"
+// "$Id$"
 //
 // X Color Browser demo program for the Fast Light Tool Kit (FLTK).
 //
@@ -336,5 +336,5 @@ static void create_form_cl(void)
 }
 
 //
-// End of "$Id: colbrowser.cxx 11917 2016-09-03 07:45:31Z manolo $".
+// End of "$Id$".
 //

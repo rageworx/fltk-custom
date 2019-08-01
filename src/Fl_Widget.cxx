@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Widget.cxx 11811 2016-07-15 19:23:16Z AlbrechtS $"
+// "$Id$"
 //
 // Base widget class for the Fast Light Tool Kit (FLTK).
 //
@@ -352,5 +352,5 @@ Fl_Widget::do_callback(Fl_Widget* o,void* arg) {
 }
 
 //
-// End of "$Id: Fl_Widget.cxx 11811 2016-07-15 19:23:16Z AlbrechtS $".
+// End of "$Id$".
 //

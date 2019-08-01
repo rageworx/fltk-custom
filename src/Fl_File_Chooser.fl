@@ -3,7 +3,7 @@ version 1.0305
 header_name {../FL/Fl_File_Chooser.H}
 code_name {.cxx}
 comment {//
-// "$Id: Fl_File_Chooser.fl 10973 2015-12-19 06:35:26Z manolo $"
+// "$Id$"
 //
 // Fl_File_Chooser dialog for the Fast Light Tool Kit (FLTK).
 //
@@ -493,6 +493,6 @@ decl {FL_EXPORT void fl_file_chooser_ok_label(const char*l);} {public local
 
 comment {
 //
-// End of "$Id: Fl_File_Chooser.fl 10973 2015-12-19 06:35:26Z manolo $".
+// End of "$Id$".
 //} {in_source in_header
 }

@@ -1,5 +1,5 @@
 //
-// "$Id: clipboard.cxx 11712 2016-05-05 07:21:24Z manolo $"
+// "$Id$"
 //
 // Clipboard display test application for the Fast Light Tool Kit (FLTK).
 //
@@ -169,5 +169,5 @@ int main(int argc, char **argv)
 }
 
 //
-// End of "$Id: clipboard.cxx 11712 2016-05-05 07:21:24Z manolo $".
+// End of "$Id$".
 //

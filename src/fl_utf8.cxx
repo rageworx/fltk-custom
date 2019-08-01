@@ -1,5 +1,5 @@
 //
-// "$Id: fl_utf8.cxx 10761 2015-06-16 09:31:05Z ianmacarthur $"
+// "$Id$"
 //
 // Unicode to UTF-8 conversion functions.
 //
@@ -891,5 +891,5 @@ void fl_make_path_for_file( const char *path ) {
 /** @} */
 
 //
-// End of "$Id: fl_utf8.cxx 10761 2015-06-16 09:31:05Z ianmacarthur $".
+// End of "$Id$".
 //

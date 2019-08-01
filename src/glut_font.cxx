@@ -1,5 +1,5 @@
 //
-// "$Id: glut_font.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // GLUT font routines for the Fast Light Tool Kit (FLTK).
 //
@@ -185,5 +185,5 @@ GLfloat glutStrokeHeight(void* fontID) {
 #endif // HAVE_GL
 
 //
-// End of "$Id: glut_font.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

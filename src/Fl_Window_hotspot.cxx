@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Window_hotspot.cxx 9163 2011-10-31 19:44:55Z manolo $"
+// "$Id$"
 //
 // Common hotspot routines for the Fast Light Tool Kit (FLTK).
 //
@@ -87,5 +87,5 @@ void Fl_Window::hotspot(const Fl_Widget *o, int offscreen) {
 
 
 //
-// End of "$Id: Fl_Window_hotspot.cxx 9163 2011-10-31 19:44:55Z manolo $".
+// End of "$Id$".
 //

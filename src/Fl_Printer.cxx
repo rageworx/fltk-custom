@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Printer.cxx 10610 2015-03-09 09:46:28Z manolo $"
+// "$Id$"
 //
 // Encompasses platform-specific printing-support code and 
 // PostScript output code for the Fast Light Tool Kit (FLTK).
@@ -197,5 +197,5 @@ Fl_Printer::~Fl_Printer(void)
 
 
 //
-// End of "$Id: Fl_Printer.cxx 10610 2015-03-09 09:46:28Z manolo $".
+// End of "$Id$".
 //

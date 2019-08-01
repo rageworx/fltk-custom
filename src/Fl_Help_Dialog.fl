@@ -3,7 +3,7 @@ version 1.0305
 header_name {../FL/Fl_Help_Dialog.H}
 code_name {.cxx}
 comment {//
-// "$Id: Fl_Help_Dialog.fl 10783 2015-07-09 02:09:33Z AlbrechtS $"
+// "$Id$"
 //
 // Fl_Help_Dialog dialog for the Fast Light Tool Kit (FLTK).
 //
@@ -265,6 +265,6 @@ window_->label(view_->title());} {}
 
 comment {
 //
-// End of "$Id: Fl_Help_Dialog.fl 10783 2015-07-09 02:09:33Z AlbrechtS $".
+// End of "$Id$".
 //} {in_source in_header
 }

@@ -1,5 +1,5 @@
 //
-// "$Id: cgdebug.h 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // OS X Core Graphics debugging help for the Fast Light Tool Kit (FLTK).
 //
@@ -201,6 +201,6 @@ inline void dbgCGContextRestoreGState(CGContextRef context)
 #endif
 
 //
-// End of "$Id: cgdebug.h 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //
 

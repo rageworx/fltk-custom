@@ -1,5 +1,5 @@
 //
-// "$Id: unittest_symbol.cxx 9852 2013-03-27 19:21:22Z greg.ercolano $"
+// "$Id$"
 //
 // Unit tests for the Fast Light Tool Kit (FLTK).
 //
@@ -91,5 +91,5 @@ public:
 UnitTest symbolExtents("symbol text", SymbolTest::create);
 
 //
-// End of "$Id: unittest_symbol.cxx 9852 2013-03-27 19:21:22Z greg.ercolano $"
+// End of "$Id$"
 //

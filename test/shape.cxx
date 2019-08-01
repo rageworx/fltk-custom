@@ -1,5 +1,5 @@
 //
-// "$Id: shape.cxx 10498 2014-12-20 07:19:23Z manolo $"
+// "$Id$"
 //
 // Tiny OpenGL demo program for the Fast Light Tool Kit (FLTK).
 //
@@ -105,5 +105,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: shape.cxx 10498 2014-12-20 07:19:23Z manolo $".
+// End of "$Id$".
 //

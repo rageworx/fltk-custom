@@ -1,5 +1,5 @@
 //
-// "$Id: table-simple.cxx 9086 2011-09-29 21:10:59Z greg.ercolano $"
+// "$Id$"
 //
 //    Simple example of using Fl_Table - Greg Ercolano 11/29/2010
 //
@@ -117,5 +117,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: table-simple.cxx 9086 2011-09-29 21:10:59Z greg.ercolano $".
+// End of "$Id$".
 //

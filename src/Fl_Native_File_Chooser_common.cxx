@@ -1,4 +1,4 @@
-// "$Id: Fl_Native_File_Chooser_common.cxx 10064 2014-01-16 16:10:19Z manolo $"
+// "$Id$"
 //
 // FLTK native OS file chooser widget
 //
@@ -73,5 +73,5 @@ static void chrcat(char *s, char c) {
 
 
 //
-// End of "$Id: Fl_Native_File_Chooser_common.cxx 10064 2014-01-16 16:10:19Z manolo $".
+// End of "$Id$".
 //

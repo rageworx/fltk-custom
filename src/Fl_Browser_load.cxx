@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Browser_load.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
+// "$Id$"
 //
 // File loading routines for the Fast Light Tool Kit (FLTK).
 //
@@ -57,5 +57,5 @@ int Fl_Browser::load(const char *filename) {
 }
 
 //
-// End of "$Id: Fl_Browser_load.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
+// End of "$Id$".
 //

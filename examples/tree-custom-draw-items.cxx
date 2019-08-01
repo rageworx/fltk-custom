@@ -1,5 +1,5 @@
 //
-// "$Id: tree-custom-draw-items.cxx 10071 2014-01-20 21:23:24Z greg.ercolano $"
+// "$Id$"
 //
 //	Demonstrate Fl_Tree custom item draw callback. - erco 11/09/2013
 //
@@ -187,5 +187,5 @@ int main(int, char**) {
 #endif
 
 //
-// End of "$Id: tree-custom-draw-items.cxx 10071 2014-01-20 21:23:24Z greg.ercolano $".
+// End of "$Id$".
 //

@@ -1,5 +1,5 @@
 //
-// "$Id: unittest_images.cxx 11269 2016-03-02 15:38:18Z AlbrechtS $"
+// "$Id$"
 //
 // Unit tests for the Fast Light Tool Kit (FLTK).
 //
@@ -198,5 +198,5 @@ Fl_RGB_Image *ImageTest::i_rgba = 0;
 UnitTest images("drawing images", ImageTest::create);
 
 //
-// End of "$Id: unittest_images.cxx 11269 2016-03-02 15:38:18Z AlbrechtS $"
+// End of "$Id$"
 //

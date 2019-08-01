@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Scroll.cxx 10776 2015-06-28 13:05:29Z AlbrechtS $"
+// "$Id$"
 //
 // Scroll widget for the Fast Light Tool Kit (FLTK).
 //
@@ -450,5 +450,5 @@ int Fl_Scroll::handle(int event) {
 }
 
 //
-// End of "$Id: Fl_Scroll.cxx 10776 2015-06-28 13:05:29Z AlbrechtS $".
+// End of "$Id$".
 //

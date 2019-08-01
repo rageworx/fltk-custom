@@ -1,5 +1,5 @@
 //
-// "$Id: keyboard.cxx 9303 2012-03-26 16:54:54Z manolo $"
+// "$Id$"
 //
 
 //
@@ -149,5 +149,5 @@ int main(int argc, char** argv) {
 }
 
 //
-// End of "$Id: keyboard.cxx 9303 2012-03-26 16:54:54Z manolo $".
+// End of "$Id$".
 //

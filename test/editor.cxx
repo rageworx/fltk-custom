@@ -1,5 +1,5 @@
 //
-// "$Id: editor.cxx 11204 2016-02-22 16:36:38Z AlbrechtS $"
+// "$Id$"
 //
 // A simple text editor program for the Fast Light Tool Kit (FLTK).
 //
@@ -974,5 +974,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: editor.cxx 11204 2016-02-22 16:36:38Z AlbrechtS $".
+// End of "$Id$".
 //

@@ -1,5 +1,5 @@
 //
-// "$Id: fl_encoding_mac_roman.cxx 9325 2012-04-05 05:12:30Z fabien $"
+// "$Id$"
 //
 // Convert Mac Roman encoded text to the local encoding.
 //
@@ -121,5 +121,5 @@ const char *fl_mac_roman_to_local(const char *t, int n)
 #endif
 
 //
-// End of "$Id: fl_encoding_mac_roman.cxx 9325 2012-04-05 05:12:30Z fabien $".
+// End of "$Id$".
 //

@@ -1,5 +1,5 @@
 //
-// "$Id: OpenGL3test.cxx 11791 2016-06-22 07:18:30Z manolo $"
+// "$Id$"
 //
 // Tiny OpenGL v3 demo program for the Fast Light Tool Kit (FLTK).
 //
@@ -228,6 +228,6 @@ int main(int argc, char **argv)
 }
 
 //
-// End of "$Id: OpenGL3test.cxx 11791 2016-06-22 07:18:30Z manolo $".
+// End of "$Id$".
 //
 

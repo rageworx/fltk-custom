@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Image_Surface.cxx 11243 2016-02-27 15:14:42Z AlbrechtS $"
+// "$Id$"
 //
 // Draw-to-image code for the Fast Light Tool Kit (FLTK).
 //
@@ -247,5 +247,5 @@ void Fl_Image_Surface::draw_decorated_window(Fl_Window* win, int delta_x, int de
 
 
 //
-// End of "$Id: Fl_Image_Surface.cxx 11243 2016-02-27 15:14:42Z AlbrechtS $".
+// End of "$Id$".
 //

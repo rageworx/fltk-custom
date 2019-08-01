@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Tabs.cxx 11970 2016-09-23 14:03:40Z AlbrechtS $"
+// "$Id$"
 //
 // Tab widget for the Fast Light Tool Kit (FLTK).
 //
@@ -548,5 +548,5 @@ void Fl_Tabs::clear_tab_positions() {
 }
 
 //
-// End of "$Id: Fl_Tabs.cxx 11970 2016-09-23 14:03:40Z AlbrechtS $".
+// End of "$Id$".
 //

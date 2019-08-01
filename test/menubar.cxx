@@ -1,5 +1,5 @@
 //
-// "$Id: menubar.cxx 10938 2015-12-01 10:03:23Z manolo $"
+// "$Id$"
 //
 // Menubar test program for the Fast Light Tool Kit (FLTK).
 //
@@ -252,5 +252,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: menubar.cxx 10938 2015-12-01 10:03:23Z manolo $".
+// End of "$Id$".
 //

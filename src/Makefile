@@ -1,5 +1,5 @@
 #
-# "$Id: Makefile 10653 2015-03-25 20:06:54Z AlbrechtS $"
+# "$Id$"
 #
 # Library makefile for the Fast Light Tool Kit (FLTK).
 #
@@ -806,5 +806,5 @@ uninstall:
 	fi
 
 #
-# End of "$Id: Makefile 10653 2015-03-25 20:06:54Z AlbrechtS $".
+# End of "$Id$".
 #

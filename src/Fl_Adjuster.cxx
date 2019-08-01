@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Adjuster.cxx 9418 2012-04-30 23:18:28Z matt $"
+// "$Id$"
 //
 // Adjuster widget for the Fast Light Tool Kit (FLTK).
 //
@@ -172,5 +172,5 @@ Fl_Adjuster::Fl_Adjuster(int X, int Y, int W, int H, const char* l)
 }
 
 //
-// End of "$Id: Fl_Adjuster.cxx 9418 2012-04-30 23:18:28Z matt $".
+// End of "$Id$".
 //

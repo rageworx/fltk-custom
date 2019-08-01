@@ -1,5 +1,5 @@
 /*
- * "$Id: config.h 8506 2011-03-04 17:51:22Z manolo $"
+ * "$Id$"
  *
  * Configuration file for the Fast Light Tool Kit (FLTK).
  *
@@ -54,5 +54,5 @@
 #define HAVE_DLSYM 1
 
 /*
- * End of "$Id: config.h 8506 2011-03-04 17:51:22Z manolo $".
+ * End of "$Id$".
  */

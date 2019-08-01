@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Double_Window.cxx 11312 2016-03-08 05:18:28Z manolo $"
+// "$Id$"
 //
 // Double-buffered window code for the Fast Light Tool Kit (FLTK).
 //
@@ -545,5 +545,5 @@ Fl_Overlay_Window::Fl_Overlay_Window(int X, int Y, int W, int H, const char *l)
 
   
 //
-// End of "$Id: Fl_Double_Window.cxx 11312 2016-03-08 05:18:28Z manolo $".
+// End of "$Id$".
 //

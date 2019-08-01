@@ -1,5 +1,5 @@
 #
-# "$Id: Makefile 11994 2016-09-30 11:33:14Z AlbrechtS $"
+# "$Id$"
 #
 # Top-level makefile for the Fast Light Tool Kit (FLTK).
 #
@@ -132,5 +132,5 @@ clang-changes:
 
 
 #
-# End of "$Id: Makefile 11994 2016-09-30 11:33:14Z AlbrechtS $".
+# End of "$Id$".
 #

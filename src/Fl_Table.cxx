@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Table.cxx 11849 2016-07-29 09:23:44Z AlbrechtS $"
+// "$Id$"
 //
 // Fl_Table -- A table widget
 //
@@ -1314,5 +1314,5 @@ void Fl_Table::draw() {
 }
 
 //
-// End of "$Id: Fl_Table.cxx 11849 2016-07-29 09:23:44Z AlbrechtS $".
+// End of "$Id$".
 //
