@@ -181,7 +181,10 @@ void ExternalCodeEditor::kill_editor() {
   if ( G_debug )
     printf("kill_editor() called: pid=%ld\n", (long)pinfo_.dwProcessId);
   if ( !is_editing() ) return;
-  switch ( terminate_app(pinfo_.dwProcessId, 500) ) {  // kill editor, wait up to 1/2 sec to die
+  // switch occurs erro on GCC 10.x --
+  int tresult = (int)terminate_app(pinfo_.dwProcessId, 500);
+  switch ( tresult ) 
+  {  // kill editor, wait up to 1/2 sec to die
     case -1: { // error
       fl_alert("Can't seem to close editor of file: %s\n"
                "Please close editor and hit OK", filename());
@@ -521,7 +524,7 @@ int ExternalCodeEditor::open_editor(const char *editor_cmd,
       // See if editor recently closed but not reaped; try to reap
       DWORD wpid = reap_editor();
       switch (wpid) {
-        case -1:        // wait failed
+        case 0xFFFFFFFF:    // wait failed (-1)
           fl_alert("ERROR: WaitForSingleObject() failed: %s\nfile='%s', pid=%ld",
             get_ms_errmsg(), filename(), long(pinfo_.dwProcessId));
           return -1;
