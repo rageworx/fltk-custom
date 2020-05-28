@@ -144,8 +144,12 @@ static int terminate_app(DWORD pid, DWORD msecTimeout) {
 void ExternalCodeEditor::close_editor() {
   if ( G_debug ) printf("close_editor() called: pid=%ld\n", long(pinfo_.dwProcessId));
   // Wait until editor is closed + reaped
-  while ( is_editing() ) {
-    switch ( reap_editor() ) {
+  while ( is_editing() ) 
+  {
+    // switch occurs error on GCC 10.x --
+    int reapv = (int)reap_editor();
+    switch ( reapv ) 
+    {
       case -1:  // error
         fl_alert("Error reaping external editor\n"
                  "pid=%ld file=%s", long(pinfo_.dwProcessId), filename());
