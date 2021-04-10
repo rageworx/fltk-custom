@@ -304,3 +304,6 @@
 
 # /test/sudoku.app/Contents/MacOS/
 /test/sudoku.app/Contents/MacOS/sudoku
+
+# Configure temporaries
+configure~
