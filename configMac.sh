@@ -27,4 +27,4 @@ if [ ${KVER_0} -gt 19 ];then
     export ARCHFLAGS="-arch x86_64 -arch arm64"  
 fi
 
-echo ./configure ${FEATURES} ${COMPILER} ${FLTKABI}
+./configure ${FEATURES} ${COMPILER} ${FLTKABI}
