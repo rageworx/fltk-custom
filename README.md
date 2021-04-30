@@ -27,4 +27,3 @@ It was originally developed by Mr. Bill Spitzak and is currently maintained by a
 * Fl_Choice affects by theme scheme.
 * Fl_Text_Display affects by theme scheme.
 * Fl_Spinner affects by theme scheme.
-* 
