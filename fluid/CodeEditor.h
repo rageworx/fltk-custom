@@ -1,45 +1,42 @@
 //
-// "$Id: CodeEditor.h 10672 2015-04-04 15:06:30Z matt $"
-//
 // Code editor widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2010 by Bill Spitzak and others.
+// Copyright 1998-2020 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 
 #ifndef CodeEditor_h
-#  define CodeEditor_h
+#define CodeEditor_h
 
 //
 // Include necessary headers...
 //
 
-#  include <stdio.h>
-#  include <stdlib.h>
-#  include <string.h>
-#  include <ctype.h>
-#  include <FL/Fl.H>
-#  include <FL/Fl_Text_Buffer.H>
-#  include <FL/Fl_Text_Editor.H>
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <FL/Fl.H>
+#include <FL/Fl_Text_Buffer.H>
+#include <FL/Fl_Text_Editor.H>
+#include "StyleParse.h"
 
 class CodeEditor : public Fl_Text_Editor {
-  static Fl_Text_Display::Style_Table_Entry styletable[];
-  static const char * const code_keywords[];
-  static const char * const code_types[];
+  friend class StyleParse;
 
+  static Fl_Text_Display::Style_Table_Entry styletable[];
 
   // 'style_parse()' - Parse text and produce style data.
-  static void style_parse(const char *text, char *style, int length);
+  static void style_parse(const char *tbuff, char *sbuff, int len, char style);
 
   // 'style_unfinished_cb()' - Update unfinished styles.
   static void style_unfinished_cb(int, void*);
@@ -59,7 +56,6 @@ class CodeEditor : public Fl_Text_Editor {
 
   // attempt to make the fluid code editor widget honour textsize setting
   void textsize(Fl_Fontsize s);
-  
 };
 
 class CodeViewer : public CodeEditor {
@@ -75,7 +71,3 @@ class CodeViewer : public CodeEditor {
 };
 
 #endif // !CodeEditor_h
-
-//
-// End of "$Id: CodeEditor.h 10672 2015-04-04 15:06:30Z matt $".
-//

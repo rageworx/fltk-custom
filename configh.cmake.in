@@ -1,7 +1,5 @@
 /* @CONFIG_H@.  Generated from @CONFIG_H_IN@ by CMake.  */
 /*
- * "$Id$"
- *
  * Configuration file for the Fast Light Tool Kit (FLTK).
  *
  * Copyright 1998-2016 by Bill Spitzak and others.
@@ -10,11 +8,11 @@
  * the file "COPYING" which should have been included with this file.  If this
  * file is missing or damaged, see the license at:
  *
- *     http://www.fltk.org/COPYING.php
+ *     https://www.fltk.org/COPYING.php
  *
- * Please report all bugs and problems on the following page:
+ * Please see the following page on how to report bugs and issues:
  *
- *     http://www.fltk.org/str.php
+ *     https://www.fltk.org/bugs.php
  */
 
 /*
@@ -86,10 +84,18 @@
 /*
  * USE_XFT
  *
- * Use the new Xft library to draw anti-aliased text.
+ * Use the Xft library to draw anti-aliased text.
  */
 
 #cmakedefine01 USE_XFT
+
+/*
+ * USE_PANGO
+ *
+ * Use the pango library to draw UTF-8 text.
+ */
+
+#cmakedefine01 USE_PANGO
 
 /*
  * HAVE_XDBE:
@@ -158,6 +164,15 @@
  */
 
 #cmakedefine USE_X11 1
+
+/*
+ * USE_SDL
+ *
+ * Should we use SDL for the current platform
+ *
+ */
+
+#cmakedefine USE_SDL 1
 
 /*
  * HAVE_OVERLAY:
@@ -303,6 +318,14 @@
 #cmakedefine HAVE_PNG_SET_TRNS_TO_ALPHA 1
 
 /*
+* FLTK_USE_SVG
+*
+* Do we want FLTK to read and write SVG-formatted files ?
+*/
+
+#cmakedefine FLTK_USE_SVG 1
+
+/*
  * Do we have POSIX threading?
  */
 
@@ -337,5 +360,13 @@
 #cmakedefine01 HAVE_DLSYM
 
 /*
- * End of "$Id$".
+ * Do we want print support?
  */
+
+#cmakedefine FL_NO_PRINT_SUPPORT 1
+
+/*
+ * Do we want filename handling and a filechooser?
+ */
+
+#cmakedefine FL_CFG_NO_FILESYSTEM_SUPPORT 1

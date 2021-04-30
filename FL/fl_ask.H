@@ -1,19 +1,17 @@
 //
-// "$Id$"
-//
 // Standard dialog header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2011 by Bill Spitzak and others.
+// Copyright 1998-2020 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 
 /** \file fl_ask.H
@@ -58,32 +56,41 @@ FL_EXPORT const char *fl_input(const char *label, const char *deflt = 0, ...) __
 FL_EXPORT const char *fl_password(const char *label, const char *deflt = 0, ...) __fl_attr((__format__ (__printf__, 1, 3)));
 
 FL_EXPORT Fl_Widget *fl_message_icon();
+#ifdef FLTK_EXT_VERSION
 extern FL_EXPORT Fl_Color fl_message_window_color_;
 extern FL_EXPORT Fl_Color fl_message_button_color_[3];
 extern FL_EXPORT Fl_Color fl_message_label_color_;
 extern FL_EXPORT Fl_Color fl_message_button_label_color_[3];
+#enduf /// of FLTK_EXT_VERSION
 extern FL_EXPORT Fl_Font fl_message_font_;
 extern FL_EXPORT Fl_Fontsize fl_message_size_;
+#ifdef FLTK_EXT_VERSION
 extern FL_EXPORT Fl_Color fl_message_input_color_;
 extern FL_EXPORT Fl_Color fl_message_input_text_color_;
 extern FL_EXPORT Fl_Font fl_message_input_text_font_;
+#endif
 inline void fl_message_font(Fl_Font f, Fl_Fontsize s) {
   fl_message_font_ = f; fl_message_size_ = s;}
 
 FL_EXPORT void fl_message_hotspot(int enable);
 FL_EXPORT int fl_message_hotspot(void);
 
+FL_EXPORT void fl_message_position(const int x, const int y, const int center = 0);
+FL_EXPORT void fl_message_position(Fl_Widget *widget);
+FL_EXPORT int fl_message_position(int *x = 0, int *y = 0);
+
+/** \see fl_message_position(Fl_Widget *widget). */
+inline void fl_message_position(Fl_Widget &widget) {
+  fl_message_position(&widget);
+}
+
 FL_EXPORT void fl_message_title(const char *title);
 FL_EXPORT void fl_message_title_default(const char *title);
 
-// pointers you can use to change FLTK to a foreign language:
+// pointers you can use to change FLTK to another language:
 extern FL_EXPORT const char* fl_no;
 extern FL_EXPORT const char* fl_yes;
 extern FL_EXPORT const char* fl_ok;
 extern FL_EXPORT const char* fl_cancel;
 extern FL_EXPORT const char* fl_close;
 #endif // !fl_ask_H
-
-//
-// End of "$Id$".
-//

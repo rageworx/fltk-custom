@@ -5,9 +5,14 @@
 #   This configure shell script helps doing configure for llvm-gcc if 
 #  your system changed gcc to hpc-gcc.
 
+if [ ! -e configure ];then
+    echo "configure stopped,"
+    ecoh "need to generate configure first by autogen.sh !"
+    exit 0
+fi
+
 COMPILER="CC=llvm-gcc CXX=llvm-g++"
 FEATURES="--enable-localjpeg  --enable-localzlib --enable-localpng"
-FLTKABI="--with-abiversion=10305"
 
 KVER_0=`uname -r | cut -d . -f1`
 KVER_1=`uname -r | cut -d . -f2`

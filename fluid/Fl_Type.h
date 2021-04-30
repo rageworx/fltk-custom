@@ -1,6 +1,4 @@
 //
-// "$Id: Fl_Type.h 11952 2016-09-20 12:57:18Z AlbrechtS $"
-//
 // Widget type header file for the Fast Light Tool Kit (FLTK).
 //
 // Each object described by Fluid is one of these objects.  They
@@ -18,11 +16,11 @@
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 
 #include <FL/Fl_Widget.H>
@@ -31,8 +29,9 @@
 #include "Fluid_Image.h"
 #include <FL/fl_draw.H>
 #include <stdarg.h>
+#include <stdlib.h>
 
-#ifdef WIN32
+#ifdef _WIN32
   #include "ExternalCodeEditor_WIN32.h"
 #else
   #include "ExternalCodeEditor_UNIX.h"
@@ -58,17 +57,17 @@ protected:
   const char *user_data_type_;
   const char *comment_;
 
-public:	// things that should not be public:
+public: // things that should not be public:
 
   Fl_Type *parent; // parent, which is previous in list
   char new_selected; // browser highlight
   char selected; // copied here by selection_changed()
-  char open_;	// state of triangle in browser
+  char open_;   // state of triangle in browser
   char visible; // true if all parents are open
-  char rtti;	// hack because I have no rtti, this is 0 for base class
-  int level;	// number of parents over this
+  char rtti;    // hack because I have no rtti, this is 0 for base class
+  int level;    // number of parents over this
   static Fl_Type *first, *last; // linked list of all objects
-  Fl_Type *next, *prev;	// linked list of all objects
+  Fl_Type *next, *prev; // linked list of all objects
 
   Fl_Type *factory;
   const char *callback_name();
@@ -86,7 +85,7 @@ public:
 
   void add(Fl_Type *parent); // add as new child
   void insert(Fl_Type *n); // insert into list before n
-  Fl_Type* remove();	// remove from list
+  Fl_Type* remove();    // remove from list
   void move_before(Fl_Type*); // move before a sibling
 
   virtual const char *title(); // string for browser
@@ -112,7 +111,7 @@ public:
   virtual void remove_child(Fl_Type*);
 
   static Fl_Type *current;  // most recently picked object
-  virtual void open();	// what happens when you double-click
+  virtual void open();  // what happens when you double-click
 
   // read and write data to a saved file:
   virtual void write();
@@ -166,8 +165,8 @@ class Fl_Function_Type : public Fl_Type {
   const char* return_type;
   char public_, cdecl_, constructor, havewidgets;
 public:
-  Fl_Function_Type() : 
-    Fl_Type(), 
+  Fl_Function_Type() :
+    Fl_Type(),
     return_type(0L), public_(0), cdecl_(0), constructor(0), havewidgets(0)
   { }
   ~Fl_Function_Type() {
@@ -193,7 +192,9 @@ public:
 
 class Fl_Code_Type : public Fl_Type {
   ExternalCodeEditor editor_;
+  int cursor_position_;
 public:
+  Fl_Code_Type() { cursor_position_ = 0; }
   Fl_Type *make();
   void write();
   void write_code1();
@@ -226,7 +227,7 @@ public:
   //     1 -- file changed, internal records updated, 'code' has new content
   //    -1 -- error getting file info (get_ms_errmsg() has reason)
   //
-  // TODO: Figure out how saving a fluid file can be intercepted to grab 
+  // TODO: Figure out how saving a fluid file can be intercepted to grab
   //       current contents of editor file..
   //
   int handle_editor_changes() {
@@ -282,8 +283,9 @@ public:
 
 class Fl_Data_Type : public Fl_Decl_Type {
   const char *filename_;
+  int text_mode_;
 public:
-  Fl_Data_Type() : Fl_Decl_Type(), filename_(0L) { }
+  Fl_Data_Type() : Fl_Decl_Type(), filename_(0L), text_mode_(0) { }
   ~Fl_Data_Type() {
     if (filename_) free((void*)filename_);
   }
@@ -343,7 +345,7 @@ public:
   ~Fl_Class_Type() {
     if (subclass_of) free((void*)subclass_of);
   }
-  
+
   // state variables for output:
   char write_public_state; // true when public: has been printed
   Fl_Class_Type* parent_class; // save class if nested
@@ -587,13 +589,13 @@ protected:
   Fl_Menu_Item* subtypes() {return window_type_menu;}
 
   friend class Overlay_Window;
-  int mx,my;		// mouse position during dragging
-  int x1,y1;		// initial position of selection box
-  int bx,by,br,bt;	// bounding box of selection before snapping
-  int sx,sy,sr,st;	// bounding box of selection after snapping to guides
+  int mx,my;            // mouse position during dragging
+  int x1,y1;            // initial position of selection box
+  int bx,by,br,bt;      // bounding box of selection before snapping
+  int sx,sy,sr,st;      // bounding box of selection after snapping to guides
   int dx,dy;
-  int drag;		// which parts of bbox are being moved
-  int numselected;	// number of children selected
+  int drag;             // which parts of bbox are being moved
+  int numselected;      // number of children selected
   enum {LEFT=1,RIGHT=2,BOTTOM=4,TOP=8,DRAG=16,BOX=32};
   void draw_overlay();
   void newdx();
@@ -604,7 +606,7 @@ protected:
   void write_code2();
   Fl_Widget_Type *_make() {return 0;} // we don't call this
   Fl_Widget *widget(int,int,int,int) {return 0;}
-  int recalc;		// set by fix_overlay()
+  int recalc;           // set by fix_overlay()
   void moveallchildren();
   int pixmapID() { return 1; }
 
@@ -619,8 +621,8 @@ public:
 
   void open();
 
-  void fix_overlay();			// Update the bounding box, etc
-  uchar *read_image(int &ww, int &hh);	// Read an image of the window
+  void fix_overlay();                   // Update the bounding box, etc
+  uchar *read_image(int &ww, int &hh);  // Read an image of the window
 
   virtual void write_properties();
   virtual void read_property(const char *);
@@ -687,6 +689,16 @@ public:
   int pixmapID() { return 16; }
 };
 
+class Fl_Radio_Menu_Item_Type : public Fl_Menu_Item_Type {
+public:
+    Fl_Type* make();
+};
+
+class Fl_Checkbox_Menu_Item_Type : public Fl_Menu_Item_Type {
+public:
+    Fl_Type* make();
+};
+
 class Fl_Submenu_Type : public Fl_Menu_Item_Type {
 public:
   Fl_Menu_Item* subtypes() {return 0;}
@@ -702,6 +714,7 @@ public:
   void remove_child(Fl_Type*a) {parent->remove_child(a);}
   int pixmapID() { return 18; }
 };
+
 
 
 #include <FL/Fl_Menu_.H>
@@ -862,8 +875,10 @@ int write_declare(const char *, ...) __fl_attr((__format__ (__printf__, 1, 2)));
 int is_id(char);
 const char* unique_id(void* o, const char*, const char*, const char*);
 void write_c(const char*, ...) __fl_attr((__format__ (__printf__, 1, 2)));
+void write_cc(const char *, int, const char*, const char*);
 void vwrite_c(const char* format, va_list args);
 void write_h(const char*, ...) __fl_attr((__format__ (__printf__, 1, 2)));
+void write_hc(const char *, int, const char*, const char*);
 void write_cstring(const char *);
 void write_cstring(const char *,int length);
 void write_cdata(const char *,int length);
@@ -890,7 +905,7 @@ extern int include_H_from_C;
 extern int use_FL_COMMAND;
 
 /*
- * This class is needed for additional command line plugins.
+ This class is needed for additional command line plugins.
  */
 class Fl_Commandline_Plugin : public Fl_Plugin {
 public:
@@ -904,14 +919,9 @@ public:
   // handle a command and return the number of args used, or 0
   virtual int arg(int argc, char **argv, int &i) = 0;
   // optional test the plugin
-  virtual int test(const char *a1=0L, const char *a2=0L, const char *a3=0L) { 
+  virtual int test(const char *a1=0L, const char *a2=0L, const char *a3=0L) {
     return 0;
   }
   // show a GUI panel to edit some data
   virtual void show_panel() { }
 };
-
-
-//
-// End of "$Id: Fl_Type.h 11952 2016-09-20 12:57:18Z AlbrechtS $".
-//

@@ -1,19 +1,17 @@
 //
-// "$Id$"
-//
 // Box drawing code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2015 by Bill Spitzak and others.
+// Copyright 1998-2020 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 
 /**
@@ -47,6 +45,9 @@ static const uchar inactive_ramp[24] = {
   49, 49, 50, 50,
   51, 51, 52, 52};
 static int draw_it_active = 1;
+
+int Fl::box_border_radius_max_ = 15;
+int Fl::box_shadow_width_ = 3;
 
 /**
   Determines if the currently drawn box is active or inactive.
@@ -465,6 +466,3 @@ void Fl_Widget::draw_box(Fl_Boxtype t, int X, int Y, int W, int H, Fl_Color c) c
   draw_it_active = 1;
 }
 
-//
-// End of "$Id$".
-//

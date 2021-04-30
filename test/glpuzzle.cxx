@@ -1,25 +1,25 @@
 //
-// "$Id$"
-//
 // OpenGL puzzle demo for the Fast Light Tool Kit (FLTK).
 //
 // This is a GLUT demo program to demonstrate fltk's GLUT emulation.
 // Search for "fltk" to find all the changes
 //
-// Copyright 1998-2010 by Bill Spitzak and others.
+// Copyright 1998-2020 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 
-// this block added for fltk's distribtion so it will compile w/o OpenGL:
+// Convenience options 'n' and ' ' and command line switch '-n' added for FLTK
+
+// this block added for fltk's distribution so it will compile w/o OpenGL:
 #include <config.h>
 #if !HAVE_GL || !HAVE_GL_GLU_H
 #include <FL/Fl.H>
@@ -37,9 +37,9 @@ int main(int, char**) {
 #include <sys/types.h>
 #include <time.h>
 #include <math.h>
-#include <FL/glut.H>	// changed for fltk
+#include <FL/glut.H>    // changed for fltk
 #include <FL/glu.h>     // added for fltk
-#include "trackball.c"	// changed from trackball.h for fltk
+#include "trackball.c"  // changed from trackball.h for fltk
 
 #define WIDTH 4
 #define HEIGHT 5
@@ -84,6 +84,7 @@ static unsigned char colors[PIECES + 1][3] =
 };
 
 void changeState(void);
+void animate(void);
 
 static struct puzzle *hashtable[HASHSIZE];
 static struct puzzle *startPuzzle;
@@ -876,7 +877,7 @@ invertMatrix(const GLfloat src[16], GLfloat inverse[16])
   makeIdentity(inverse);
 
   for (i = 0; i < 4; i++) {
-    /* 
+    /*
        ** Look for largest element in column */
     swap = i;
     for (j = i + 1; j < 4; j++) {
@@ -886,7 +887,7 @@ invertMatrix(const GLfloat src[16], GLfloat inverse[16])
     }
 
     if (swap != i) {
-      /* 
+      /*
          ** Swap rows. */
       for (k = 0; k < 4; k++) {
         t = temp[i][k];
@@ -899,7 +900,7 @@ invertMatrix(const GLfloat src[16], GLfloat inverse[16])
       }
     }
     if (temp[i][i] == 0) {
-      /* 
+      /*
          ** No non-zero pivot.  The matrix is singular, which
          shouldn't ** happen.  This means the user gave us a
          bad matrix. */
@@ -925,9 +926,9 @@ invertMatrix(const GLfloat src[16], GLfloat inverse[16])
 
 /*
    ** This is a screwball function.  What it does is the following:
-   ** Given screen x and y coordinates, compute the corresponding object space 
+   ** Given screen x and y coordinates, compute the corresponding object space
    **   x and y coordinates given that the object space z is 0.9 + OFFSETZ.
-   ** Since the tops of (most) pieces are at z = 0.9 + OFFSETZ, we use that 
+   ** Since the tops of (most) pieces are at z = 0.9 + OFFSETZ, we use that
    **   number.
  */
 int
@@ -966,10 +967,10 @@ computeCoords(int piece, int mousex, int mousey,
     finalMatrix[3 * 4 + 3];
   d = finalMatrix[2 * 4 + 3];
 
-  /* 
-     ** Ok, now we need to solve for z: **   (a + b z) / (c + d 
+  /*
+     ** Ok, now we need to solve for z: **   (a + b z) / (c + d
 
-     z) = height. ** ("height" is the height in object space we 
+     z) = height. ** ("height" is the height in object space we
 
      want to solve z for) ** ** ==>  a + b z = height c +
      height d z **      bz - height d z = height c - a ** z =
@@ -981,12 +982,12 @@ computeCoords(int piece, int mousex, int mousey,
 
   z = top / bot;
 
-  /* 
+  /*
      ** Ok, no problem. ** Now we solve for x and y.  We know
      that w = c + d z, so we compute it. */
   w = c + d * z;
 
-  /* 
+  /*
      ** Now for x and y: */
   *selx = (in[0] * finalMatrix[0 * 4 + 0] +
     in[1] * finalMatrix[1 * 4 + 0] +
@@ -1093,7 +1094,7 @@ moveSelection(float selx, float sely)
   } else {
     if (deltay > 0 && thePuzzle[selecty][selectx] == 10 &&
       selectx == 1 && selecty == 3) {
-      /* Allow visual movement of solution piece outside of the 
+      /* Allow visual movement of solution piece outside of the
 
          box */
       move_x = selectx;
@@ -1119,6 +1120,7 @@ static int left_mouse, middle_mouse;
 static int mousex, mousey;
 static int solving;
 static int spinning;
+static int enable_spinning = 1;
 static float lastquat[4];
 static int sel_piece;
 
@@ -1152,8 +1154,16 @@ toggleSolve(void)
     glutPostRedisplay();
 }
 
+void reset_position(void)
+{
+    spinning = 0;
+    trackball(curquat, 0.0, 0.0, 0.0, 0.0); // reset position
+    glutIdleFunc(animate);
+}
+
 void reset(void)
 {
+    reset_position();
     if (solving) {
       freeSolutions();
       solving = 0;
@@ -1174,6 +1184,11 @@ keyboard(unsigned char c, int x, int y)
   switch (c) {
   case 27:
     exit(0);
+    break;
+  case ' ':
+  case 'n':
+  case 'N':
+    reset_position();
     break;
   case 'D':
   case 'd':
@@ -1226,7 +1241,7 @@ motion(int x, int y)
         (H - 2.0*mousey) / H,
         (2.0*x - W) / W,
         (H - 2.0*y) / H);
-      spinning = 1;
+      spinning = enable_spinning; // 1 = yes, 0 = disabled (commandline -n)
     } else {
       spinning = 0;
     }
@@ -1400,12 +1415,15 @@ menu(int choice)
 {
    switch(choice) {
    case 1:
-      toggleSolve();
+      reset_position();
       break;
    case 2:
-      reset();
+      toggleSolve();
       break;
    case 3:
+      reset();
+      break;
+   case 4:
       exit(0);
       break;
    }
@@ -1421,6 +1439,9 @@ main(int argc, char **argv)
   for (i = 1; i < argc; i++) {
     if (argv[i][0] == '-') {
       switch (argv[i][1]) {
+      case 'n':
+        enable_spinning = 0; // disable (sometimes annoying) spinning behaviour
+        break;
       case 's':
         doubleBuffer = 0;
         break;
@@ -1447,6 +1468,7 @@ main(int argc, char **argv)
   glGetIntegerv(GL_VIEWPORT, viewport);
 
   puts("");
+  puts("n   Normal position - stop spinning");
   puts("r   Reset puzzle");
   puts("s   Solve puzzle (may take a few seconds to compute)");
   puts("d   Destroy a piece - makes the puzzle easier");
@@ -1463,16 +1485,13 @@ main(int argc, char **argv)
   glutMouseFunc(mouse);
   glutVisibilityFunc(visibility);
   glutCreateMenu(menu);
-  glutAddMenuEntry((char *)"Solve", 1);
-  glutAddMenuEntry((char *)"Reset", 2);
-  glutAddMenuEntry((char *)"Quit", 3);
+  glutAddMenuEntry((char *)"Normal pos", 1);
+  glutAddMenuEntry((char *)"Solve", 2);
+  glutAddMenuEntry((char *)"Reset", 3);
+  glutAddMenuEntry((char *)"Quit", 4);
   glutAttachMenu(GLUT_RIGHT_BUTTON);
   glutMainLoop();
   return 0;             /* ANSI C requires main to return int. */
 }
 
 #endif // added for fltk's distribution
-
-//
-// End of "$Id$".
-//

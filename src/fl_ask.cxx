@@ -1,19 +1,17 @@
 //
-// "$Id$"
-//
 // Standard dialog functions for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2011 by Bill Spitzak and others.
+// Copyright 1998-2021 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 
 /**
@@ -26,13 +24,10 @@
 // mostly.  In most cases it is easier to get a multi-line message
 // by putting newlines in the message.
 
-#include <stdio.h>
-#include <stdarg.h>
-#include "flstring.h"
-
 #include <FL/Fl.H>
-
+#include <FL/fl_string.h>
 #include <FL/fl_ask.H>
+#include "flstring.h"
 
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Button.H>
@@ -40,8 +35,13 @@
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Input.H>
 #include <FL/Fl_Secret_Input.H>
-#include <FL/x.H>
+#include <FL/platform.H>
+#include "Fl_Screen_Driver.H"
 #include <FL/fl_draw.H>
+
+#include <stdio.h>
+#include <stdarg.h>
+#include <stdlib.h>
 
 static Fl_Window *message_form;
 static Fl_Box *message;
@@ -61,9 +61,9 @@ Fl_Color fl_message_input_color_ = FL_WHITE;
 Fl_Color fl_message_input_text_color_ = FL_BLACK;
 Fl_Font fl_message_input_text_font_ = FL_HELVETICA;
 static int enableHotspot = 1;
-#ifdef __APPLE__
-extern "C" void NSBeep(void);
-#endif
+static int form_x = 0;
+static int form_y = 0;
+static int form_position = 0; // 0 = not set, 1 = absolute, 2 = centered
 
 static char avoidRecursion = 0;
 
@@ -219,6 +219,7 @@ static void resizeform() {
 //             button[i]->w(), button[i]->h(),
 //	     button[i]->x(), button[i]->y());
     }
+  message_form->init_sizes();
 }
 
 static int innards(const char* fmt, va_list ap,
@@ -295,8 +296,19 @@ static int innards(const char* fmt, va_list ap,
 
   if (button[1]->visible() && !input->visible())
     button[1]->take_focus();
-  if (enableHotspot)
+
+  if (form_position) {
+    if (form_position == 2) { // centered
+      form_x -= message_form->w()/2;
+      form_y -= message_form->h()/2;
+    }
+    message_form->position(form_x, form_y);
+    form_x = form_y = form_position = 0;
+  } else if (enableHotspot)
     message_form->hotspot(button[0]);
+  else
+    message_form->free_position();
+
   if (b0 && Fl_Widget::label_shortcut(b0))
     button[0]->shortcut(0);
   else
@@ -338,51 +350,11 @@ const char* fl_close= "Close";   ///< string pointer used in common dialogs, you
  \param[in] type   The beep type from the \ref Fl_Beep enumeration.
    \note \#include <FL/fl_ask.H>
  */
-void fl_beep(int type) {
-#ifdef WIN32
-  switch (type) {
-    case FL_BEEP_QUESTION :
-    case FL_BEEP_PASSWORD :
-      MessageBeep(MB_ICONQUESTION);
-      break;
-    case FL_BEEP_MESSAGE :
-      MessageBeep(MB_ICONASTERISK);
-      break;
-    case FL_BEEP_NOTIFICATION :
-      MessageBeep(MB_ICONASTERISK);
-      break;
-    case FL_BEEP_ERROR :
-      MessageBeep(MB_ICONERROR);
-      break;
-    default :
-      MessageBeep(0xFFFFFFFF);
-      break;
-  }
-#elif defined(__APPLE__)
-  switch (type) {
-    case FL_BEEP_DEFAULT :
-    case FL_BEEP_ERROR :
-      NSBeep();
-      break;
-    default :
-      break;
-  }
-#else
-  switch (type) {
-    case FL_BEEP_DEFAULT :
-    case FL_BEEP_ERROR :
-      if (!fl_display) fl_open_display();
-
-      XBell(fl_display, 100);
-      break;
-    default :
-      if (!fl_display) fl_open_display();
-
-      XBell(fl_display, 50);
-      break;
-  }
-#endif // WIN32
+void fl_beep(int type)
+{
+  Fl::screen_driver()->beep(type);
 }
+
 
 /** Shows an information message dialog box.
 
@@ -460,14 +432,20 @@ int fl_ask(const char *fmt, ...) {
   return r;
 }
 
-/** Shows a dialog displaying the printf style \p fmt message,
-    this dialog features up to 3 customizable choice buttons
+/** Shows a dialog displaying the printf style \p fmt message.
+
+    This dialog features up to 3 customizable choice buttons
+    which are specified in order of *right-to-left* in the dialog, e.g.
+    \image html  fl_choice_left_middle_right.png
+    \image latex fl_choice_left_middle_right.png  "fl_choice() button ordering" width=4cm
 
    \note Common dialog boxes are application modal. No more than one common dialog box
     can be open at any time. Requests for additional dialog boxes are ignored.
    \note \#include <FL/fl_ask.H>
 
    Three choices with printf() style formatting:
+   \image html  fl_choice_three_fmt.png
+   \image latex fl_choice_three_fmt.png  "fl_choice() three choices with printf formatting" width=4cm
    \code
        int num_msgs = GetNumberOfMessages();
        switch ( fl_choice("What to do with %d messages?", "Send", "Save", "Delete", num_msgs) ) {
@@ -482,10 +460,10 @@ int fl_ask(const char *fmt, ...) {
    \image html  fl_choice_three.png
    \image latex fl_choice_three.png  "fl_choice() three choices" width=4cm
    \code
-       switch ( fl_choice("How many musketeers?", "One", "Two", "Three") ) {
-         case 0: .. // One
-         case 1: .. // Two (default)
-         case 2: .. // Three
+   switch ( fl_choice("How many bedrooms?", "Zero", "One", "Two") ) {
+     case 0: .. // "Zero"
+     case 1: .. // "One" (default)
+     case 2: .. // "Two"
        }
    \endcode
 
@@ -507,12 +485,12 @@ int fl_ask(const char *fmt, ...) {
    \endcode
 
    \param[in] fmt can be used as an sprintf-like format and variables for the message text
-   \param[in] b0 text label of button 0
-   \param[in] b1 text label of button 1 (can be 0)
-   \param[in] b2 text label of button 2 (can be 0)
-   \retval 0 if the first button with \p b0 text is pushed or another dialog box is still open
-   \retval 1 if the second button with \p b1 text is pushed
-   \retval 2 if the third button with \p b2 text is pushed
+   \param[in] b0 text label for right button 0
+   \param[in] b1 text label for middle button 1 (can be 0)
+   \param[in] b2 text label for left button 2 (can be 0)
+   \retval 0 if the button with \p b0 text is pushed or another dialog box is still open
+   \retval 1 if the button with \p b1 text is pushed
+   \retval 2 if the button with \p b2 text is pushed
  */
 int fl_choice(const char*fmt,const char *b0,const char *b1,const char *b2,...){
 
@@ -599,6 +577,82 @@ const char *fl_password(const char *fmt, const char *defstr, ...) {
   return r;
 }
 
+/** Sets the preferred position for the common message box used in
+    many common dialogs like fl_message(), fl_alert(),
+    fl_ask(), fl_choice(), fl_input(), fl_password().
+
+    Resets after every call to any of the common dialogs.
+
+    The position set with this method overrides the hotspot setting,
+    i.e. setting a position has higher priority than the hotspot mode
+    set by fl_message_hotspot(int).
+
+    If the optional argument \p center is non-zero (true) the message box
+    will be centered at the given coordinates rather than using the X/Y
+    position as the window position (top left corner).
+
+    \note \#include <FL/fl_ask.H>
+
+    \param[in] x        Preferred X position
+    \param[in] y        Preferred Y position
+    \param[in] center   1 = centered, 0 = absolute
+
+    \see int fl_message_position(int *x, int *y)
+*/
+void fl_message_position(const int x, const int y, const int center) {
+  form_x = x;
+  form_y = y;
+  form_position = center ? 2 : 1;
+}
+
+/** Sets the preferred position for the common message box used in
+    many common dialogs like fl_message(), fl_alert(),
+    fl_ask(), fl_choice(), fl_input(), fl_password().
+
+    The common message box will be centered over the given widget
+    or window extensions.
+
+    Everything else is like fl_message_position(int, int, int) with
+    argument 'center' set to 1.
+
+    \note \#include <FL/fl_ask.H>
+
+    \param[in] widget   Widget or window to position the message box over.
+
+    \see int fl_message_position(int x, int y, int center)
+*/
+void fl_message_position(Fl_Widget *widget) {
+  form_x = widget->x() + widget->w()/2;
+  form_y = widget->y() + widget->h()/2;
+  form_position = 2;
+}
+
+/** Gets the preferred position for the common message box used in
+    many common dialogs like fl_message(), fl_alert(),
+    fl_ask(), fl_choice(), fl_input(), fl_password().
+
+    \note \#include <FL/fl_ask.H>
+
+    \param[out] x  Preferred X position, returns -1 if not set
+    \param[out] y  Preferred Y position, returns -1 if not set
+
+    \returns    whether position is currently set or not
+    \retval     0 position is not set (may be hotspot or not)
+    \retval     1 position is set (window position)
+    \retval     2 position is set (message box centered)
+
+    \see fl_message_position(int, int)
+    \see fl_message_hotspot(int)
+    \see int fl_message_hotspot()
+*/
+int fl_message_position(int *x, int *y) {
+  if (x)
+    *x = form_position ? form_x : -1;
+  if (y)
+    *y = form_position ? form_y : -1;
+  return form_position;
+}
+
 /** Sets whether or not to move the common message box used in
     many common dialogs like fl_message(), fl_alert(),
     fl_ask(), fl_choice(), fl_input(), fl_password() to follow
@@ -668,11 +722,7 @@ void fl_message_title_default(const char *title) {
     message_title_default = 0;
   }
   if (title)
-    message_title_default = strdup(title);
+    message_title_default = fl_strdup(title);
 }
 
 /** @} */
-
-//
-// End of "$Id$".
-//

@@ -1,6 +1,4 @@
 //
-// "$Id$"
-//
 // shapedwindow example source file for the Fast Light Tool Kit (FLTK).
 //
 // Copyright 1998-2014 by Bill Spitzak and others.
@@ -9,11 +7,11 @@
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems to:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 
 #include <FL/Fl_Window.H>
@@ -76,8 +74,7 @@ Fl_RGB_Image* prepare_shape(int w)
 {
   // draw a white circle with a hole in it on black background
   Fl_Image_Surface *surf = new Fl_Image_Surface(w, w);
-  Fl_Surface_Device* current = Fl_Surface_Device::surface();
-  surf->set_current();
+  Fl_Surface_Device::push_current(surf);
   fl_color(FL_BLACK);
   fl_rectf(-1, -1, w+2, w+2);
   fl_color(FL_WHITE);
@@ -86,7 +83,7 @@ Fl_RGB_Image* prepare_shape(int w)
   fl_pie(0.7*w,w/2,w/4,w/4,0,360);
   Fl_RGB_Image* img = surf->image();
   delete surf;
-  current->set_current();
+  Fl_Surface_Device::pop_current();
   return img; // return white image on black background
 }
 
@@ -120,7 +117,3 @@ int main(int argc, char **argv) {
   delete win;
   return 0;
 }
-
-//
-// End of "$Id$".
-//

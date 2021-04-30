@@ -1,19 +1,17 @@
 //
-// "$Id$"
-//
 // Offscreen drawing test program for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2016 by Bill Spitzak and others.
+// Copyright 1998-2018 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 
 /* Standard headers */
@@ -23,7 +21,7 @@
 /* Fltk headers */
 #include <FL/Fl.H>
 #include <FL/Fl_Double_Window.H>
-#include <FL/x.H>
+#include <FL/platform.H>
 #include <FL/Fl_Box.H>
 #include <FL/fl_draw.H>
 
@@ -68,6 +66,8 @@ private:
   int page_x, page_y; // top left of view area
   // Width and height of the offscreen surface
   int offsc_w, offsc_h;
+  int iters; // Must be set on first pass!
+  float scale; // current screen scaling factor value
 };
 
 /*****************************************************************************/
@@ -77,7 +77,8 @@ oscr_box::oscr_box(int x, int y, int w, int h) :
   x1(0), y1(0), drag_state(0), // not dragging view
   page_x((offscreen_size - win_size) / 2), // roughly centred in view
   page_y((offscreen_size - win_size) / 2),
-  offsc_w(0), offsc_h(0) // offscreen size - initially none
+  offsc_w(0), offsc_h(0), // offscreen size - initially none
+  iters(num_iterations + 1)
 { } // Constructor
 
 /*****************************************************************************/
@@ -94,6 +95,11 @@ void oscr_box::draw()
   // then add the offscreen on top of the grey background
   if (has_oscr()) // offscreen exists
   {
+    if (scale != Fl_Graphics_Driver::default_driver().scale()) {
+      // the screen scaling factor has changed
+      fl_rescale_offscreen(oscr);
+      scale = Fl_Graphics_Driver::default_driver().scale();
+    }
     fl_copy_offscreen(xo, yo, wd, ht, oscr, page_x, page_y);
   }
   else  // create offscreen
@@ -103,6 +109,7 @@ void oscr_box::draw()
     offsc_w = offscreen_size;
     offsc_h = offscreen_size;
     oscr = fl_create_offscreen(offsc_w, offsc_h);
+    scale = Fl_Graphics_Driver::default_driver().scale();
   }
 } // draw method
 
@@ -110,6 +117,7 @@ void oscr_box::draw()
 int oscr_box::handle(int ev)
 {
   int ret = Fl_Box::handle(ev);
+
   // handle dragging of visible page area - if a valid context exists
   if (has_oscr())
   {
@@ -135,32 +143,32 @@ int oscr_box::handle(int ev)
     case FL_DRAG:
       if (drag_state == 1) // dragging page
       {
-	int x2 = Fl::event_x_root();
-	int y2 = Fl::event_y_root();
-	xoff = x1 - x2;
-	yoff = y1 - y2;
-	x1 = x2;
-	y1 = y2;
-	page_x += xoff;
-	page_y += yoff;
-	// check the page bounds
-	if (page_x < -w())
-	{
-	  page_x = -w();
-	}
-	else if (page_x > offsc_w)
-	{
-	  page_x = offsc_w;
-	}
-	if (page_y < -h())
-	{
-	  page_y = -h();
-	}
-	else if (page_y > offsc_h)
-	{
-	  page_y = offsc_h;
-	}
-	redraw();
+        int x2 = Fl::event_x_root();
+        int y2 = Fl::event_y_root();
+        xoff = x1 - x2;
+        yoff = y1 - y2;
+        x1 = x2;
+        y1 = y2;
+        page_x += xoff;
+        page_y += yoff;
+        // check the page bounds
+        if (page_x < -w())
+        {
+          page_x = -w();
+        }
+        else if (page_x > offsc_w)
+        {
+          page_x = offsc_w;
+        }
+        if (page_y < -h())
+        {
+          page_y = -h();
+        }
+        else if (page_y > offsc_h)
+        {
+          page_y = offsc_h;
+        }
+        redraw();
       }
       ret = 1;
       break;
@@ -184,7 +192,6 @@ void oscr_box::oscr_drawing(void)
   static int icol = first_useful_color;
   static int ox = (offscreen_size / 2);
   static int oy = (offscreen_size / 2);
-  static int iters = num_iterations + 1; // Must be set on first pass!
 
   if (!has_oscr())
   {
@@ -220,6 +227,7 @@ void oscr_box::oscr_drawing(void)
     ox = ex;
     oy = ey;
   }
+  fl_line_style(FL_SOLID, 0);
   fl_end_offscreen(); // close the offscreen context
   redraw();
 } // oscr_drawing
@@ -254,7 +262,3 @@ int main(int argc, char **argv)
 
   return Fl::run();
 } // main
-
-//
-// End of "$Id$".
-//

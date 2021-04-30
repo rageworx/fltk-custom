@@ -1,6 +1,4 @@
 //
-// "$Id: Fluid_Image.cxx 12028 2016-10-14 16:35:44Z AlbrechtS $"
-//
 // Pixmap (and other images) label support for the Fast Light Tool Kit (FLTK).
 //
 // Copyright 1998-2016 by Bill Spitzak and others.
@@ -9,15 +7,18 @@
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 
 #include <FL/Fl.H>
 #include <FL/Fl_Widget.H>
+#include <FL/filename.H>
+#include <FL/fl_string.h>
+#include <FL/fl_utf8.h>     // fl_fopen()
 #include "Fl_Type.h"
 #include "Fluid_Image.h"
 #include "../src/flstring.h"
@@ -25,7 +26,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <FL/filename.H>
 
 extern void goto_source_dir(); // in fluid.cxx
 extern void leave_source_dir(); // in fluid.cxx
@@ -99,7 +99,7 @@ void Fluid_Image::write_static() {
 
     FILE *f = fl_fopen(name(), "rb");
     if (!f) {
-      // message = "Can't include binary file. Can't open";
+      // message = "Can't inline file into source code. Can't open";
     } else {
       fseek(f, 0, SEEK_END);
       size_t nData = ftell(f);
@@ -112,7 +112,7 @@ void Fluid_Image::write_static() {
       }
       fclose(f);
     }
-    
+
     write_c(";\n");
     write_initializer("Fl_JPEG_Image", "\"%s\", %s", fl_filename_name(name()), idata_name);
   } else {
@@ -121,7 +121,7 @@ void Fluid_Image::write_static() {
     if (image_header_written != write_number) {
       write_c("#include <FL/Fl_Image.H>\n");
       image_header_written = write_number;
-    } 
+    }
     write_c("static const unsigned char %s[] =\n", idata_name);
     const int extra_data = img->ld() ? (img->ld()-img->w()*img->d()) : 0;
     write_cdata(img->data()[0], (img->w() * img->d() + extra_data) * img->h());
@@ -206,7 +206,7 @@ Fluid_Image* Fluid_Image::find(const char *iname) {
 }
 
 Fluid_Image::Fluid_Image(const char *iname) {
-  name_ = strdup(iname);
+  name_ = fl_strdup(iname);
   written = 0;
   refcount = 0;
   img = Fl_Shared_Image::get(iname);
@@ -249,8 +249,3 @@ Fluid_Image *ui_find_image(const char *oldname) {
   leave_source_dir();
   return ret;
 }
-
-
-//
-// End of "$Id: Fluid_Image.cxx 12028 2016-10-14 16:35:44Z AlbrechtS $".
-//

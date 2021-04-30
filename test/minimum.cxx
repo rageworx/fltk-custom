@@ -1,25 +1,23 @@
 //
-// "$Id$"
-//
 // Minimal update test program for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2010 by Bill Spitzak and others.
+// Copyright 1998-2017 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 
 //
 // This is a test of the minimal update code.  The right slider has a
-// label that extends outside it's border, and the minimal update
-// assummes this does not happen.  Thus there is *supposed* to be
+// label that extends outside its border, and the minimal update
+// assumes this does not happen.  Thus there is *supposed* to be
 // display errors when you move the right-most or any other slider.
 // If you *don't* see these errors, then the minimal update is
 // broken!!!
@@ -48,14 +46,14 @@ int main(int argc, char **argv) {
 "MINIMUM UPDATE TEST\n"
 "\n"
 "The slider on the right purposely\n"
-"draws outside it's boundaries.\n"
+"draws outside its boundaries.\n"
 "Moving it should leave old copies\n"
 "of the label.  These copies should\n"
 "*not* be erased by any actions\n"
 "other than hiding and showing\n"
 "of that portion of the window\n"
 "or changing the button that\n"
-"intesects them.")));
+"intersects them.")));
 
   Fl_Slider *s;
   s = new Fl_Slider(320,10,20,300,"Too_Big_Label");
@@ -67,7 +65,3 @@ int main(int argc, char **argv) {
   window->show(argc, argv);
   return Fl::run();
 }
-
-//
-// End of "$Id$".
-//

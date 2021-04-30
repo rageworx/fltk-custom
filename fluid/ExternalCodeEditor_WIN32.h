@@ -1,6 +1,4 @@
 //
-// "$Id: ExternalCodeEditor_WIN32.h 11879 2016-08-16 21:08:40Z greg.ercolano $".
-//
 //       External code editor management class for Windows
 //
 //       Handles starting and keeping track of an external text editor,
@@ -43,7 +41,7 @@ public:
   ExternalCodeEditor();
   ~ExternalCodeEditor();
   int is_editing();
-  DWORD reap_editor();
+  int reap_editor(DWORD *pid_reaped=NULL);
   void close_editor();
   const char *filename() { return filename_; }
   int open_editor(const char *editor_cmd, const char *code);
@@ -59,6 +57,3 @@ public:
 };
 
 #endif /*_EXTCODEEDITOR_H */
-//
-// End of "$Id: ExternalCodeEditor_WIN32.h 11879 2016-08-16 21:08:40Z greg.ercolano $".
-//

@@ -1,29 +1,26 @@
 //
-// "$Id$"
-//
 // File chooser test program.
 //
 // Copyright 1999-2010 by Michael Sweet.
+// Copyright 2011-2021 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 // Contents:
 //
-//   main()           - Create a file chooser and wait for a selection to
-//                      be made.
+//   main()           - Create a file chooser and wait for a selection to be made.
 //   close_callback() - Close the main window...
 //   fc_callback()    - Handle choices in the file chooser...
 //   pdf_check()      - Check for and load the first page of a PDF file.
-//   ps_check()       - Check for and load the first page of a PostScript
-//                      file.
+//   ps_check()       - Check for and load the first page of a PostScript file.
 //   show_callback()  - Show the file chooser...
 //
 //   extra_callback() - circle extra groups (none,group1,check_button);
@@ -33,24 +30,32 @@
 // Include necessary headers...
 //
 
-#include <stdio.h>
 #include <FL/Fl_File_Chooser.H>
 #include <FL/Fl_File_Icon.H>
 #include <FL/Fl_Shared_Image.H>
 #include <FL/Fl_PNM_Image.H>
 #include <FL/Fl_Light_Button.H>
 #include <FL/Fl_Double_Window.H>
-#include <string.h>
+#include <FL/Fl_Simple_Terminal.H>
 
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>     // exit()
+#include <locale.h>     // setlocale()..
+
+#define TERMINAL_HEIGHT 120
+#define TERMINAL_GREEN  "\033[32m"
+#define TERMINAL_NORMAL "\033[0m"
 
 //
 // Globals...
 //
 
-Fl_Input		*filter;
-Fl_File_Browser		*files;
-Fl_File_Chooser		*fc;
-Fl_Shared_Image		*image = 0;
+Fl_Input                *filter;
+Fl_File_Browser         *files;
+Fl_File_Chooser         *fc;
+Fl_Shared_Image         *image = 0;
+Fl_Simple_Terminal      *tty = 0;
 
 // for choosing extra groups
 Fl_Choice *ch_extra;
@@ -64,31 +69,33 @@ Fl_Check_Button *version = (Fl_Check_Button*)0;
 // Functions...
 //
 
-void		close_callback(void);
-void		create_callback(void);
-void		dir_callback(void);
-void		fc_callback(Fl_File_Chooser *, void *);
-void		multi_callback(void);
-Fl_Image	*pdf_check(const char *, uchar *, int);
-Fl_Image	*ps_check(const char *, uchar *, int);
-void		show_callback(void);
+void            close_callback(void);
+void            create_callback(void);
+void            dir_callback(void);
+void            fc_callback(Fl_File_Chooser *, void *);
+void            multi_callback(void);
+Fl_Image        *pdf_check(const char *, uchar *, int);
+Fl_Image        *ps_check(const char *, uchar *, int);
+void            show_callback(void);
 
-void		extra_callback(Fl_Choice*,void*);
+void            extra_callback(Fl_Choice*,void*);
 
 //
 // 'main()' - Create a file chooser and wait for a selection to be made.
 //
 
-int			// O - Exit status
-main(int  argc,		// I - Number of command-line arguments
-     char *argv[])	// I - Command-line arguments
+int                     // O - Exit status
+main(int  argc,         // I - Number of command-line arguments
+     char *argv[])      // I - Command-line arguments
 {
-  Fl_Double_Window	*window;// Main window
-  Fl_Button		*button;// Buttons
-  Fl_File_Icon		*icon;	// New file icon
+  Fl_Double_Window      *window;// Main window
+  Fl_Button             *button;// Buttons
+  Fl_Group              *grp;   // Groups
+  Fl_File_Icon          *icon;  // New file icon
 
 
   // Make the file chooser...
+  setlocale(LC_ALL, "");    // enable multilanguage errors in file chooser
   Fl::scheme(NULL);
   Fl_File_Icon::load_system_icons();
 
@@ -100,50 +107,80 @@ main(int  argc,		// I - Number of command-line arguments
   Fl_Shared_Image::add_handler(ps_check);
 
   // Make the main window...
-  window = new Fl_Double_Window(400, 215, "File Chooser Test");
+  window = new Fl_Double_Window(400, 215+TERMINAL_HEIGHT, "File Chooser Test");
 
-  filter = new Fl_Input(50, 10, 315, 25, "Filter:");
-  int argn = 1;
-#ifdef __APPLE__
-  // OS X may add the process number as the first argument - ignore
-  if (argc>argn && strncmp(argv[1], "-psn_", 5)==0)
-    argn++;
-#endif
-  if (argc > argn)
-    filter->value(argv[argn]);
-  else
-    filter->value("PDF Files (*.pdf)\t"
-                  "PostScript Files (*.ps)\t"
-		  "Image Files (*.{bmp,gif,jpg,png})\t"
-		  "C/C++ Source Files (*.{c,C,cc,cpp,cxx})");
+  tty = new Fl_Simple_Terminal(0,215,window->w(),TERMINAL_HEIGHT);
+  tty->ansi(true);
 
-  button = new Fl_Button(365, 10, 25, 25);
-  button->labelcolor(FL_YELLOW);
-  button->callback((Fl_Callback *)show_callback);
+  // Group: limit resizing to filter input (not browse button)
+  grp = new Fl_Group(0,10,400,25);
+  grp->begin();
+  {
+    filter = new Fl_Input(50, 10, 315, 25, "Filter:");
+    // Process standard arguments and find filter argument if present
+    int argn = 1;
+    while (argn < argc) {
+      if (Fl::arg(argc, argv, argn) == 0)  break;
+    }
+    if (argc > argn)
+      filter->value(argv[argn]);
+    else
+      filter->value("PDF Files (*.pdf)\t"
+                    "PostScript Files (*.ps)\t"
+                    "Image Files (*.{bmp,gif,jpg,png})\t"
+                    "C/C++ Source Files (*.{c,C,cc,cpp,cxx})");
 
-  icon   = Fl_File_Icon::find(".", Fl_File_Icon::DIRECTORY);
-  icon->label(button);
+    button = new Fl_Button(365, 10, 25, 25);
+    button->tooltip("Click to open file browser..");
+    button->callback((Fl_Callback *)show_callback);
+    if ( (icon = Fl_File_Icon::find(".", Fl_File_Icon::DIRECTORY)) ) {
+      // Icon found; assign it..
+      button->labelcolor(FL_YELLOW);
+      icon->label(button);
+    } else {
+      // Fallback if no icon found
+      button->label("..");
+    }
+  }
+  grp->end();
+  grp->resizable(filter);
 
-  button = new Fl_Light_Button(50, 45, 80, 25, "MULTI");
-  button->callback((Fl_Callback *)multi_callback);
+  // Group: prevent resizing of the light buttons
+  grp = new Fl_Group(0,45,400,55);
+  grp->begin();
+  {
+    button = new Fl_Light_Button(50, 45, 80, 25, "MULTI");
+    button->callback((Fl_Callback *)multi_callback);
 
-  button = new Fl_Light_Button(140, 45, 90, 25, "CREATE");
-  button->callback((Fl_Callback *)create_callback);
+    button = new Fl_Light_Button(140, 45, 90, 25, "CREATE");
+    button->callback((Fl_Callback *)create_callback);
 
-  button = new Fl_Light_Button(240, 45, 115, 25, "DIRECTORY");
-  button->callback((Fl_Callback *)dir_callback);
+    button = new Fl_Light_Button(240, 45, 115, 25, "DIRECTORY");
+    button->callback((Fl_Callback *)dir_callback);
 
-  //
-  ch_extra = new Fl_Choice(150, 75, 150, 25, "Extra Group:");
-  ch_extra->add("none|encodings group|check button");
-  ch_extra->value(0);
-  ch_extra->callback((Fl_Callback *)extra_callback);
+    //
+    ch_extra = new Fl_Choice(150, 75, 150, 25, "Extra Group:");
+    ch_extra->add("none|encodings group|check button");
+    ch_extra->value(0);
+    ch_extra->callback((Fl_Callback *)extra_callback);
+  }
+  grp->end();
+  grp->resizable(0);
   //
   files = new Fl_File_Browser(50, 105, 340, 75, "Files:");
   files->align(FL_ALIGN_LEFT);
 
-  button = new Fl_Button(340, 185, 50, 25, "Close");
-  button->callback((Fl_Callback *)close_callback);
+  // Prevent resizing close button, but keep at right edge of scrn
+  grp = new Fl_Group(0,185,400,25);
+  grp->begin();
+  {
+    Fl_Box *invis = new Fl_Box(100,185,1,1);
+    invis->box(FL_NO_BOX);
+    button = new Fl_Button(310, 185, 80, 25, "Close");
+    button->callback((Fl_Callback *)close_callback);
+    grp->resizable(invis);
+  }
+  grp->end();
 
   window->resizable(files);
   window->end();
@@ -215,17 +252,17 @@ dir_callback(void)
 //
 
 void
-fc_callback(Fl_File_Chooser *fc,	// I - File chooser
-            void            *data)	// I - Data
+fc_callback(Fl_File_Chooser *fc,        // I - File chooser
+            void            *data)      // I - Data
 {
-  const char		*filename;	// Current filename
+  const char            *filename;      // Current filename
 
 
-  printf("fc_callback(fc = %p, data = %p)\n", fc, data);
+  tty->printf("fc_callback(fc = %p, data = %p)\n", fc, data);
 
   filename = fc->value();
 
-  printf("    filename = \"%s\"\n", filename ? filename : "(null)");
+  tty->printf("    filename = \"%s\"\n", filename ? filename : "(null)");
 }
 
 
@@ -244,28 +281,28 @@ multi_callback(void)
 // 'pdf_check()' - Check for and load the first page of a PDF file.
 //
 
-Fl_Image *			// O - Page image or NULL
-pdf_check(const char *name,	// I - Name of file
-          uchar      *header,	// I - Header data
-	  int)			// I - Length of header data (unused)
+Fl_Image *                      // O - Page image or NULL
+pdf_check(const char *name,     // I - Name of file
+          uchar      *header,   // I - Header data
+          int)                  // I - Length of header data (unused)
 {
-  const char	*home;		// Home directory
-  char		preview[FL_PATH_MAX],	// Preview filename
-		command[FL_PATH_MAX];	// Command
+  const char    *home;          // Home directory
+  char          preview[FL_PATH_MAX],   // Preview filename
+                command[3 * FL_PATH_MAX]; // Command
 
 
   if (memcmp(header, "%PDF", 4) != 0)
     return 0;
 
-  home = getenv("HOME");
+  home = fl_getenv("HOME");
   sprintf(preview, "%s/.preview.ppm", home ? home : "");
 
   sprintf(command,
           "gs -r100 -dFIXED -sDEVICE=ppmraw -dQUIET -dNOPAUSE -dBATCH "
-	  "-sstdout=\"%%stderr\" -sOUTPUTFILE=\'%s\' "
-	  "-dFirstPage=1 -dLastPage=1 \'%s\' 2>/dev/null", preview, name);
+          "-sstdout=\"%%stderr\" -sOUTPUTFILE=\'%s\' "
+          "-dFirstPage=1 -dLastPage=1 \'%s\' 2>/dev/null", preview, name);
 
-  if (system(command)) return 0;
+  if (fl_system(command)) return 0;
 
   return new Fl_PNM_Image(preview);
 }
@@ -275,25 +312,25 @@ pdf_check(const char *name,	// I - Name of file
 // 'ps_check()' - Check for and load the first page of a PostScript file.
 //
 
-Fl_Image *			// O - Page image or NULL
-ps_check(const char *name,	// I - Name of file
-         uchar      *header,	// I - Header data
-	 int)			// I - Length of header data (unused)
+Fl_Image *                      // O - Page image or NULL
+ps_check(const char *name,      // I - Name of file
+         uchar      *header,    // I - Header data
+         int)                   // I - Length of header data (unused)
 {
-  const char	*home;		// Home directory
-  char		preview[FL_PATH_MAX],	// Preview filename
-		outname[FL_PATH_MAX],	// Preview PS file
-		command[FL_PATH_MAX];	// Command
-  FILE		*in,		// Input file
-		*out;		// Output file
-  int		page;		// Current page
-  char		line[256];	// Line from file
+  const char    *home;          // Home directory
+  char          preview[FL_PATH_MAX],   // Preview filename
+                outname[FL_PATH_MAX],   // Preview PS file
+                command[3 * FL_PATH_MAX]; // Command
+  FILE          *in,            // Input file
+                *out;           // Output file
+  int           page;           // Current page
+  char          line[256];      // Line from file
 
 
   if (memcmp(header, "%!", 2) != 0)
     return 0;
 
-  home = getenv("HOME");
+  home = fl_getenv("HOME");
   sprintf(preview, "%s/.preview.ppm", home ? home : "");
 
   if (memcmp(header, "%!PS", 4) == 0) {
@@ -306,12 +343,12 @@ ps_check(const char *name,	// I - Name of file
       page = 0;
 
       while (fgets(line, sizeof(line), in) != NULL) {
-	if (strncmp(line, "%%Page:", 7) == 0) {
+        if (strncmp(line, "%%Page:", 7) == 0) {
           page ++;
-	  if (page > 1) break;
-	}
+          if (page > 1) break;
+        }
 
-	fputs(line, out);
+        fputs(line, out);
       }
 
       fclose(in);
@@ -325,10 +362,10 @@ ps_check(const char *name,	// I - Name of file
 
   sprintf(command,
           "gs -r100 -dFIXED -sDEVICE=ppmraw -dQUIET -dNOPAUSE -dBATCH "
-	  "-sstdout=\"%%stderr\" -sOUTPUTFILE=\'%s\' \'%s\' 2>/dev/null",
-	  preview, outname);
+          "-sstdout=\"%%stderr\" -sOUTPUTFILE=\'%s\' \'%s\' 2>/dev/null",
+          preview, outname);
 
-  if (system(command)) return 0;
+  if (fl_system(command)) return 0;
 
   return new Fl_PNM_Image(preview);
 }
@@ -341,9 +378,9 @@ ps_check(const char *name,	// I - Name of file
 void
 show_callback(void)
 {
-  int	i;			// Looping var
-  int	count;			// Number of files selected
-  char	relative[FL_PATH_MAX];	// Relative filename
+  int   i;                      // Looping var
+  int   count;                  // Number of files selected
+  char  relative[FL_PATH_MAX];  // Relative filename
 
 
   if (filter->value()[0])
@@ -362,20 +399,13 @@ show_callback(void)
 
     for (i = 1; i <= count; i ++)
     {
-      if (!fc->value(i))
-        break;
-
+      if (!fc->value(i)) break;
       fl_filename_relative(relative, sizeof(relative), fc->value(i));
-
-      files->add(relative,
-                 Fl_File_Icon::find(fc->value(i), Fl_File_Icon::PLAIN));
+      tty->printf("%d/%d) %sPicked: '%s'\n     Relative: '%s'%s\n", i, count,
+                  TERMINAL_GREEN, fc->value(i), relative, TERMINAL_NORMAL);
+      files->add(relative, Fl_File_Icon::find(fc->value(i), Fl_File_Icon::PLAIN));
     }
 
     files->redraw();
   }
 }
-
-
-//
-// End of "$Id$".
-//

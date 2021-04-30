@@ -1,6 +1,4 @@
 //
-// "$Id: factory.cxx 10611 2015-03-09 20:37:45Z AlbrechtS $"
-//
 // Widget factory code for the Fast Light Tool Kit (FLTK).
 //
 // Type classes for most of the fltk widgets.  Most of the work
@@ -11,17 +9,17 @@
 // to a factory instance for every class (both the ones defined
 // here and ones in other files)
 //
-// Copyright 1998-2010 by Bill Spitzak and others.
+// Copyright 1998-2017 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 
 #include <FL/Fl.H>
@@ -190,8 +188,7 @@ public:
     w -= Fl::box_dw(o->box());
     int ww = (int)fl_width('m');
     w = ((w + ww - 1) / ww) * ww + Fl::box_dw(o->box());
-    h = ((h + fl_height() - 1) / fl_height()) * fl_height() +
-        Fl::box_dh(o->box());
+    h = ((h + fl_height() - 1) / fl_height()) * fl_height() + Fl::box_dh(o->box());
     if (h < 30) h = 30;
     if (w < 50) w = 50;
   }
@@ -204,8 +201,8 @@ public:
     if (!batch_mode) {
       char buffer[20];
       for (int i = 1; i <= 20; i++) {
-	sprintf(buffer,"Browser Line %d",i);
-	b->add(buffer);
+        sprintf(buffer,"Browser Line %d",i);
+        b->add(buffer);
       }
     }
     return b;
@@ -238,8 +235,7 @@ public:
     w -= Fl::box_dw(o->box()) - fl_height();
     int ww = (int)fl_width('m');
     w = ((w + ww - 1) / ww) * ww + Fl::box_dw(o->box());
-    h = ((h + fl_height() - 1) / fl_height()) * fl_height() +
-        Fl::box_dh(o->box());
+    h = ((h + fl_height() - 1) / fl_height()) * fl_height() + Fl::box_dh(o->box());
     if (h < 30) h = 30;
     if (w < 50) w = 50;
   }
@@ -252,8 +248,8 @@ public:
     if (!batch_mode) {
       char buffer[20];
       for (int i = 1; i <= 20; i++) {
-	sprintf(buffer,"Browser Line %d",i);
-	b->add(buffer);
+        sprintf(buffer,"Browser Line %d",i);
+        b->add(buffer);
       }
     }
     return b;
@@ -313,8 +309,7 @@ public:
     w -= Fl::box_dw(o->box()) + fl_height();
     int ww = (int)fl_width('m');
     w = ((w + ww - 1) / ww) * ww + Fl::box_dw(o->box());
-    h = ((h + fl_height() - 1) / fl_height()) * fl_height() +
-        Fl::box_dh(o->box());
+    h = ((h + fl_height() - 1) / fl_height()) * fl_height() + Fl::box_dh(o->box());
     if (h < 30) h = 30;
     if (w < 50) w = 50;
   }
@@ -399,13 +394,14 @@ public:
     w -= Fl::box_dw(o->box());
     int ww = (int)fl_width('m');
     w = ((w + ww - 1) / ww) * ww + Fl::box_dw(o->box()) + h / 2;
-    if (w < 40) w = 40	;
+    if (w < 40) w = 40  ;
   }
   virtual const char *type_name() {return "Fl_Spinner";}
   virtual const char *alt_type_name() {return "fltk::Spinner";}
   int is_spinner() const { return 1; }
   Fl_Widget *widget(int x,int y,int w,int h) {
-    return new Fl_Spinner(x,y,w,h,"spinner:");}
+    return new Fl_Spinner(x,y,w,h,"spinner:");
+  }
   Fl_Widget_Type *_make() {return new Fl_Spinner_Type();}
 };
 static Fl_Spinner_Type Fl_Spinner_type;
@@ -534,8 +530,7 @@ public:
     w -= Fl::box_dw(o->box());
     int ww = (int)fl_width('m');
     w = ((w + ww - 1) / ww) * ww + Fl::box_dw(o->box());
-    h = ((h + fl_height() - 1) / fl_height()) * fl_height() +
-        Fl::box_dh(o->box());
+    h = ((h + fl_height() - 1) / fl_height()) * fl_height() + Fl::box_dh(o->box());
     if (h < 30) h = 30;
     if (w < 50) w = 50;
   }
@@ -576,8 +571,7 @@ public:
     w -= Fl::box_dw(o->box());
     int ww = (int)fl_width('m');
     w = ((w + ww - 1) / ww) * ww + Fl::box_dw(o->box());
-    h = ((h + fl_height() - 1) / fl_height()) * fl_height() +
-        Fl::box_dh(o->box());
+    h = ((h + fl_height() - 1) / fl_height()) * fl_height() + Fl::box_dh(o->box());
     if (h < 30) h = 30;
     if (w < 50) w = 50;
   }
@@ -607,6 +601,31 @@ int Fl_Text_Editor_Type::textstuff(int w, Fl_Font& f, int& s, Fl_Color& c) {
 
 ////////////////////////////////////////////////////////////////
 
+#include <FL/Fl_Simple_Terminal.H>
+class Fl_Simple_Terminal_Type : public Fl_Text_Editor_Type {
+public:
+  virtual const char *type_name() {return "Fl_Simple_Terminal";}
+  virtual const char *alt_type_name() {return "fltk::SimpleTerminal";}
+  int is_text_display() const {return 1;}
+  Fl_Widget *widget(int x,int y,int w,int h) {
+    Fl_Widget *myo = 0L;
+    if (batch_mode) {
+      // The Fl_Simple_Terminal constructor attaches a buffer which in turn
+      // opens a connection to the display. In batch mode, we create the
+      // superclass Fl_Text_Display to avoid that.
+      myo = new Fl_Text_Display(x,y,w,h);
+    } else {
+      myo = new Fl_Simple_Terminal(x,y,w,h);
+    }
+    return myo;
+  }
+  Fl_Widget_Type *_make() {return new Fl_Simple_Terminal_Type();}
+  int pixmapID() { return 52; }
+};
+static Fl_Simple_Terminal_Type Fl_Simple_Terminal_type;
+
+////////////////////////////////////////////////////////////////
+
 #include <FL/Fl_Clock.H>
 class Fl_Clock_Type : public Fl_Widget_Type {
 public:
@@ -631,8 +650,7 @@ public:
     w -= Fl::box_dw(o->box());
     int ww = (int)fl_width('m');
     w = ((w + ww - 1) / ww) * ww + Fl::box_dw(o->box());
-    h = ((h + fl_height() - 1) / fl_height()) * fl_height() +
-        Fl::box_dh(o->box());
+    h = ((h + fl_height() - 1) / fl_height()) * fl_height() + Fl::box_dh(o->box());
     if (h < 30) h = 30;
     if (w < 50) w = 50;
   }
@@ -926,6 +944,8 @@ extern class Fl_Choice_Type Fl_Choice_type;
 extern class Fl_Menu_Bar_Type Fl_Menu_Bar_type;
 extern class Fl_Menu_Button_Type Fl_Menu_Button_type;
 extern class Fl_Menu_Item_Type Fl_Menu_Item_type;
+extern class Fl_Checkbox_Menu_Item_Type Fl_Checkbox_Menu_Item_type;
+extern class Fl_Radio_Menu_Item_Type Fl_Radio_Menu_Item_type;
 extern class Fl_Submenu_Type Fl_Submenu_type;
 extern class Fl_Wizard_Type Fl_Wizard_type;
 
@@ -983,7 +1003,7 @@ Fl_Menu_Item New_Menu[] = {
   {"Class",0,cb,(void*)&Fl_Class_type},
   {"Widget Class",0,cb,(void*)&Fl_Widget_Class_type},
   {"Comment",0,cb,(void*)&Fl_Comment_type},
-  {"Binary Data",0,cb,(void*)&Fl_Data_type},
+  {"Inlined Data",0,cb,(void*)&Fl_Data_type},
 {0},
 {"Group",0,0,0,FL_SUBMENU},
   {0,0,cb,(void*)&Fl_Window_type},
@@ -1021,6 +1041,7 @@ Fl_Menu_Item New_Menu[] = {
   {0,0,cb,(void*)&Fl_Output_type},
   {0,0,cb,(void*)&Fl_Text_Display_type},
   {0,0,cb,(void*)&Fl_Text_Editor_type},
+  {0,0,cb,(void*)&Fl_Simple_Terminal_type},
 {0},
 {"Menus",0,0,0,FL_SUBMENU},
   {0,0,cb,(void*)&Fl_Menu_Bar_type},
@@ -1029,6 +1050,8 @@ Fl_Menu_Item New_Menu[] = {
   {0,0,cb,(void*)&Fl_Input_Choice_type},
   {0,0,cb, (void*)&Fl_Submenu_type},
   {0,0,cb, (void*)&Fl_Menu_Item_type},
+  {"Checkbox Menu Item",0,cb, (void*)&Fl_Checkbox_Menu_Item_type},
+  {"Radio Menu Item",0,cb, (void*)&Fl_Radio_Menu_Item_type},
 {0},
 {"Browsers",0,0,0,FL_SUBMENU},
   {0,0,cb,(void*)&Fl_Browser_type},
@@ -1046,23 +1069,25 @@ Fl_Menu_Item New_Menu[] = {
 
 #include <FL/Fl_Multi_Label.H>
 
-// modify a menuitem to display an icon in front of the label
-static void make_iconlabel( Fl_Menu_Item *mi, Fl_Image *ic, const char *txt )
+// Modify a menuitem to display an icon in front of the label. This is
+// implemented using Fl_Multi_Label as the labeltype (FL_MULTI_LABEL).
+// The icon (ic) may be null. If ic is null only the text (txt) is assigned
+// to the label - Fl_Multi_Label is not used. txt must not be null.
+static void make_iconlabel(Fl_Menu_Item *mi, Fl_Image *ic, const char *txt)
 {
   if (ic) {
     char *t1 = new char[strlen(txt)+6];
-    strcpy( t1, " " );
+    strcpy(t1, " ");
     strcat(t1, txt);
     strcat(t1, "...");
-    mi->image( ic );
     Fl_Multi_Label *ml = new Fl_Multi_Label;
     ml->labela = (char*)ic;
     ml->labelb = t1;
-    ml->typea = _FL_IMAGE_LABEL;
+    ml->typea = FL_IMAGE_LABEL;
     ml->typeb = FL_NORMAL_LABEL;
-    ml->label( mi );
+    ml->label(mi);
   }
-  else if (txt!=mi->text)
+  else if (txt != mi->text)
     mi->label(txt);
 }
 
@@ -1092,8 +1117,14 @@ Fl_Type *Fl_Type_make(const char *tn) {
     Fl_Menu_Item *m = New_Menu+i;
     if (!m->user_data()) continue;
     Fl_Type *t = (Fl_Type*)(m->user_data());
-    if (!fl_ascii_strcasecmp(tn,t->type_name())) {r = t->make(); break;}
-    if (!fl_ascii_strcasecmp(tn,t->alt_type_name())) {r = t->make(); break;}
+    if (!fl_ascii_strcasecmp(tn,t->type_name())) {
+        r = t->make();
+        break;
+    }
+    if (!fl_ascii_strcasecmp(tn,t->alt_type_name())) {
+        r = t->make();
+        break;
+    }
   }
   reading_file = 0;
   return r;
@@ -1107,125 +1138,125 @@ Fl_Type *Fl_Type_make(const char *tn) {
 struct symbol {const char *name; int value;};
 
 static symbol table[] = {
-  {"BLACK",	FL_BLACK},
-  {"RED",	FL_RED},
-  {"GREEN",	FL_GREEN},
-  {"YELLOW",	FL_YELLOW},
-  {"BLUE",	FL_BLUE},
-  {"MAGENTA",	FL_MAGENTA},
-  {"CYAN",	FL_CYAN},
-  {"WHITE",	FL_WHITE},
+  {"BLACK",                     FL_BLACK},
+  {"RED",                       FL_RED},
+  {"GREEN",                     FL_GREEN},
+  {"YELLOW",                    FL_YELLOW},
+  {"BLUE",                      FL_BLUE},
+  {"MAGENTA",                   FL_MAGENTA},
+  {"CYAN",                      FL_CYAN},
+  {"WHITE",                     FL_WHITE},
 
-  {"LCOL",		 FL_BLACK},
-  {"COL1",		 FL_GRAY},
-  {"MCOL",		 FL_LIGHT1},
-  {"LEFT_BCOL",		 FL_LIGHT3},
-  {"TOP_BCOL",		 FL_LIGHT2},
-  {"BOTTOM_BCOL",	 FL_DARK2},
-  {"RIGHT_BCOL",		 FL_DARK3},
-  {"INACTIVE",		 FL_INACTIVE_COLOR},
-  {"INACTIVE_COL",	 FL_INACTIVE_COLOR},
-  {"FREE_COL1",		 FL_FREE_COLOR},
-  {"FREE_COL2",		 FL_FREE_COLOR+1},
-  {"FREE_COL3",		 FL_FREE_COLOR+2},
-  {"FREE_COL4",		 FL_FREE_COLOR+3},
-  {"FREE_COL5",		 FL_FREE_COLOR+4},
-  {"FREE_COL6",		 FL_FREE_COLOR+5},
-  {"FREE_COL7",		 FL_FREE_COLOR+6},
-  {"FREE_COL8",		 FL_FREE_COLOR+7},
-  {"FREE_COL9",		 FL_FREE_COLOR+8},
-  {"FREE_COL10",		 FL_FREE_COLOR+9},
-  {"FREE_COL11",		 FL_FREE_COLOR+10},
-  {"FREE_COL12",		 FL_FREE_COLOR+11},
-  {"FREE_COL13",		 FL_FREE_COLOR+12},
-  {"FREE_COL14",		 FL_FREE_COLOR+13},
-  {"FREE_COL15",		 FL_FREE_COLOR+14},
-  {"FREE_COL16",		 FL_FREE_COLOR+15},
-  {"TOMATO",		 131},
-  {"INDIANRED",		 164},
-  {"SLATEBLUE",		 195},
-  {"DARKGOLD",		 84},
-  {"PALEGREEN",		 157},
-  {"ORCHID",		 203},
-  {"DARKCYAN",		 189},
-  {"DARKTOMATO",		 113},
-  {"WHEAT",		 174},
-  {"ALIGN_CENTER",	FL_ALIGN_CENTER},
-  {"ALIGN_TOP",		FL_ALIGN_TOP},
-  {"ALIGN_BOTTOM",	FL_ALIGN_BOTTOM},
-  {"ALIGN_LEFT",	FL_ALIGN_LEFT},
-  {"ALIGN_RIGHT",	FL_ALIGN_RIGHT},
-  {"ALIGN_INSIDE",	FL_ALIGN_INSIDE},
-  {"ALIGN_TOP_LEFT",	 FL_ALIGN_TOP | FL_ALIGN_LEFT},
-  {"ALIGN_TOP_RIGHT",	 FL_ALIGN_TOP | FL_ALIGN_RIGHT},
-  {"ALIGN_BOTTOM_LEFT",	 FL_ALIGN_BOTTOM | FL_ALIGN_LEFT},
-  {"ALIGN_BOTTOM_RIGHT", FL_ALIGN_BOTTOM | FL_ALIGN_RIGHT},
-  {"ALIGN_CENTER|FL_ALIGN_INSIDE",	FL_ALIGN_CENTER|FL_ALIGN_INSIDE},
-  {"ALIGN_TOP|FL_ALIGN_INSIDE",		FL_ALIGN_TOP|FL_ALIGN_INSIDE},
-  {"ALIGN_BOTTOM|FL_ALIGN_INSIDE",	FL_ALIGN_BOTTOM|FL_ALIGN_INSIDE},
-  {"ALIGN_LEFT|FL_ALIGN_INSIDE",	FL_ALIGN_LEFT|FL_ALIGN_INSIDE},
-  {"ALIGN_RIGHT|FL_ALIGN_INSIDE",	FL_ALIGN_RIGHT|FL_ALIGN_INSIDE},
-  {"ALIGN_INSIDE|FL_ALIGN_INSIDE",	FL_ALIGN_INSIDE|FL_ALIGN_INSIDE},
-  {"ALIGN_TOP_LEFT|FL_ALIGN_INSIDE",	FL_ALIGN_TOP|FL_ALIGN_LEFT|FL_ALIGN_INSIDE},
-  {"ALIGN_TOP_RIGHT|FL_ALIGN_INSIDE",	FL_ALIGN_TOP|FL_ALIGN_RIGHT|FL_ALIGN_INSIDE},
-  {"ALIGN_BOTTOM_LEFT|FL_ALIGN_INSIDE",	FL_ALIGN_BOTTOM|FL_ALIGN_LEFT|FL_ALIGN_INSIDE},
+  {"LCOL",                      FL_BLACK},
+  {"COL1",                      FL_GRAY},
+  {"MCOL",                      FL_LIGHT1},
+  {"LEFT_BCOL",                 FL_LIGHT3},
+  {"TOP_BCOL",                  FL_LIGHT2},
+  {"BOTTOM_BCOL",               FL_DARK2},
+  {"RIGHT_BCOL",                FL_DARK3},
+  {"INACTIVE",                  FL_INACTIVE_COLOR},
+  {"INACTIVE_COL",              FL_INACTIVE_COLOR},
+  {"FREE_COL1",                 FL_FREE_COLOR},
+  {"FREE_COL2",                 FL_FREE_COLOR+1},
+  {"FREE_COL3",                 FL_FREE_COLOR+2},
+  {"FREE_COL4",                 FL_FREE_COLOR+3},
+  {"FREE_COL5",                 FL_FREE_COLOR+4},
+  {"FREE_COL6",                 FL_FREE_COLOR+5},
+  {"FREE_COL7",                 FL_FREE_COLOR+6},
+  {"FREE_COL8",                 FL_FREE_COLOR+7},
+  {"FREE_COL9",                 FL_FREE_COLOR+8},
+  {"FREE_COL10",                FL_FREE_COLOR+9},
+  {"FREE_COL11",                FL_FREE_COLOR+10},
+  {"FREE_COL12",                FL_FREE_COLOR+11},
+  {"FREE_COL13",                FL_FREE_COLOR+12},
+  {"FREE_COL14",                FL_FREE_COLOR+13},
+  {"FREE_COL15",                FL_FREE_COLOR+14},
+  {"FREE_COL16",                FL_FREE_COLOR+15},
+  {"TOMATO",                    131},
+  {"INDIANRED",                 164},
+  {"SLATEBLUE",                 195},
+  {"DARKGOLD",                  84},
+  {"PALEGREEN",                 157},
+  {"ORCHID",                    203},
+  {"DARKCYAN",                  189},
+  {"DARKTOMATO",                113},
+  {"WHEAT",                     174},
+  {"ALIGN_CENTER",              FL_ALIGN_CENTER},
+  {"ALIGN_TOP",                 FL_ALIGN_TOP},
+  {"ALIGN_BOTTOM",              FL_ALIGN_BOTTOM},
+  {"ALIGN_LEFT",                FL_ALIGN_LEFT},
+  {"ALIGN_RIGHT",               FL_ALIGN_RIGHT},
+  {"ALIGN_INSIDE",              FL_ALIGN_INSIDE},
+  {"ALIGN_TOP_LEFT",            FL_ALIGN_TOP | FL_ALIGN_LEFT},
+  {"ALIGN_TOP_RIGHT",           FL_ALIGN_TOP | FL_ALIGN_RIGHT},
+  {"ALIGN_BOTTOM_LEFT",         FL_ALIGN_BOTTOM | FL_ALIGN_LEFT},
+  {"ALIGN_BOTTOM_RIGHT",        FL_ALIGN_BOTTOM | FL_ALIGN_RIGHT},
+  {"ALIGN_CENTER|FL_ALIGN_INSIDE",      FL_ALIGN_CENTER|FL_ALIGN_INSIDE},
+  {"ALIGN_TOP|FL_ALIGN_INSIDE",         FL_ALIGN_TOP|FL_ALIGN_INSIDE},
+  {"ALIGN_BOTTOM|FL_ALIGN_INSIDE",      FL_ALIGN_BOTTOM|FL_ALIGN_INSIDE},
+  {"ALIGN_LEFT|FL_ALIGN_INSIDE",        FL_ALIGN_LEFT|FL_ALIGN_INSIDE},
+  {"ALIGN_RIGHT|FL_ALIGN_INSIDE",       FL_ALIGN_RIGHT|FL_ALIGN_INSIDE},
+  {"ALIGN_INSIDE|FL_ALIGN_INSIDE",      FL_ALIGN_INSIDE|FL_ALIGN_INSIDE},
+  {"ALIGN_TOP_LEFT|FL_ALIGN_INSIDE",    FL_ALIGN_TOP|FL_ALIGN_LEFT|FL_ALIGN_INSIDE},
+  {"ALIGN_TOP_RIGHT|FL_ALIGN_INSIDE",   FL_ALIGN_TOP|FL_ALIGN_RIGHT|FL_ALIGN_INSIDE},
+  {"ALIGN_BOTTOM_LEFT|FL_ALIGN_INSIDE", FL_ALIGN_BOTTOM|FL_ALIGN_LEFT|FL_ALIGN_INSIDE},
   {"ALIGN_BOTTOM_RIGHT|FL_ALIGN_INSIDE",FL_ALIGN_BOTTOM|FL_ALIGN_RIGHT|FL_ALIGN_INSIDE},
 
-  {"ALIGN_LEFT_TOP",	 FL_ALIGN_TOP | FL_ALIGN_LEFT},
-  {"ALIGN_RIGHT_TOP",	 FL_ALIGN_TOP | FL_ALIGN_RIGHT},
-  {"ALIGN_LEFT_BOTTOM",	 FL_ALIGN_BOTTOM | FL_ALIGN_LEFT},
-  {"ALIGN_RIGHT_BOTTOM", FL_ALIGN_BOTTOM | FL_ALIGN_RIGHT},
-  {"INVALID_STYLE",	 255},
-  {"NORMAL_STYLE",	 FL_HELVETICA},
-  {"BOLD_STYLE",		 FL_HELVETICA|FL_BOLD},
-  {"ITALIC_STYLE",	 FL_HELVETICA|FL_ITALIC},
-  {"BOLDITALIC_STYLE",	 FL_HELVETICA|FL_BOLD|FL_ITALIC},
-  {"FIXED_STYLE",	 FL_COURIER},
-  {"FIXEDBOLD_STYLE",	 FL_COURIER|FL_BOLD},
-  {"FIXEDITALIC_STYLE",	 FL_COURIER|FL_ITALIC},
-  {"FIXEDBOLDITALIC_STYLE",  FL_COURIER|FL_BOLD|FL_ITALIC},
-  {"TIMES_STYLE",	 FL_TIMES},
-  {"TIMESBOLD_STYLE",	 FL_TIMES|FL_BOLD},
-  {"TIMESITALIC_STYLE",	 FL_TIMES|FL_ITALIC},
-  {"TIMESBOLDITALIC_STYLE",  FL_TIMES|FL_BOLD|FL_ITALIC},
-  {"SHADOW_STYLE",	(_FL_SHADOW_LABEL<<8)},
-  {"ENGRAVED_STYLE",	(_FL_ENGRAVED_LABEL<<8)},
-  {"EMBOSSED_STYLE",	(_FL_EMBOSSED_LABEL<<0)},
-  {"TINY_SIZE",		 8},
-  {"SMALL_SIZE",		 11},
-  {"NORMAL_SIZE",	 FL_NORMAL_SIZE},
-  {"MEDIUM_SIZE",	 18},
-  {"LARGE_SIZE",		 24},
-  {"HUGE_SIZE",		 32},
-  {"DEFAULT_SIZE",	 FL_NORMAL_SIZE},
-  {"TINY_FONT",		 8},
-  {"SMALL_FONT",		 11},
-  {"NORMAL_FONT",	 FL_NORMAL_SIZE},
-  {"MEDIUM_FONT",	 18},
-  {"LARGE_FONT",		 24},
-  {"HUGE_FONT",		 32},
-  {"NORMAL_FONT1",	 11},
-  {"NORMAL_FONT2",	 FL_NORMAL_SIZE},
-  {"DEFAULT_FONT",	 11},
-  {"RETURN_END_CHANGED",  0},
-  {"RETURN_CHANGED",	 1},
-  {"RETURN_END",		 2},
-  {"RETURN_ALWAYS",	 3},
-  {"PUSH_BUTTON",	FL_TOGGLE_BUTTON},
-  {"RADIO_BUTTON",	FL_RADIO_BUTTON},
-  {"HIDDEN_BUTTON",	FL_HIDDEN_BUTTON},
-  {"SELECT_BROWSER",	FL_SELECT_BROWSER},
-  {"HOLD_BROWSER",	FL_HOLD_BROWSER},
-  {"MULTI_BROWSER",	FL_MULTI_BROWSER},
-  {"SIMPLE_COUNTER",	FL_SIMPLE_COUNTER},
-  {"LINE_DIAL",		FL_LINE_DIAL},
-  {"FILL_DIAL",		FL_FILL_DIAL},
-  {"VERT_SLIDER",	FL_VERT_SLIDER},
-  {"HOR_SLIDER",	FL_HOR_SLIDER},
-  {"VERT_FILL_SLIDER",	FL_VERT_FILL_SLIDER},
-  {"HOR_FILL_SLIDER",	FL_HOR_FILL_SLIDER},
-  {"VERT_NICE_SLIDER",	FL_VERT_NICE_SLIDER},
-  {"HOR_NICE_SLIDER",	FL_HOR_NICE_SLIDER},
+  {"ALIGN_LEFT_TOP",            FL_ALIGN_TOP | FL_ALIGN_LEFT},
+  {"ALIGN_RIGHT_TOP",           FL_ALIGN_TOP | FL_ALIGN_RIGHT},
+  {"ALIGN_LEFT_BOTTOM",         FL_ALIGN_BOTTOM | FL_ALIGN_LEFT},
+  {"ALIGN_RIGHT_BOTTOM",        FL_ALIGN_BOTTOM | FL_ALIGN_RIGHT},
+  {"INVALID_STYLE",             255},
+  {"NORMAL_STYLE",              FL_HELVETICA},
+  {"BOLD_STYLE",                FL_HELVETICA|FL_BOLD},
+  {"ITALIC_STYLE",              FL_HELVETICA|FL_ITALIC},
+  {"BOLDITALIC_STYLE",          FL_HELVETICA|FL_BOLD|FL_ITALIC},
+  {"FIXED_STYLE",               FL_COURIER},
+  {"FIXEDBOLD_STYLE",           FL_COURIER|FL_BOLD},
+  {"FIXEDITALIC_STYLE",         FL_COURIER|FL_ITALIC},
+  {"FIXEDBOLDITALIC_STYLE",     FL_COURIER|FL_BOLD|FL_ITALIC},
+  {"TIMES_STYLE",               FL_TIMES},
+  {"TIMESBOLD_STYLE",           FL_TIMES|FL_BOLD},
+  {"TIMESITALIC_STYLE",         FL_TIMES|FL_ITALIC},
+  {"TIMESBOLDITALIC_STYLE",     FL_TIMES|FL_BOLD|FL_ITALIC},
+  {"SHADOW_STYLE",              (_FL_SHADOW_LABEL<<8)},
+  {"ENGRAVED_STYLE",            (_FL_ENGRAVED_LABEL<<8)},
+  {"EMBOSSED_STYLE",            (_FL_EMBOSSED_LABEL<<0)},
+  {"TINY_SIZE",                 8},
+  {"SMALL_SIZE",                11},
+  {"NORMAL_SIZE",               FL_NORMAL_SIZE},
+  {"MEDIUM_SIZE",               18},
+  {"LARGE_SIZE",                24},
+  {"HUGE_SIZE",                 32},
+  {"DEFAULT_SIZE",              FL_NORMAL_SIZE},
+  {"TINY_FONT",                 8},
+  {"SMALL_FONT",                11},
+  {"NORMAL_FONT",               FL_NORMAL_SIZE},
+  {"MEDIUM_FONT",               18},
+  {"LARGE_FONT",                24},
+  {"HUGE_FONT",                 32},
+  {"NORMAL_FONT1",              11},
+  {"NORMAL_FONT2",              FL_NORMAL_SIZE},
+  {"DEFAULT_FONT",              11},
+  {"RETURN_END_CHANGED",        0},
+  {"RETURN_CHANGED",            1},
+  {"RETURN_END",                2},
+  {"RETURN_ALWAYS",             3},
+  {"PUSH_BUTTON",               FL_TOGGLE_BUTTON},
+  {"RADIO_BUTTON",              FL_RADIO_BUTTON},
+  {"HIDDEN_BUTTON",             FL_HIDDEN_BUTTON},
+  {"SELECT_BROWSER",            FL_SELECT_BROWSER},
+  {"HOLD_BROWSER",              FL_HOLD_BROWSER},
+  {"MULTI_BROWSER",             FL_MULTI_BROWSER},
+  {"SIMPLE_COUNTER",            FL_SIMPLE_COUNTER},
+  {"LINE_DIAL",                 FL_LINE_DIAL},
+  {"FILL_DIAL",                 FL_FILL_DIAL},
+  {"VERT_SLIDER",               FL_VERT_SLIDER},
+  {"HOR_SLIDER",                FL_HOR_SLIDER},
+  {"VERT_FILL_SLIDER",          FL_VERT_FILL_SLIDER},
+  {"HOR_FILL_SLIDER",           FL_HOR_FILL_SLIDER},
+  {"VERT_NICE_SLIDER",          FL_VERT_NICE_SLIDER},
+  {"HOR_NICE_SLIDER",           FL_HOR_NICE_SLIDER},
 };
 
 #include <stdlib.h>
@@ -1237,7 +1268,3 @@ int lookup_symbol(const char *name, int &v, int numberok) {
   if (numberok && ((v = atoi(name)) || !strcmp(name,"0"))) return 1;
   return 0;
 }
-
-//
-// End of "$Id: factory.cxx 10611 2015-03-09 20:37:45Z AlbrechtS $".
-//

@@ -1,6 +1,4 @@
 /*
- * "$Id$"
- *
  * Configuration file for the Fast Light Tool Kit (FLTK).
  *
  * Copyright 1998-2016 by Bill Spitzak and others.
@@ -9,11 +7,11 @@
  * the file "COPYING" which should have been included with this file.  If this
  * file is missing or damaged, see the license at:
  *
- *     http://www.fltk.org/COPYING.php
+ *     https://www.fltk.org/COPYING.php
  *
- * Please report all bugs and problems on the following page:
+ * Please see the following page on how to report bugs and issues:
  *
- *     http://www.fltk.org/str.php
+ *     https://www.fltk.org/bugs.php
  */
 
 /*
@@ -85,10 +83,18 @@
 /*
  * USE_XFT
  *
- * Use the new Xft library to draw anti-aliased text.
+ * Use the Xft library to draw anti-aliased text.
  */
 
 #define USE_XFT 0
+
+/*
+ * USE_PANGO
+ *
+ * Use the pango library to draw UTF-8 text.
+ */
+
+#define USE_PANGO 0
 
 /*
  * HAVE_XDBE:
@@ -157,6 +163,16 @@
  */
 
 #undef USE_X11
+
+/*
+ * USE_SDL
+ *
+ * Should we use SDL for the current platform
+ * *FIXME* Not yet implemented in configure !
+ *
+ */
+
+#undef USE_SDL
 
 /*
  * HAVE_OVERLAY:
@@ -269,6 +285,7 @@
 #undef HAVE_LIBPNG
 #undef HAVE_LIBZ
 #undef HAVE_LIBJPEG
+#undef FLTK_USE_SVG
 
 /*
  * FLTK_USE_CAIRO
@@ -336,5 +353,14 @@
 #define HAVE_DLSYM 0
 
 /*
- * End of "$Id$".
+ * Do we want print support?
  */
+
+#undef FL_NO_PRINT_SUPPORT
+
+/*
+ * Do we want filename handling and a filechooser?
+ * *FIXME* Not yet implemented in configure !
+ */
+
+#undef FL_CFG_NO_FILESYSTEM_SUPPORT

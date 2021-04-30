@@ -1,6 +1,4 @@
 //
-// "$Id$"
-//
 // A shared image test program for the Fast Light Tool Kit (FLTK).
 //
 // Copyright 1998-2015 by Bill Spitzak and others.
@@ -9,13 +7,14 @@
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 
+#include <config.h>
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Double_Window.H>
@@ -24,8 +23,11 @@
 #include <FL/Fl_Printer.H>
 #include <string.h>
 #include <errno.h>
+#include <locale.h>     // setlocale()..
 #include <FL/Fl_File_Chooser.H>
 #include <FL/fl_message.H>
+#include <FL/Fl_SVG_File_Surface.H>
+#include <FL/Fl_Native_File_Chooser.H>
 
 Fl_Box *b;
 Fl_Double_Window *w;
@@ -48,7 +50,7 @@ void load_file(const char *n) {
     return;
   }
   Fl_Shared_Image *img2 = Fl_Shared_Image::get(n);
- 
+
   if (!img2) {
     b->label("@filenew"); // show an empty document
     b->labelsize(64);
@@ -60,19 +62,8 @@ void load_file(const char *n) {
   img = img2;
   b->labelsize(14);
   b->labelcolor(FL_FOREGROUND_COLOR);
-#if FLTK_ABI_VERSION >= 10304
   b->image(img);
   img->scale(b->w(), b->h());
-#else
-  if (img->w() <= b->w() && img->h() <= b->h()) b->image(img);
-  else {
-    float fw = img->w() / float(b->w());
-    float fh = img->h() / float(b->h());
-    float f = fw > fh ? fw : fh;
-    b->image(img->copy(int(img->w()/f), int(img->h()/f)));
-    img->release();
-  }
-#endif
   b->label(NULL);
   b->redraw();
 }
@@ -86,10 +77,18 @@ void file_cb(const char *n) {
 
 void button_cb(Fl_Widget *,void *) {
   fl_file_chooser_callback(file_cb);
-  const char *fname = fl_file_chooser("Image file?","*.{bm,bmp,gif,jpg,pbm,pgm,png,ppm,xbm,xpm}", name);
+  const char *fname = fl_file_chooser("Image file?","*.{bm,bmp,gif,jpg,pbm,pgm,png,ppm,xbm,xpm"
+#ifdef FLTK_USE_SVG
+                                      ",svg"
+#ifdef HAVE_LIBZ
+                                      ",svgz"
+#endif // HAVE_LIBZ
+#endif // FLTK_USE_SVG
+                                      "}", name);
   puts(fname ? fname : "(null)"); fflush(stdout);
   fl_file_chooser_callback(0);
 }
+
 void print_cb(Fl_Widget *widget, void *) {
   Fl_Printer printer;
   int width, height;
@@ -105,6 +104,19 @@ void print_cb(Fl_Widget *widget, void *) {
   printer.end_job();
 }
 
+void svg_cb(Fl_Widget *widget, void *) {
+  Fl_Native_File_Chooser fnfc;
+  fnfc.title("Pick a .svg file");
+  fnfc.type(Fl_Native_File_Chooser::BROWSE_SAVE_FILE);
+  fnfc.filter("SVG\t*.svg\n");
+  fnfc.options(Fl_Native_File_Chooser::SAVEAS_CONFIRM | Fl_Native_File_Chooser::USE_FILTER_EXT);
+  if (fnfc.show() ) return;
+  FILE *svg = fl_fopen(fnfc.filename(), "w");
+  Fl_SVG_File_Surface surf(widget->window()->decorated_w(), widget->window()->decorated_h(), svg);
+  surf.draw_decorated_window(widget->window());
+  surf.close();
+}
+
 int dvisual = 0;
 int arg(int, char **argv, int &i) {
   if (argv[i][1] == '8') {dvisual = 1; i++; return 1;}
@@ -114,6 +126,7 @@ int arg(int, char **argv, int &i) {
 int main(int argc, char **argv) {
   int i = 1;
 
+  setlocale(LC_ALL, "");    // enable multilanguage errors in file chooser
   fl_register_images();
 
   Fl::args(argc,argv,i,arg);
@@ -129,11 +142,9 @@ int main(int argc, char **argv) {
   window.resizable(b);
   Fl_Button print(300,425,50,25,"Print");
   print.callback(print_cb);
+  Fl_Button svg(190,425,100,25,"save as SVG");
+  svg.callback(svg_cb);
 
   window.show(argc,argv);
   return Fl::run();
 }
-
-//
-// End of "$Id$".
-//

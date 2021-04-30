@@ -1,23 +1,21 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0305
+version 1.0400
 header_name {.h}
 code_name {.cxx}
 comment {//
-// "$Id: alignment_panel.fl 11952 2016-09-20 12:57:18Z AlbrechtS $"
-//
 // Setting and shell dialogs for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2016 by Bill Spitzak and others.
+// Copyright 1998-2020 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 } {in_source in_header
 }
@@ -35,6 +33,9 @@ decl {\#include <FL/Fl_Preferences.H>} {private global
 }
 
 decl {\#include <FL/fl_ask.H>} {private global
+}
+
+decl {\#include <string.h>} {private global
 }
 
 decl {extern void load_history();} {public local
@@ -59,9 +60,6 @@ decl {extern struct Fl_Menu_Item *dbmanager_item;} {public local
 }
 
 decl {extern Fl_Preferences fluid_prefs;} {public local
-}
-
-decl {Fl_Text_Buffer *shell_run_buffer;} {public local
 }
 
 Function {make_project_window()} {open
@@ -135,7 +133,7 @@ Function {make_project_window()} {open
         }
         Fl_Input i18n_include_input {
           label {\#include:}
-          callback i18n_text_cb selected
+          callback i18n_text_cb
           tooltip {The include file for internationalization.} xywh {100 78 272 20} box THIN_DOWN_BOX labelfont 1 textfont 4
         }
         Fl_Input i18n_file_input {
@@ -278,7 +276,7 @@ redraw_browser();}
         callback {strncpy(G_external_editor_command, editor_command_input->value(), sizeof(G_external_editor_command)-1);
 G_external_editor_command[sizeof(G_external_editor_command)-1] = 0;
 fluid_prefs.set("external_editor_command", G_external_editor_command);
-redraw_browser();} selected
+redraw_browser();}
         tooltip {The editor command to open your external text editor.
 Include any necessary flags to ensure your editor does not background itself.
 Examples:
@@ -297,7 +295,8 @@ Examples:
   }
 }
 
-Function {make_shell_window()} {} {
+Function {make_shell_window()} {open
+} {
   Fl_Window shell_window {
     label {Shell Command} open
     xywh {761 190 365 125} type Double hide
@@ -346,17 +345,20 @@ Function {make_shell_window()} {} {
     }
   }
   Fl_Window shell_run_window {
-    label {Shell Command Output}
-    xywh {592 332 555 430} type Double hide resizable
+    label {Shell Command Output} open
+    xywh {454 363 555 430} type Double hide resizable
   } {
-    Fl_Text_Display shell_run_display {
-      xywh {10 10 535 375} box DOWN_BOX textfont 4 resizable
-      code0 {shell_run_buffer = new Fl_Text_Buffer();}
-      code1 {shell_run_display->buffer(shell_run_buffer);}
+    Fl_Simple_Terminal shell_run_terminal {
+      xywh {10 10 535 375} resizable
     }
     Fl_Return_Button shell_run_button {
       label Close
-      callback {shell_run_window->hide();}
+      callback {Fl_Preferences pos(fluid_prefs, "shell_run_Window_pos");
+pos.set("x", shell_run_window->x());
+pos.set("y", shell_run_window->y());
+pos.set("w", shell_run_window->w());
+pos.set("h", shell_run_window->h());
+shell_run_window->hide();}
       xywh {468 395 77 25}
     }
   }
@@ -480,7 +482,9 @@ wVisibleFocus->value(opt[Fl::OPTION_VISIBLE_FOCUS][mode]);
 wArrowFocus->value(opt[Fl::OPTION_ARROW_FOCUS][mode]);
 wShowTooltips->value(opt[Fl::OPTION_SHOW_TOOLTIPS][mode]);
 wDNDText->value(opt[Fl::OPTION_DND_TEXT][mode]);
-wGTKText->value(opt[Fl::OPTION_FNFC_USES_GTK][mode]);} {}
+wGTKText->value(opt[Fl::OPTION_FNFC_USES_GTK][mode]);
+wPrintGTKText->value(opt[Fl::OPTION_PRINTER_USES_GTK][mode]);
+wShowZoomFactor->value(opt[Fl::OPTION_SHOW_SCALING][mode]);} {}
 }
 
 Function {readPrefs()} {
@@ -495,6 +499,8 @@ Function {readPrefs()} {
   opt_prefs.get("DNDText", opt[Fl::OPTION_DND_TEXT][1], 2);
   opt_prefs.get("ShowTooltips", opt[Fl::OPTION_SHOW_TOOLTIPS][1], 2);
   opt_prefs.get("FNFCUsesGTK", opt[Fl::OPTION_FNFC_USES_GTK ][1], 2);
+  opt_prefs.get("PrintUsesGTK", opt[Fl::OPTION_PRINTER_USES_GTK ][1], 2);
+  opt_prefs.get("ShowZoomFactor", opt[Fl::OPTION_SHOW_SCALING ][1], 2);
 }
 {
   Fl_Preferences prefs(Fl_Preferences::USER, "fltk.org", "fltk");
@@ -504,6 +510,8 @@ Function {readPrefs()} {
   opt_prefs.get("DNDText", opt[Fl::OPTION_DND_TEXT][0], 2);
   opt_prefs.get("ShowTooltips", opt[Fl::OPTION_SHOW_TOOLTIPS][0], 2);
   opt_prefs.get("FNFCUsesGTK", opt[Fl::OPTION_FNFC_USES_GTK ][0], 2);
+  opt_prefs.get("PrintUsesGTK", opt[Fl::OPTION_PRINTER_USES_GTK ][0], 2);
+  opt_prefs.get("ShowZoomFactor", opt[Fl::OPTION_SHOW_SCALING ][0], 2);
 }
 refreshUI();} {}
 }
@@ -525,6 +533,10 @@ Function {writePrefs()} {
   else opt_prefs.set("ShowTooltips", opt[Fl::OPTION_SHOW_TOOLTIPS][1]);
   if (opt[Fl::OPTION_FNFC_USES_GTK][1]==2) opt_prefs.deleteEntry("FNFCUsesGTK");
   else opt_prefs.set("FNFCUsesGTK", opt[Fl::OPTION_FNFC_USES_GTK][1]);
+  if (opt[Fl::OPTION_PRINTER_USES_GTK][1]==2) opt_prefs.deleteEntry("PrintUsesGTK");
+  else opt_prefs.set("PrintUsesGTK", opt[Fl::OPTION_PRINTER_USES_GTK][1]);
+  if (opt[Fl::OPTION_SHOW_SCALING][1]==2) opt_prefs.deleteEntry("ShowZoomFactor");
+  else opt_prefs.set("ShowZoomFactor", opt[Fl::OPTION_SHOW_SCALING][1]);
 }
 {
   Fl_Preferences prefs(Fl_Preferences::USER, "fltk.org", "fltk");
@@ -539,6 +551,10 @@ Function {writePrefs()} {
   else opt_prefs.set("ShowTooltips", opt[Fl::OPTION_SHOW_TOOLTIPS][0]);
   if (opt[Fl::OPTION_FNFC_USES_GTK][0]==2) opt_prefs.deleteEntry("FNFCUsesGTK");
   else opt_prefs.set("FNFCUsesGTK", opt[Fl::OPTION_FNFC_USES_GTK][0]);
+  if (opt[Fl::OPTION_PRINTER_USES_GTK][0]==2) opt_prefs.deleteEntry("PrintUsesGTK");
+  else opt_prefs.set("PrintUsesGTK", opt[Fl::OPTION_PRINTER_USES_GTK][0]);
+  if (opt[Fl::OPTION_SHOW_SCALING][0]==2) opt_prefs.deleteEntry("ShowZoomFactor");
+  else opt_prefs.set("ShowZoomFactor", opt[Fl::OPTION_SHOW_SCALING][0]);
 }} {}
 }
 
@@ -549,19 +565,19 @@ Function {show_global_settings_window()} {open return_type void
 readPrefs();
 refreshUI();
 fl_message(
-	"WARNING!\\n\\n"
-	"The following dialog changes the user interface behavior\\n"
-	"of ALL FLTK applications, for the current user, or for \\n"
-	"ALL users on this machine.\\n\\n"
-	"Please choose these settings carefully, or reset\\n"
-	"user and system settings to \\"default\\".");
+        "WARNING!\\n\\n"
+        "The following dialog changes the user interface behavior\\n"
+        "of ALL FLTK applications, for the current user, or for \\n"
+        "ALL users on this machine.\\n\\n"
+        "Please choose these settings carefully, or reset\\n"
+        "user and system settings to \\"default\\".");
 global_settings_window->show();} {}
 }
 
 Function {make_global_settings_window()} {} {
   Fl_Window global_settings_window {
     label {FLTK Preferences} open
-    xywh {1147 190 400 378} type Double color 50 hide
+    xywh {715 96 400 531} type Double color 50 hide
   } {
     Fl_Group {} {
       label {Keyboard Focus Options} open
@@ -691,7 +707,7 @@ Default is on.} xywh {245 225 100 25} down_box BORDER_BOX
         callback {int mode = wUserOrSystem->value();
 opt[Fl::OPTION_FNFC_USES_GTK ][mode] = wGTKText->value();} open
         tooltip {OPTION_FNFC_USES_GTK
-        
+
 If 'Native File Chooser uses GTK' is enabled, the Fl_Native_File_Chooser class
 calls the GTK open/save file dialogs when they are available on the platfom. If disabled, the Fl_Native_File_Chooser class
 always uses FLTK's own file dialog (i.e., Fl_File_Chooser) even if GTK is available.
@@ -715,9 +731,76 @@ Default is on.} xywh {245 300 100 25} down_box BORDER_BOX
         }
       }
     }
+    Fl_Group {} {
+      label {Print dialog Options} open
+      xywh {10 345 380 66} box GTK_DOWN_BOX labelfont 2 align 21
+    } {
+      Fl_Choice wPrintGTKText {
+        label {Print dialog uses GTK:}
+        callback {int mode = wUserOrSystem->value();
+opt[Fl::OPTION_PRINTER_USES_GTK ][mode] = wPrintGTKText->value();} open
+        tooltip {OPTION_PRINTER_USES_GTK
+
+If 'Print dialog uses GTK' is enabled, the Fl_Printer class
+calls the GTK print dialog when it's available on the platfom. If disabled, the Fl_Printer class
+always uses FLTK's own print dialog even if GTK is available.
+
+Default is on.} xywh {245 366 100 25} down_box BORDER_BOX
+      } {
+        MenuItem {} {
+          label off
+          user_data 0 user_data_type long selected
+          xywh {30 30 31 20}
+        }
+        MenuItem {} {
+          label on
+          user_data 1 user_data_type long
+          xywh {30 30 31 20} divider
+        }
+        MenuItem {} {
+          label default
+          user_data 2 user_data_type long
+          xywh {30 30 31 20}
+        }
+      }
+    }
+
+        Fl_Group {} {
+      label {Scaling Factor Options} open
+      xywh {10 421 380 66} box GTK_DOWN_BOX labelfont 2 align 21
+    } {
+      Fl_Choice wShowZoomFactor {
+        label {Transiently show scaling factor:}
+        callback {int mode = wUserOrSystem->value();
+opt[Fl::OPTION_SHOW_SCALING ][mode] = wShowZoomFactor->value();} open
+        tooltip {OPTION_SHOW_SCALING
+
+If 'Transiently show scaling factor' is enabled, the library shows in a transient yellow window the display
+scaling factor value when it is changed. If disabled, no such transient window is used.
+
+Default is on.} xywh {245 442 100 25} down_box BORDER_BOX
+      } {
+        MenuItem {} {
+          label off
+          user_data 0 user_data_type long selected
+          xywh {30 30 31 20}
+        }
+        MenuItem {} {
+          label on
+          user_data 1 user_data_type long
+          xywh {30 30 31 20} divider
+        }
+        MenuItem {} {
+          label default
+          user_data 2 user_data_type long
+          xywh {30 30 31 20}
+        }
+      }
+    }
+
     Fl_Choice wUserOrSystem {
       callback {refreshUI();} open
-      tooltip {Change settings for the current user, or default values for all users of this computer. Individual users can override system options, if they set their options to specific values (not 'default').} xywh {10 345 141 25} down_box BORDER_BOX
+      tooltip {Change settings for the current user, or default values for all users of this computer. Individual users can override system options, if they set their options to specific values (not 'default').} xywh {10 496 141 25} down_box BORDER_BOX
     } {
       MenuItem {} {
         label {User Settings}
@@ -733,21 +816,15 @@ Default is on.} xywh {245 300 100 25} down_box BORDER_BOX
     Fl_Button {} {
       label Cancel
       callback {global_settings_window->hide();}
-      xywh {230 345 75 25}
+      xywh {230 496 75 25}
     }
     Fl_Button {} {
       label OK
       callback {writePrefs();
 global_settings_window->hide();}
-      xywh {315 345 75 25}
+      xywh {315 496 75 25}
     }
   }
   code {readPrefs();
   Fl::option(Fl::OPTION_SHOW_TOOLTIPS,1); // make sure tooltips are on !} {}
-}
-
-comment {
-//
-// End of "$Id: alignment_panel.fl 11952 2016-09-20 12:57:18Z AlbrechtS $".
-//} {in_source in_header
 }

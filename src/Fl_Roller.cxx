@@ -1,6 +1,4 @@
 //
-// "$Id$"
-//
 // Roller widget for the Fast Light Tool Kit (FLTK).
 //
 // Copyright 1998-2010 by Bill Spitzak and others.
@@ -9,11 +7,11 @@
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 
 // Rapid-App style knob
@@ -41,6 +39,21 @@ int Fl_Roller::handle(int event) {
   case FL_RELEASE:
     handle_release();
     return 1;
+    case FL_MOUSEWHEEL :
+      if (Fl::belowmouse()==this) {
+        if (horizontal()) {
+          if (Fl::e_dx!=0) {
+            handle_drag(clamp(round(increment(value(),-Fl::e_dx))));
+          }
+        } else {
+          if (Fl::e_dy!=0) {
+            handle_drag(clamp(round(increment(value(),-Fl::e_dy))));
+          }
+        }
+        return 1;
+      } else {
+        return 0;
+      }
   case FL_KEYBOARD :
     switch (Fl::event_key()) {
       case FL_Up:
@@ -170,7 +183,3 @@ Fl_Roller::Fl_Roller(int X,int Y,int W,int H,const char* L)
   box(FL_UP_BOX);
   step(1,1000);
 }
-
-//
-// End of "$Id$".
-//

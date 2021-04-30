@@ -1,19 +1,17 @@
 //
-// "$Id$"
-//
 // Unit tests for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2010 by Bill Spitzak and others.
+// Copyright 1998-2021 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 
 // Fltk unit tests
@@ -29,19 +27,21 @@
 #include <FL/Fl_Help_View.H>
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Box.H>
-#include <FL/fl_draw.H>		// fl_text_extents()
+#include <FL/fl_draw.H>     // fl_text_extents()
+#include <FL/fl_string.h>   // fl_strdup()
+#include <stdlib.h>         // malloc, free
 
 // WINDOW/WIDGET SIZES
-#define MAINWIN_W	700				// main window w()
-#define MAINWIN_H	400				// main window h()
-#define BROWSER_X	10				// browser x()
-#define BROWSER_Y	25				// browser y()
-#define BROWSER_W	150				// browser w()
-#define BROWSER_H	MAINWIN_H-35			// browser h()
-#define TESTAREA_X	(BROWSER_W + 20)		// test area x()
-#define TESTAREA_Y	25				// test area y()
-#define TESTAREA_W	(MAINWIN_W - BROWSER_W - 30)	// test area w()
-#define TESTAREA_H	BROWSER_H			// test area h()
+#define MAINWIN_W       700                             // main window w()
+#define MAINWIN_H       400                             // main window h()
+#define BROWSER_X       10                              // browser x()
+#define BROWSER_Y       25                              // browser y()
+#define BROWSER_W       150                             // browser w()
+#define BROWSER_H       MAINWIN_H-35                    // browser h()
+#define TESTAREA_X      (BROWSER_W + 20)                // test area x()
+#define TESTAREA_Y      25                              // test area y()
+#define TESTAREA_W      (MAINWIN_W - BROWSER_W - 30)    // test area w()
+#define TESTAREA_H      BROWSER_H                       // test area h()
 
 typedef void (*UnitTestCallback)(const char*,Fl_Group*);
 
@@ -49,13 +49,13 @@ class MainWindow *mainwin = 0;
 Fl_Hold_Browser *browser = 0;
 
 // This class helps to automagically register a new test with the unittest app.
-// Please see the examples on how this is used. 
+// Please see the examples on how this is used.
 class UnitTest {
 public:
   UnitTest(const char *label, Fl_Widget* (*create)()) :
     fWidget(0L)
   {
-    fLabel = strdup(label);
+    fLabel = fl_strdup(label);
     fCreate = create;
     add(this);
   }
@@ -95,7 +95,7 @@ int UnitTest::nTest = 0;
 UnitTest *UnitTest::fTest[200];
 
 
-// The main window needs an additional drawing feature in order to support 
+// The main window needs an additional drawing feature in order to support
 // the viewport alignment test.
 class MainWindow : public Fl_Double_Window {
 public:
@@ -153,6 +153,7 @@ public:
 #include "unittest_viewport.cxx"
 #include "unittest_scrollbarsize.cxx"
 #include "unittest_schemes.cxx"
+#include "unittest_simple_terminal.cxx"
 
 // callback whenever the browser value changes
 void Browser_CB(Fl_Widget*, void*) {
@@ -167,14 +168,14 @@ void Browser_CB(Fl_Widget*, void*) {
 }
 
 
-// this is the main call. It creates the window and adds all previously
+// This is the main call. It creates the window and adds all previously
 // registered tests to the browser widget.
 int main(int argc, char **argv) {
   Fl::args(argc,argv);
   Fl::get_system_colors();
   Fl::scheme(Fl::scheme()); // init scheme before instantiating tests
   Fl::visual(FL_RGB);
-  mainwin = new MainWindow(MAINWIN_W, MAINWIN_H, "Fltk Unit Tests");
+  mainwin = new MainWindow(MAINWIN_W, MAINWIN_H, "FLTK Unit Tests");
   browser = new Fl_Hold_Browser(BROWSER_X, BROWSER_Y, BROWSER_W, BROWSER_H, "Unit Tests");
   browser->align(FL_ALIGN_TOP|FL_ALIGN_LEFT);
   browser->when(FL_WHEN_CHANGED);
@@ -189,7 +190,6 @@ int main(int argc, char **argv) {
     browser->add(t->label(), (void*)t);
   }
 
-  /////
   mainwin->resizable(mainwin);
   mainwin->show(argc,argv);
   // Select first test in browser, and show that test.
@@ -197,7 +197,3 @@ int main(int argc, char **argv) {
   Browser_CB(browser,0);
   return(Fl::run());
 }
-
-//
-// End of "$Id$".
-//

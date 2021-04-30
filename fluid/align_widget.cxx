@@ -1,6 +1,4 @@
 //
-// "$Id: align_widget.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $"
-//
 // Alignment code for the Fast Light Tool Kit (FLTK).
 //
 // Copyright 1998-2010 by Bill Spitzak and others.
@@ -9,11 +7,11 @@
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 
 #include <FL/Fl.H>
@@ -22,9 +20,9 @@
 #include "undo.h"
 
 /**
- * the first behaviour always uses the first selected widget as a reference
- * the second behaviour uses the largest widget (most extreme positions) as
- * a reference.
+ the first behaviour always uses the first selected widget as a reference
+ the second behaviour uses the largest widget (most extreme positions) as
+ a reference.
  */
 #define BREAK_ON_FIRST break
 //#define BREAK_ON_FIRST
@@ -524,9 +522,3 @@ void widget_size_cb(Fl_Widget *, long size) {
     }
   }
 }
-
-
-//
-// End of "$Id: align_widget.cxx 8864 2011-07-19 04:49:30Z greg.ercolano $".
-//
-

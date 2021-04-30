@@ -1,25 +1,17 @@
 //
-// "$Id: ExternalCodeEditor_WIN32.cxx 11879 2016-08-16 21:08:40Z greg.ercolano $".
+//      External code editor management class for Windows
 //
-//       External code editor management class for Windows
-//
-
-#ifdef WIN32	        /* This entire file windows only */
-
-#include <stdio.h>      // snprintf()
+//      Note: This entire file Windows only.
 
 #include <FL/Fl.H>      // Fl_Timeout_Handler..
 #include <FL/fl_ask.H>  // fl_alert()
+#include <FL/fl_utf8.h> // fl_utf8fromwc()
+#include <FL/fl_string.h> // fl_strdup()
 
 #include "ExternalCodeEditor_WIN32.h"
 
-// fixing _spnprintf() refernece :
-#ifndef _snprintf
-#include <cstring>
-#include <string>
-	#define _snprintf std::snprintf
-#endif /// of _spnprintf
-// -------------------------------
+#include <stdio.h>      // snprintf()
+#include <stdlib.h>
 
 extern int G_debug;     // defined in fluid.cxx
 
@@ -30,22 +22,26 @@ static Fl_Timeout_Handler L_update_timer_cb = 0;        // app's update timer ca
 // [Static/Local] Get error message string for last failed WIN32 function.
 // Returns a string pointing to static memory.
 //
-//     TODO: Is more code needed here to convert returned string to utf8? -erco
-//
 static const char *get_ms_errmsg() {
   static char emsg[1024];
   DWORD lastErr = GetLastError();
   DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER |
                 FORMAT_MESSAGE_IGNORE_INSERTS  |
                 FORMAT_MESSAGE_FROM_SYSTEM;
-  LPSTR mbuf = 0;
-  DWORD size = FormatMessageA(flags, 0, lastErr, MAKELANGID(LANG_NEUTRAL,
-                              SUBLANG_DEFAULT), (LPSTR)&mbuf, 0, NULL);
-  if ( size == 0 ) {
-    _snprintf(emsg, sizeof(emsg), "Error Code %ld", long(lastErr));
+  DWORD langid = MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT);
+  LPWSTR mbuf = 0;
+  DWORD msize = 0;
+
+  // Get error message from Windows
+  msize = FormatMessageW(flags, 0, lastErr, langid, (LPWSTR)&mbuf, 0, NULL);
+  if ( msize == 0 ) {
+    _snprintf(emsg, sizeof(emsg), "Error #%ld", (unsigned long)lastErr);
   } else {
-    // Copy mbuf -> emsg (with '\r's removed -- they screw up fl_alert())
-    for ( char *src=mbuf, *dst=emsg; 1; src++ ) {
+    // Convert message to UTF-8
+    int mlen = fl_utf8fromwc(emsg, sizeof(emsg), mbuf, msize);
+    // Remove '\r's -- they screw up fl_alert()
+    char *src = emsg, *dst = emsg;
+    for ( ; 1; src++ ) {
       if ( *src == '\0' ) { *dst = '\0'; break; }
       if ( *src != '\r' ) { *dst++ = *src; }
     }
@@ -89,7 +85,7 @@ ExternalCodeEditor::~ExternalCodeEditor() {
 //
 void ExternalCodeEditor::set_filename(const char *val) {
   if ( filename_ ) free((void*)filename_);
-  filename_ = val ? strdup(val) : 0;
+  filename_ = val ? fl_strdup(val) : 0;
 }
 
 // [Public] Is editor running?
@@ -97,7 +93,7 @@ int ExternalCodeEditor::is_editing() {
   return( (pinfo_.dwProcessId != 0) ? 1 : 0 );
 }
 
-// [Static/Local] Terminate_app()'s callback to send WM_CLOSE to a single window. 
+// [Static/Local] Terminate_app()'s callback to send WM_CLOSE to a single window.
 static BOOL CALLBACK terminate_app_enum(HWND hwnd, LPARAM lParam) {
   DWORD dwID;
   GetWindowThreadProcessId(hwnd, &dwID);
@@ -144,30 +140,28 @@ static int terminate_app(DWORD pid, DWORD msecTimeout) {
 void ExternalCodeEditor::close_editor() {
   if ( G_debug ) printf("close_editor() called: pid=%ld\n", long(pinfo_.dwProcessId));
   // Wait until editor is closed + reaped
-  while ( is_editing() ) 
-  {
-    // switch occurs error on GCC 10.x --
-    int reapv = (int)reap_editor();
-    switch ( reapv ) 
-    {
+  while ( is_editing() ) {
+    switch ( reap_editor() ) {
+      case -2:  // no editor running (unlikely to happen)
+        return;
       case -1:  // error
         fl_alert("Error reaping external editor\n"
                  "pid=%ld file=%s", long(pinfo_.dwProcessId), filename());
         break;
       case 0:   // process still running
-	switch ( fl_choice("Please close external editor\npid=%ld file=%s",
-			   "Force Close",	// button 0
-			   "Closed",		// button 1
-			   0,			// button 2
-			   long(pinfo_.dwProcessId), filename() ) ) {
-	  case 0: 	// Force Close
-	    kill_editor();
-	    continue;
-	  case 1: 	// Closed? try to reap
-	    continue;
-	}
+        switch ( fl_choice("Please close external editor\npid=%ld file=%s",
+                           "Force Close",       // button 0
+                           "Closed",            // button 1
+                           0,                   // button 2
+                           long(pinfo_.dwProcessId), filename() ) ) {
+          case 0:       // Force Close
+            kill_editor();
+            continue;
+          case 1:       // Closed? try to reap
+            continue;
+        }
         break;
-      default:  // process reaped
+      case 1:   // process reaped
         return;
     }
   }
@@ -181,10 +175,7 @@ void ExternalCodeEditor::kill_editor() {
   if ( G_debug )
     printf("kill_editor() called: pid=%ld\n", (long)pinfo_.dwProcessId);
   if ( !is_editing() ) return;
-  // switch occurs erro on GCC 10.x --
-  int tresult = (int)terminate_app(pinfo_.dwProcessId, 500);
-  switch ( tresult ) 
-  {  // kill editor, wait up to 1/2 sec to die
+  switch ( terminate_app(pinfo_.dwProcessId, 500) ) {  // kill editor, wait up to 1/2 sec to die
     case -1: { // error
       fl_alert("Can't seem to close editor of file: %s\n"
                "Please close editor and hit OK", filename());
@@ -192,7 +183,7 @@ void ExternalCodeEditor::kill_editor() {
     }
     case 0: {  // success -- process reaped
       DWORD pid = pinfo_.dwProcessId;     // save pid
-      reap_cleanup();
+      reap_cleanup();                     // clears pinfo_
       if ( G_debug )
         printf("*** kill_editor() REAP pid=%ld #open=%ld\n",
                long(pid), long(L_editors_open));
@@ -231,7 +222,7 @@ int ExternalCodeEditor::handle_changes(const char **code, int force) {
   // Get file size
   if ( GetFileSizeEx(fh, &fsize) == 0 ) {
     DWORD err = GetLastError();
-    CloseHandle(fh); 
+    CloseHandle(fh);
     SetLastError(err);  // return error from GetFileSizeEx(), not CloseHandle()
     return -1;
   }
@@ -239,7 +230,7 @@ int ExternalCodeEditor::handle_changes(const char **code, int force) {
   FILETIME ftCreate, ftAccess, ftWrite;
   if ( GetFileTime(fh, &ftCreate, &ftAccess, &ftWrite) == 0 ) {
     DWORD err = GetLastError();
-    CloseHandle(fh); 
+    CloseHandle(fh);
     SetLastError(err);  // return error from GetFileTime(), not CloseHandle()
     return -1;
   }
@@ -252,17 +243,18 @@ int ExternalCodeEditor::handle_changes(const char **code, int force) {
   // Changes? Load file. Be sure to fallthru to CloseHandle()
   int ret = 0;
   if ( changed || force ) {
-    char *buf = (char*)malloc(fsize.QuadPart + 1);
+    size_t buflen = size_t(fsize.QuadPart);
+    char *buf = (char*)malloc(buflen + 1);
     DWORD count;
-    if ( ReadFile(fh, buf, fsize.QuadPart, &count, 0) == 0 ) {
+    if ( ReadFile(fh, buf, buflen, &count, 0) == 0 ) {
       fl_alert("ERROR: ReadFile() failed for %s: %s",
                filename(), get_ms_errmsg());
       free((void*)buf); buf = 0;
       ret = -1;      // fallthru to CloseHandle()
-    } else if ( count != fsize.QuadPart ) {
+    } else if ( count != buflen ) {
       fl_alert("ERROR: ReadFile() failed for %s:\n"
                "expected %ld bytes, got %ld",
-               filename(), long(fsize.QuadPart), long(count));
+               filename(), long(buflen), long(count));
       free((void*)buf); buf = 0;
       ret = -1;      // fallthru to CloseHandle()
     } else {
@@ -461,7 +453,7 @@ int ExternalCodeEditor::start_editor(const char *editor_cmd,
 // [Protected] Cleanup after editor reaped:
 //    > Remove tmpfile, zeroes mtime/size/filename
 //    > Close process handles
-//    > Zero out process info
+//    > Zeroes out pinfo_
 //    > Decrease editor count
 //
 void ExternalCodeEditor::reap_cleanup() {
@@ -474,15 +466,19 @@ void ExternalCodeEditor::reap_cleanup() {
 }
 
 // [Public] Try to reap external editor process
+// If 'pid_reaped' not NULL, returns PID of reaped editor.
 // Returns:
 //   -2 -- editor not open
 //   -1 -- WaitForSingleObject() failed (get_ms_errmsg() has reason)
 //    0 -- process still running
-//   >0 -- process finished + reaped (value is pid)
+//    1 -- process finished + reaped ('pid_reaped' has pid), pinfo_ set to 0.
 //         Handles removing tmpfile/zeroing file_mtime/file_size/filename
 //
-DWORD ExternalCodeEditor::reap_editor() {
-  if ( pinfo_.dwProcessId == 0 ) return -2;
+// If return value <=0, 'pid_reaped' is set to zero.
+//
+int ExternalCodeEditor::reap_editor(DWORD *pid_reaped) {
+  if ( pid_reaped ) *pid_reaped = 0;
+  if ( !is_editing() ) return -2;
   int err;
   DWORD msecs_wait = 50;   // .05 sec
   switch ( err = WaitForSingleObject(pinfo_.hProcess, msecs_wait) ) {
@@ -490,11 +486,12 @@ DWORD ExternalCodeEditor::reap_editor() {
       return 0;
     }
     case WAIT_OBJECT_0: {  // reaped
-      DWORD pid = pinfo_.dwProcessId;      // save pid
-      reap_cleanup();
+      DWORD wpid = pinfo_.dwProcessId;      // save pid
+      reap_cleanup();                       // clears pinfo_
+      if ( pid_reaped ) *pid_reaped = wpid; // return pid to caller
       if ( G_debug ) printf("*** EDITOR REAPED: pid=%ld #open=%d\n",
-                            long(pid), L_editors_open);
-      return pid;
+                            long(wpid), L_editors_open);
+      return 1;
     }
     case WAIT_FAILED: {    // failed
       return -1;
@@ -522,9 +519,11 @@ int ExternalCodeEditor::open_editor(const char *editor_cmd,
   if ( is_file(filename()) ) {
     if ( is_editing() ) {
       // See if editor recently closed but not reaped; try to reap
-      DWORD wpid = reap_editor();
-      switch (wpid) {
-        case 0xFFFFFFFF:    // wait failed (-1)
+      DWORD wpid;
+      switch ( reap_editor(&wpid) ) {
+        case -2:        // no editor running (unlikely to happen)
+          break;
+        case -1:        // wait failed
           fl_alert("ERROR: WaitForSingleObject() failed: %s\nfile='%s', pid=%ld",
             get_ms_errmsg(), filename(), long(pinfo_.dwProcessId));
           return -1;
@@ -532,7 +531,7 @@ int ExternalCodeEditor::open_editor(const char *editor_cmd,
           fl_alert("Editor Already Open\n  file='%s'\n  pid=%ld",
             filename(), long(pinfo_.dwProcessId));
           return 0;
-        default:        // process reaped, wpid is pid reaped
+        case 1:         // process reaped, wpid is pid reaped
           if ( G_debug )
             printf("*** REAPED EXTERNAL EDITOR: PID %ld\n", long(wpid));
           break;        // fall thru to open new editor instance
@@ -585,8 +584,3 @@ void ExternalCodeEditor::set_update_timer_callback(Fl_Timeout_Handler cb) {
 int ExternalCodeEditor::editors_open() {
   return L_editors_open;
 }
-
-#endif /* WIN32 */
-//
-// End of "$Id: ExternalCodeEditor_WIN32.cxx 11879 2016-08-16 21:08:40Z greg.ercolano $".
-//

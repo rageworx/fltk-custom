@@ -1,12 +1,10 @@
 //
-// "$Id$"
-//
 // Visual list utility for the Fast Light Tool Kit (FLTK).
 //
 // List all the visuals on the screen, and dumps anything interesting
 // about them to stdout.
 //
-// Does not use FLTK.
+// Does not use FLTK under X11.
 //
 // This file may be #included in another program to make a function to
 // call to list the visuals.  Fl.H must be included first to indicate this.
@@ -17,29 +15,26 @@
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 
-#if defined(WIN32) || defined(__APPLE__)
-#include <FL/Fl.H>
-#include <FL/fl_message.H>
+#ifndef Fl_H
+#  define NEED_MAIN 1 // when not included by another FLTK program
+#endif
 
-int main(int, char**) {
-  fl_alert("Currently, this program works only under X.");
-  return 1;
-}
+#include <FL/platform.H> // for USE_X11
 
-#else
+#if USE_X11
 
 #include <config.h>
 
 #define HAVE_MULTIBUF 0
 
-#ifndef Fl_H
+#ifdef NEED_MAIN
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -59,7 +54,7 @@ void fl_open_display() {
   fl_screen = DefaultScreen(fl_display);
 }
 
-#endif
+#endif // NEED_MAIN
 
 const char *ClassNames[] = {
   "StaticGray ",
@@ -101,8 +96,8 @@ static void print_mask(XVisualInfo* p) {
     else new_what = '?';
     if (new_what != what) {
       if (what && (what != '?' || print_anything)) {
-	q += sprintf(q,"%d%c", n, what);
-	print_anything = 1;
+        q += sprintf(q,"%d%c", n, what);
+        print_anything = 1;
       }
       what = new_what;
       n = 1;
@@ -132,10 +127,10 @@ void list_visuals() {
     Atom actualType;
     int actualFormat;
     if (!XGetWindowProperty(fl_display, RootWindow(fl_display, fl_screen),
-			   overlayVisualsAtom, 0L, 10000L, False,
-			   overlayVisualsAtom, &actualType, &actualFormat,
-			   &sizeData, &bytesLeft,
-			   (unsigned char **) &overlayInfo))
+                           overlayVisualsAtom, 0L, 10000L, False,
+                           overlayVisualsAtom, &actualType, &actualFormat,
+                           &sizeData, &bytesLeft,
+                           (unsigned char **) &overlayInfo))
       numoverlayinfo = int(sizeData/4);
   }
 
@@ -145,7 +140,7 @@ void list_visuals() {
   int nmbuf = 0, nsbuf = 0;
   if (XmbufQueryExtension(fl_display,&event_base, &error_base)) {
     XmbufGetScreenInfo(fl_display,RootWindow(fl_display,fl_screen),
-		       &nmbuf, &mbuf, &nsbuf, &sbuf);
+                       &nmbuf, &mbuf, &nsbuf, &sbuf);
   }
 #endif
 
@@ -176,7 +171,7 @@ void list_visuals() {
 
     int j = pfv ? pfv->bits_per_pixel : 0;
     printf(" %2ld: %s %2d/%d", p->visualid, ClassNames[p->c_class],
-	   p->depth, j);
+           p->depth, j);
     if (j < 10) putchar(' ');
 
     print_mask(p);
@@ -184,11 +179,11 @@ void list_visuals() {
     for (j=0; j<numoverlayinfo; j++) {
       OverlayInfo *o = &overlayInfo[j];
       if (o->overlay_visual == long(p->visualid)) {
-	printf(" overlay(");
-	if (o->transparent_type==1) printf("transparent pixel %ld, ",o->value);
-	else if (o->transparent_type==2) printf("transparent mask %ld, ",o->value);
-	else printf("opaque, ");
-	printf("layer %ld)", o->layer);
+        printf(" overlay(");
+        if (o->transparent_type==1) printf("transparent pixel %ld, ",o->value);
+        else if (o->transparent_type==2) printf("transparent mask %ld, ",o->value);
+        else printf("opaque, ");
+        printf("layer %ld)", o->layer);
       }
     }
 
@@ -196,12 +191,12 @@ void list_visuals() {
     for (j=0; j<nmbuf; j++) {
       XmbufBufferInfo *m = &mbuf[j];
       if (m->visualid == p->visualid)
-	printf(" multibuffer(%d)", m->max_buffers);
+        printf(" multibuffer(%d)", m->max_buffers);
     }
     for (j=0; j<nsbuf; j++) {
       XmbufBufferInfo *m = &sbuf[j];
       if (m->visualid == p->visualid)
-	printf(" stereo multibuffer(%d)", m->max_buffers);
+        printf(" stereo multibuffer(%d)", m->max_buffers);
     }
 #endif
 
@@ -218,18 +213,25 @@ void list_visuals() {
   if ( overlayInfo ) { XFree(overlayInfo); overlayInfo = 0; }
 }
 
-#endif
+#endif // USE_X11
 
-#ifndef Fl_H
-int main(int argc, char **argv) {
+#ifdef NEED_MAIN
+
+#  if ! USE_X11
+#    include <FL/fl_ask.H>
+#  endif
+
+int main(int argc, char** argv) {
+#  if USE_X11
   if (argc == 1);
   else if (argc == 2 && argv[1][0]!='-') dname = argv[1];
   else {fprintf(stderr,"usage: %s <display>\n",argv[0]); exit(1);}
   list_visuals();
   return 0;
+#  else
+  fl_alert("Currently, this program works only under X.");
+  return 1;
+#  endif // USE_X11
 }
-#endif
 
-//
-// End of "$Id$".
-//
+#endif // NEED_MAIN
