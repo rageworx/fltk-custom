@@ -295,15 +295,12 @@
 /test/fltk*.lib
 /test/fltk*.exp
 /test/fltk*.dll
-
-# /test/blocks.app/Contents/MacOS/
 /test/blocks.app/Contents/MacOS/blocks
-
-# /test/checkers.app/Contents/MacOS/
 /test/checkers.app/Contents/MacOS/checkers
-
-# /test/sudoku.app/Contents/MacOS/
 /test/sudoku.app/Contents/MacOS/sudoku
+/test/checkers_pieces.cxx
+/test/checkers_pieces.h
 
 # Configure temporaries
+configure
 configure~
