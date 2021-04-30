@@ -187,7 +187,7 @@ static void dnullcat(char*&wp, const char *string, int n = -1 ) {
   }
 
   if ( n == -1 ) n = (int) strlen(string);
-  strncpy(wp2, string, n);
+  if ( n > 0 ) strncpy(wp2, string, n);
 
   // Leave string double-null terminated
   *(wp2+n+0) = '\0';
@@ -341,12 +341,12 @@ void Fl_WinAPI_Native_File_Chooser_Driver::ClearBINF() {
 
 // CONVERT WINDOWS BACKSLASHES TO UNIX FRONTSLASHES
 void Fl_WinAPI_Native_File_Chooser_Driver::Win2Unix(char *s) {
-  while ( s=strchr(s,'\\') ) *s = '/';
+  while ( ( s=strchr(s,'\\') )!=NULL ) *s = '/';
 }
 
 // CONVERT UNIX FRONTSLASHES TO WINDOWS BACKSLASHES
 void Fl_WinAPI_Native_File_Chooser_Driver::Unix2Win(char *s) {
-  while ( s=strchr(s,'/') ) *s = '\\';
+  while ( ( s=strchr(s,'/') )!=NULL ) *s = '\\';
 }
 
 // SEE IF PATH IS FRONT SLASH OR BACKSLASH STYLE

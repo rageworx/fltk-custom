@@ -30,9 +30,7 @@ void Fl_Choice::draw() {
   if ( Fl::scheme() )
   {
 	  btype = FL_UP_BOX;
-#ifdef FLTK_EXT_VERSION
 	  if (Fl::is_scheme("flat")) btype = FL_DOWN_BOX;
-#endif /// of FLTK_EXT_VERSION
   }
 
   int dx = Fl::box_dx(btype);
@@ -64,13 +62,11 @@ void Fl_Choice::draw() {
       // Show larger up/down arrows...
       fl_polygon(x1, y1 + 3, x1 + w1, y1 + w1 + 3, x1 + 2 * w1, y1 + 3);
       fl_polygon(x1, y1 + 1, x1 + w1, y1 - w1 + 1, x1 + 2 * w1, y1 + 1);
-#ifdef FLTK_EXT_VERSION
 	} else if (Fl::is_scheme( "flat" )) {
 		// Show a smaller down arrows without divider.
 		x1 = x() + w() - 13 - dx;
 		y1 = y() + h() / 2;
 		fl_polygon( x1, y1 , x1 + 3, y1 + 3, x1 + 6, y1 );
-#endif /// of FLTK_EXT_VERSION
 	} else {
       // Show smaller up/down arrows with a divider...
       x1 = x() + w() - 13 - dx;

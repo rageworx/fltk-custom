@@ -175,11 +175,8 @@ protected:
   /**
     Sets the background color of the spinner widget's input field.
   */
-#ifdef FLTK_EXT_VERSION
-  void	color(Fl_Color v) { input_.color(v); up_button_.color(v); down_button_.color(v); }
-#else
-  void      color(Fl_Color v) { input_.color(v); }
-#endif /// of FLTK_EXT_VERSION
+  //void      color(Fl_Color v) { input_.color(v); }
+  void	    color(Fl_Color v) { input_.color(v); up_button_.color(v); down_button_.color(v); }
   /**
     Returns the background color of the spinner widget's input field.
   */
@@ -205,13 +202,11 @@ protected:
    */
   int maximum_size() const { return input_.maximum_size(); }
 
-#if FLTK_EXT_VERSION > 1
   /* rageworx's additional methods : */
   Fl_Boxtype box() const { return input_.box(); }
   void       box( Fl_Boxtype new_box ) {	input_.box( new_box ); }
   Fl_Repeat_Button* up_button()   { return &up_button_; }
   Fl_Repeat_Button* down_button() { return &down_button_; }
-#endif /// of FLTK_EXT_VERSION > 1
 };
 
 #endif // !Fl_Spinner_H

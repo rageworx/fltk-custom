@@ -169,9 +169,7 @@ int Fl::scheme(const char *s) {
     else if (!fl_ascii_strcasecmp(s, "gtk+")) s = fl_strdup("gtk+");
     else if (!fl_ascii_strcasecmp(s, "plastic")) s = fl_strdup("plastic");
     else if (!fl_ascii_strcasecmp(s, "gleam")) s = fl_strdup("gleam");
-#ifdef FLTK_EXT_VERISON
     else if (!fl_ascii_strcasecmp(s, "flat")) s = fl_strdup("flat");
-#endif /// of FLTK_EXT_VERISON
     else s = 0;
   }
   if (scheme_) free((void*)scheme_);
@@ -280,7 +278,6 @@ int Fl::reload_scheme() {
 
     // Use slightly thinner scrollbars...
     Fl::scrollbar_size(15);
-#ifdef FLTK_EXT_VERISON
   } else if (scheme_ && !fl_ascii_strcasecmp(scheme_, "flat")) {
     // windows flat UI style, by Raphael Kim
     if (scheme_bg_) {
@@ -302,7 +299,6 @@ int Fl::reload_scheme() {
 
     // Use slightly thinner scrollbars...
     Fl::scrollbar_size(15);
-#endif /// of FLTK_EXT_VERISON
   } else {
     // Use the standard FLTK look-n-feel...
     if (scheme_bg_) {
