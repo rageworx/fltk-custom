@@ -304,3 +304,6 @@
 # Configure temporaries
 configure
 configure~
+
+# Cmake build directory ( mostly people doing )
+build/
