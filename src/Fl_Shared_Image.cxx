@@ -275,6 +275,17 @@ void Fl_Shared_Image::reload() {
     for (i = 0, img = 0; i < num_handlers_; i ++) {
       img = (handlers_[i])(name_, header, count);
       if (img) break;
+
+      // bug fixed by fire-eggs
+      // see this : https://github.com/fltk/fltk/pull/228/commits/439494248bd313a45b6c7b745e29db53ed2ce3d6
+      if (img) {
+        // We might have an object, but it might not be valid.
+        if (img->fail()) {
+            delete img;
+            img = 0;
+        }
+        else break;
+      }
     }
   }
 

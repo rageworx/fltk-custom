@@ -158,6 +158,11 @@ void Fl_BMP_Image::load_bmp_(Fl_Image_Reader &rdr)
     colors_used = 0;
 
     repcount = info_size - 12;
+  // fire-eggs fixed this issue 
+  // see https://github.com/fltk/fltk/pull/228/commits/439494248bd313a45b6c7b745e29db53ed2ce3d6
+  } else if (info_size != 40) {
+    ld(ERR_FORMAT); // Another image size is not valid [see text file check above].
+    return;
   } else {
     // New BMP header...
     w(rdr.read_long());
