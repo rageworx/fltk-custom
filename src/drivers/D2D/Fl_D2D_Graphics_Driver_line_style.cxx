@@ -1,0 +1,67 @@
+//
+// Line style code for the Fast Light Tool Kit (FLTK).
+//
+// Copyright 2021 Raphael Kim
+//
+// This library is free software. Distribution and use rights are outlined in
+// the file "COPYING" which should have been included with this file.  If this
+// file is missing or damaged, see the license at:
+//
+//     https://www.fltk.org/COPYING.php
+//
+// Please see the following page on how to report bugs and issues:
+//
+//     https://www.fltk.org/bugs.php
+//
+
+/**
+  \file Fl_D2D_Graphics_Driver_line_style.cxx
+
+  \brief Line style drawing utility for Windows (GDI) platform.
+*/
+
+#include <FL/Fl.H>
+#include <FL/platform.H>
+#include <FL/fl_draw.H>
+
+#include "Fl_D2D_Graphics_Driver.H"
+
+
+void Fl_D2D_Graphics_Driver::line_style_unscaled(int style, int width, char* dashes) 
+{
+  // According to Bill, the "default" cap and join should be the
+  // "fastest" mode supported for the platform.  I don't know why
+  // they should be different (same graphics cards, etc., right?) MRS
+
+  static const DWORD Cap[4]  = {PS_ENDCAP_FLAT, PS_ENDCAP_FLAT, PS_ENDCAP_ROUND, PS_ENDCAP_SQUARE};
+  static const DWORD Join[4] = {PS_JOIN_ROUND, PS_JOIN_MITER, PS_JOIN_ROUND, PS_JOIN_BEVEL};
+
+  int s1 = PS_GEOMETRIC | Cap[(style>>8)&3] | Join[(style>>12)&3];
+  DWORD a[16];
+  int n = 0;
+ 
+    if (dashes && dashes[0]) 
+    {
+        s1 |= PS_USERSTYLE;
+        for (n = 0; n < 16 && *dashes; n++) a[n] = *dashes++;
+    } else {
+        s1 |= style & 0xff; // allow them to pass any low 8 bits for style
+    }
+
+    if ((style || n) && !width) width = int(scale()); // fix cards that do nothing for 0?
+    if (!fl_current_xmap) color(FL_BLACK);
+
+    LOGBRUSH penbrush = {BS_SOLID,fl_RGB(),0}; // can this be fl_brush()?
+    HPEN newpen = ExtCreatePen(s1, width, &penbrush, n, n ? a : 0);
+
+    if (!newpen) 
+    {
+        Fl::error("fl_line_style(): Could not create GDI pen object.");
+        return;
+    }
+    
+    HPEN oldpen = (HPEN)SelectObject(gc_, newpen);
+    DeleteObject(oldpen);
+    DeleteObject(fl_current_xmap->pen);
+    fl_current_xmap->pen = newpen;
+}
