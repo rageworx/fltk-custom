@@ -1615,7 +1615,44 @@ void Fl_Text_Display::previous_word() {
   insert_position( pos );
 }
 
+void Fl_Text_Display::scrollbar_color( Fl_Color c )
+{
+	if ( mHScrollBar != NULL )
+	{
+		mHScrollBar->color( c, c );
+	}
+	
+	if ( mVScrollBar != NULL )
+	{
+		mVScrollBar->color( c, c );
+	}
+}
 
+void Fl_Text_Display::scrollbar_color( Fl_Color c1, Fl_Color c2 )
+{
+	if ( mHScrollBar != NULL )
+	{
+		mHScrollBar->color( c1, c2 );
+	}
+
+	if ( mVScrollBar != NULL )
+	{
+		mVScrollBar->color( c1, c2 );
+	}
+}
+
+void Fl_Text_Display::scrollbar_box( Fl_Boxtype b )
+{
+	if ( mHScrollBar != NULL )
+	{
+		mHScrollBar->slider( b );
+	}
+	
+	if ( mVScrollBar != NULL )
+	{
+		mVScrollBar->slider( b );
+	}
+}
 
 /**
  \brief This is called before any characters are deleted.
