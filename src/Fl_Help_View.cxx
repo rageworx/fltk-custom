@@ -670,6 +670,9 @@ Fl_Help_View::draw()
 
   draw_box(b, x(), y(), ww, hh, bgcolor_);
 
+  int hf = 0;
+  if (Fl::is_scheme("flat")) hf = 3;
+
   if ( hscrollbar_.visible() || scrollbar_.visible() ) {
     int scrollsize = scrollbar_size_ ? scrollbar_size_ : Fl::scrollbar_size();
     int hor_vis = hscrollbar_.visible();
@@ -677,7 +680,7 @@ Fl_Help_View::draw()
     // Scrollbar corner
     int scorn_x = x() + ww - (ver_vis?scrollsize:0) - Fl::box_dw(b) + Fl::box_dx(b);
     int scorn_y = y() + hh - (hor_vis?scrollsize:0) - Fl::box_dh(b) + Fl::box_dy(b);
-    if ( hor_vis ) {
+   if ( hor_vis ) {
       if ( hscrollbar_.h() != scrollsize ) {		// scrollsize changed?
 	hscrollbar_.resize(x(), scorn_y, scorn_x - x(), scrollsize);
 	init_sizes();
@@ -687,7 +690,7 @@ Fl_Help_View::draw()
     }
     if ( ver_vis ) {
       if ( scrollbar_.w() != scrollsize ) {		// scrollsize changed?
-	scrollbar_.resize(scorn_x, y(), scrollsize, scorn_y - y());
+	scrollbar_.resize(scorn_x, y()+hf, scrollsize, scorn_y - y()-hf);
 	init_sizes();
       }
       draw_child(scrollbar_);
