@@ -114,7 +114,8 @@ void Fl_PNG_Image::load_png_(const char *name_png, const unsigned char *buffer_p
 {
 #if defined(HAVE_LIBPNG) && defined(HAVE_LIBZ)
   int i;                // Looping var
-  int channels;         // Number of color channels
+  int channels = 1;     // Number of color channels
+  int convreq = 0;      // Flag for sens RGB converted
   png_structp pp;       // PNG read pointer
   png_infop info = 0;   // PNG info pointers
   png_bytep *rows;      // PNG row pointers
@@ -176,24 +177,26 @@ void Fl_PNG_Image::load_png_(const char *name_png, const unsigned char *buffer_p
 
   if (png_get_color_type(pp, info) & PNG_COLOR_MASK_COLOR)
     channels = 3;
-  else
-    channels = 1;
 
   int num_trans = 0;
   png_get_tRNS(pp, info, 0, &num_trans, 0);
   if ((png_get_color_type(pp, info) & PNG_COLOR_MASK_ALPHA) || (num_trans != 0))
+  {
+    if ( channels == 1 ) convreq = 1;
     channels ++;
+  }
 
   w((int)(png_get_image_width(pp, info)));
   h((int)(png_get_image_height(pp, info)));
   d(channels);
 
-  if (png_get_bit_depth(pp, info) < 8)
+  int bd = png_get_bit_depth(pp, info);
+  if ( bd < 8)
   {
     png_set_packing(pp);
     png_set_expand(pp);
   }
-  else if (png_get_bit_depth(pp, info) == 16)
+  else if ( bd == 16)
     png_set_strip_16(pp);
 
 #  if defined(HAVE_PNG_GET_VALID) && defined(HAVE_PNG_SET_TRNS_TO_ALPHA)
@@ -216,10 +219,38 @@ void Fl_PNG_Image::load_png_(const char *name_png, const unsigned char *buffer_p
   for (i = png_set_interlace_handling(pp); i > 0; i --)
     png_read_rows(pp, rows, NULL, h());
 
+  // Some Gray image need to convert to RGB array 
+  // by has alpha channel
+  const uchar* pvarray = NULL;
+  if ( convreq )
+  { 
+    pvarray = array;
+    array = NULL;
+    array = new uchar[w()*h()*4];
+    uchar* p = (uchar*)array;
+    if ( array )
+    {
+      printf( "(converting %d)", w()*h()*4 ); fflush( stdout );
+      for(i=0;i<w()*h();i++)
+      {
+        int mulb = (8/bd);
+        p[i*4+0]=p[i*4+1]=p[i*4+2]=(pvarray[i*2+0]*mulb);
+        p[i*4+3]=pvarray[i*2+1];
+        // it will removed by next delete[] rows;
+        //delete[] pvarray;
+        convreq++;
+      }
+    }
+    d(4); 
+    channels = 4;
+  }
+
   if (channels == 4) Fl::system_driver()->png_extra_rgba_processing((uchar*)array, w(), h());
 
   // Free memory and return...
   delete[] rows;
+  
+  if ( pvarray ) delete[] pvarray;
 
   png_read_end(pp, info);
   png_destroy_read_struct(&pp, &info, NULL);
