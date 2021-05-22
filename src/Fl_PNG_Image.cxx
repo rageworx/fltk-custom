@@ -233,7 +233,7 @@ void Fl_PNG_Image::load_png_(const char *name_png, const unsigned char *buffer_p
       for(i=0;i<w()*h();i++)
       {
         p[i*4]=p[i*4+1]=p[i*4+2]=(pvarray[i*2]*mulb);
-        p[i*4+3]=pvarray[i*2+1];
+        p[i*4+3]=(pvarray[i*2+1]*mulb);
         // it will removed by next delete[] rows;
         //delete[] pvarray;
         convreq++;
