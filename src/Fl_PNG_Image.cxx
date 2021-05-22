@@ -225,24 +225,23 @@ void Fl_PNG_Image::load_png_(const char *name_png, const unsigned char *buffer_p
   if ( convreq )
   { 
     pvarray = array;
-    array = NULL;
     array = new uchar[w()*h()*4];
     uchar* p = (uchar*)array;
     if ( array )
     {
-      printf( "(converting %d)", w()*h()*4 ); fflush( stdout );
+      int mulb = (8/bd);
       for(i=0;i<w()*h();i++)
       {
-        int mulb = (8/bd);
-        p[i*4+0]=p[i*4+1]=p[i*4+2]=(pvarray[i*2+0]*mulb);
+        p[i*4]=p[i*4+1]=p[i*4+2]=(pvarray[i*2]*mulb);
         p[i*4+3]=pvarray[i*2+1];
         // it will removed by next delete[] rows;
         //delete[] pvarray;
         convreq++;
       }
+      
+      channels = 4;
+      d(channels);
     }
-    d(4); 
-    channels = 4;
   }
 
   if (channels == 4) Fl::system_driver()->png_extra_rgba_processing((uchar*)array, w(), h());
