@@ -170,6 +170,29 @@ public:
   int innards(const char *fmt, va_list ap, const char *b0, const char *b1, const char *b2);
 
   const char *input_innards(const char *fmt, va_list ap, const char *defstr, uchar type, int maxchar = -1);
+
+#ifdef FLTK_EXT_VERSION
+public:
+  Fl_Window* windowwidget(){
+      return window_;
+  }
+
+  Fl_Message_Box* messagewidget(){
+      return message_;
+  }
+
+  Fl_Button* buttonwidget( int order ){
+      if ( ( order >= 0 ) && ( order < 3 ) )
+        return button_[order];
+      return NULL;
+  }
+
+  Fl_Input* inputwidget(){
+      return input_;
+  }
+#endif
+
+
 };
 
 /**

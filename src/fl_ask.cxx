@@ -45,7 +45,9 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
+#include <FL/Fl_Button.H>
 #include <FL/Fl_Input_.H>
+#include <FL/Fl_Input.H>
 #include "flstring.h"
 #include "Fl_Screen_Driver.H"
 #include <FL/fl_ask.H>
@@ -79,6 +81,72 @@ const char *fl_close = "Close";   ///< string pointer used in common dialogs, yo
 
 // fltk functions:
 
+#ifdef FLTK_EXT_VERSION
+void _fl_ask_applycolor( Fl_Message* msg )
+{
+  if ( msg == NULL )
+      return;
+
+  Fl_Window* msgwin = msg->windowwidget();    
+  if ( msgwin != NULL )
+  {
+      if ( msgwin->color() != fl_message_window_color_ )
+          msgwin->color( fl_message_window_color_ );
+  }
+
+  Fl_Message_Box* msgbox = msg->messagewidget();
+  if ( msgbox != NULL )
+  {
+     if ( msgbox->labelcolor() != fl_message_label_color_ )
+        msgbox->labelcolor( fl_message_label_color_ );
+    
+     if ( msgbox->labelfont() != fl_message_font_ )
+        msgbox->labelfont( fl_message_font_ );
+     
+     if( fl_message_size_ > 0 )
+        if ( msgbox->labelsize() != fl_message_size_ )
+           msgbox->labelsize( fl_message_size_ );
+  }
+  
+  for( int x=0; x<3; x++ )
+  {
+     Fl_Button* btn = msg->buttonwidget(x);
+     if ( btn != NULL )
+     {
+        if ( btn->labelfont() != fl_message_font_ )
+            btn->labelfont( fl_message_font_ );
+        if ( btn->labelcolor() != fl_message_button_label_color_[x] )
+            btn->labelcolor( fl_message_button_label_color_[x] );
+        if ( btn->color() != fl_message_button_color_[x] )
+            btn->color( fl_message_button_color_[x] );
+        if ( fl_message_size_ > 0 )
+            if ( btn->labelsize() != fl_message_size_ )
+                btn->labelsize( fl_message_size_ );
+     }
+  } 
+
+  Fl_Input* inp = msg->inputwidget();
+  if ( inp != NULL )
+  {
+      if ( inp->labelcolor() != fl_message_input_color_ )
+         inp->labelcolor( fl_message_label_color_ );
+    
+      if ( inp->labelfont() != fl_message_font_ )
+         inp->labelfont( fl_message_font_ );
+     
+      if( fl_message_size_ > 0 )
+         if ( inp->labelsize() != fl_message_size_ )
+            inp->labelsize( fl_message_size_ );
+
+      if ( inp->textcolor() != fl_message_input_text_color_ )
+         inp->textcolor( fl_message_input_text_color_ );
+
+      if ( inp->textfont() != fl_message_input_text_font_ )
+         inp->textfont( fl_message_input_text_font_ );
+  }
+}
+#endif /// of FLTK_EXT_VERSION
+
 /**
   Emits a system beep message.
 
@@ -103,6 +171,10 @@ void fl_message(const char *fmt, ...) {
 
   // fl_beep(FL_BEEP_MESSAGE);
 
+#ifdef FLTK_EXT_VERSION
+  _fl_ask_applycolor( &msg );
+#endif /// of FLTK_EXT_VERSION
+
   va_start(ap, fmt);
   msg.innards(fmt, ap, 0, fl_close, 0);
   va_end(ap);
@@ -120,6 +192,10 @@ void fl_alert(const char *fmt, ...) {
   va_list ap;
 
   // fl_beep(FL_BEEP_ERROR);
+
+#ifdef FLTK_EXT_VERSION
+  _fl_ask_applycolor( &msg );
+#endif /// of FLTK_EXT_VERSION
 
   va_start(ap, fmt);
   msg.innards(fmt, ap, 0, fl_close, 0);
@@ -145,6 +221,9 @@ int fl_ask(const char *fmt, ...) {
   va_list ap;
 
   // fl_beep(FL_BEEP_QUESTION);
+#ifdef FLTK_EXT_VERSION
+  _fl_ask_applycolor( &msg );
+#endif /// of FLTK_EXT_VERSION
 
   va_start(ap, fmt);
   int r = msg.innards(fmt, ap, fl_no, fl_yes, 0);
@@ -218,6 +297,10 @@ int fl_choice(const char *fmt, const char *b0, const char *b1, const char *b2, .
 
   // fl_beep(FL_BEEP_QUESTION);
 
+#ifdef FLTK_EXT_VERSION
+  _fl_ask_applycolor( &msg );
+#endif /// of FLTK_EXT_VERSION
+
   va_start(ap, b2);
   int r = msg.innards(fmt, ap, b0, b1, b2);
   va_end(ap);
@@ -250,6 +333,10 @@ int fl_choice_n(const char *fmt, const char *b0, const char *b1, const char *b2,
   va_list ap;
 
   // fl_beep(FL_BEEP_QUESTION);
+
+#ifdef FLTK_EXT_VERSION
+  _fl_ask_applycolor( &msg );
+#endif /// of FLTK_EXT_VERSION
 
   va_start(ap, b2);
   int r = msg.innards(fmt, ap, b0, b1, b2);
@@ -359,6 +446,11 @@ Fl_String fl_input_str(int maxchar, const char *fmt, const char *defstr, ...) {
   Fl_Message msg("?");
   if (maxchar < 0)
     maxchar = 0;
+
+#ifdef FLTK_EXT_VERSION
+  _fl_ask_applycolor( &msg );
+#endif /// of FLTK_EXT_VERSION
+
   va_list ap;
   va_start(ap, defstr);
   const char *r = msg.input_innards(fmt, ap, defstr, FL_NORMAL_INPUT, maxchar);
@@ -387,6 +479,11 @@ const char *fl_password(const char *fmt, const char *defstr, ...) {
   // fl_beep(FL_BEEP_PASSWORD);
 
   Fl_Message msg("?");
+
+#ifdef FLTK_EXT_VERSION
+  _fl_ask_applycolor( &msg );
+#endif /// of FLTK_EXT_VERSION
+
   va_list ap;
   va_start(ap, defstr);
   const char *r = msg.input_innards(fmt, ap, defstr, FL_SECRET_INPUT);
@@ -421,6 +518,11 @@ Fl_String fl_password_str(int maxchar, const char *fmt, const char *defstr, ...)
   // fl_beep(FL_BEEP_PASSWORD);
 
   Fl_Message msg("?");
+
+#ifdef FLTK_EXT_VERSION
+  _fl_ask_applycolor( &msg );
+#endif /// of FLTK_EXT_VERSION
+
   if (maxchar < 0)
     maxchar = 0;
   va_list ap;
