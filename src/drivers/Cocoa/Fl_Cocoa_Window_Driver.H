@@ -2,7 +2,7 @@
 // Definition of Apple Cocoa window driver
 // for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2010-2018 by Bill Spitzak and others.
+// Copyright 2010-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -24,6 +24,7 @@
 #define FL_COCOA_WINDOW_DRIVER_H
 
 #include "../../Fl_Window_Driver.H"
+#include <FL/Fl_Plugin.H>
 #include <ApplicationServices/ApplicationServices.h>
 
 class Fl_Image;
@@ -85,6 +86,7 @@ private:
   // stores 3 binary flags: whether window is mapped to retina display; whether resolution just changed;
   // whether window's view received the [FLView view_did_resize] message
   unsigned window_flags_;
+  int screen_num_; // number of screen where window is mapped
 public:
   Fl_Cocoa_Window_Driver(Fl_Window*);
   ~Fl_Cocoa_Window_Driver();
@@ -100,6 +102,8 @@ public:
   void changed_resolution(bool);// sets whether window just moved to display with another resolution
   bool view_resized();   // did window's view receive [FLView view_did_resize] message?
   void view_resized(bool b); // sets whether window's view received [FLView view_did_resize] message
+  bool through_resize();   // did Fl_Window::resize() run already
+  void through_resize(bool b); // set whether Fl_Window::resize() run already
   CGRect* subRect() { return subRect_; } // getter
   void subRect(CGRect *r) { subRect_ = r; } // setter
   static void destroy(FLWindow*);
@@ -131,6 +135,8 @@ public:
   virtual void size_range();
   virtual void iconize();
   virtual void decoration_sizes(int *top, int *left,  int *right, int *bottom);
+  virtual int screen_num();
+  virtual void screen_num(int n);
   // --- window cursor stuff
   virtual int set_cursor(Fl_Cursor);
   virtual int set_cursor(const Fl_RGB_Image*, int, int);
@@ -156,6 +162,16 @@ public:
   //icons
   virtual void icons(const Fl_RGB_Image *icons[], int count);
   NSImage *icon_image;
+
+  virtual fl_uintptr_t os_id();
+};
+
+class Fl_Cocoa_Plugin : public Fl_Plugin {
+public:
+  Fl_Cocoa_Plugin(const char *pluginName)  : Fl_Plugin(klass(), pluginName) { }
+  virtual const char *klass() { return "fltk:cocoa"; }
+  virtual const char *name() = 0;
+  virtual void resize(Fl_Gl_Window *glw, int x, int y, int w, int h) = 0;
 };
 
 #endif // FL_COCOA_WINDOW_DRIVER_H

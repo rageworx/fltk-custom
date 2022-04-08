@@ -1,7 +1,7 @@
 #
 # CMakeLists.txt used to build test and demo apps by the CMake build system
 #
-# Copyright 2004-2020 by Bill Spitzak and others.
+# Copyright 2004-2021 by Bill Spitzak and others.
 #
 # This library is free software. Distribution and use rights are outlined in
 # the file "COPYING" which should have been included with this file.  If this
@@ -47,32 +47,39 @@ include_directories(
 )
 
 #######################################################################
-# Add the ANDROID_OK option if the example can be compiled for Android
-# as well as for other platforms.
+# Define additional example programs for testing, for instance:
+#   set (extra_tests issue-276 str-1895)
+# Use the source file test/'name'.cxx for each additional program.
+# These test programs will be built with image and GL libraries.
+# Leave the variable 'extra_tests' empty to disable extra test programs.
 
-if (NOT ANDROID)
+set (extra_tests)
 
-CREATE_EXAMPLE (adjuster adjuster.cxx fltk ANDROID_OK)
-CREATE_EXAMPLE (arc arc.cxx fltk ANDROID_OK)
-CREATE_EXAMPLE (animated animated.cxx fltk ANDROID_OK)
-CREATE_EXAMPLE (ask ask.cxx fltk ANDROID_OK)
-CREATE_EXAMPLE (bitmap bitmap.cxx fltk ANDROID_OK)
-CREATE_EXAMPLE (blocks "blocks.cxx;blocks.icns" "fltk;${AUDIOLIBS}")
-CREATE_EXAMPLE (boxtype boxtype.cxx fltk ANDROID_OK)
-CREATE_EXAMPLE (browser browser.cxx fltk ANDROID_OK)
-CREATE_EXAMPLE (button button.cxx fltk ANDROID_OK)
-CREATE_EXAMPLE (buttons buttons.cxx fltk ANDROID_OK)
-CREATE_EXAMPLE (checkers "checkers.cxx;checkers_pieces.fl;checkers.icns" "fltk_images;fltk" ANDROID_OK)
-CREATE_EXAMPLE (clock clock.cxx fltk ANDROID_OK)
+#######################################################################
+
+CREATE_EXAMPLE (adjuster adjuster.cxx fltk)
+CREATE_EXAMPLE (arc arc.cxx fltk)
+CREATE_EXAMPLE (animated animated.cxx fltk)
+CREATE_EXAMPLE (ask ask.cxx fltk)
+CREATE_EXAMPLE (bitmap bitmap.cxx fltk)
+CREATE_EXAMPLE (blocks "blocks.cxx;blocks.plist;blocks.icns" "fltk;${AUDIOLIBS}")
+CREATE_EXAMPLE (boxtype boxtype.cxx fltk)
+CREATE_EXAMPLE (browser browser.cxx fltk)
+CREATE_EXAMPLE (button button.cxx fltk)
+CREATE_EXAMPLE (buttons buttons.cxx fltk)
+CREATE_EXAMPLE (checkers "checkers.cxx;checkers_pieces.fl;checkers.icns" "fltk_images;fltk")
+CREATE_EXAMPLE (clipboard clipboard.cxx "fltk_images;fltk")
+CREATE_EXAMPLE (clock clock.cxx fltk)
 CREATE_EXAMPLE (colbrowser colbrowser.cxx fltk)
-CREATE_EXAMPLE (color_chooser color_chooser.cxx fltk ANDROID_OK)
-CREATE_EXAMPLE (cursor cursor.cxx fltk ANDROID_OK)
-CREATE_EXAMPLE (curve curve.cxx fltk ANDROID_OK)
+CREATE_EXAMPLE (color_chooser color_chooser.cxx fltk)
+CREATE_EXAMPLE (coordinates coordinates.cxx fltk)
+CREATE_EXAMPLE (cursor cursor.cxx fltk)
+CREATE_EXAMPLE (curve curve.cxx fltk)
 CREATE_EXAMPLE (demo demo.cxx fltk)
 CREATE_EXAMPLE (device device.cxx "fltk_images;fltk")
-CREATE_EXAMPLE (doublebuffer doublebuffer.cxx fltk ANDROID_OK)
-CREATE_EXAMPLE (editor "editor.cxx;editor-Info.plist" fltk ANDROID_OK)
-CREATE_EXAMPLE (fast_slow fast_slow.fl fltk ANDROID_OK)
+CREATE_EXAMPLE (doublebuffer doublebuffer.cxx fltk)
+CREATE_EXAMPLE (editor "editor.cxx;editor.plist" fltk)
+CREATE_EXAMPLE (fast_slow fast_slow.fl fltk)
 CREATE_EXAMPLE (file_chooser file_chooser.cxx "fltk_images;fltk")
 CREATE_EXAMPLE (fltk-versions fltk-versions.cxx fltk)
 CREATE_EXAMPLE (fonts fonts.cxx fltk)
@@ -117,10 +124,13 @@ CREATE_EXAMPLE (resize-example3b "resize-example3b.cxx;resize-arrows.cxx" fltk)
 CREATE_EXAMPLE (resize-example3c "resize-example3c.cxx;resize-arrows.cxx" fltk)
 CREATE_EXAMPLE (resize-example4a "resize-example4a.cxx;resize-arrows.cxx" fltk)
 CREATE_EXAMPLE (resize-example4b "resize-example4b.cxx;resize-arrows.cxx" fltk)
+CREATE_EXAMPLE (resize-example5a "resize-example5a.cxx;resize-arrows.cxx" fltk)
+CREATE_EXAMPLE (resize-example5b "resize-example5b.cxx;resize-arrows.cxx" fltk)
+CREATE_EXAMPLE (resize-example5c "resize-example5c.cxx;resize-arrows.cxx" fltk)
 CREATE_EXAMPLE (rotated_text rotated_text.cxx fltk)
 CREATE_EXAMPLE (scroll scroll.cxx fltk)
 CREATE_EXAMPLE (subwindow subwindow.cxx fltk)
-CREATE_EXAMPLE (sudoku "sudoku.cxx;sudoku.icns;sudoku.rc" "fltk_images;fltk;${AUDIOLIBS}")
+CREATE_EXAMPLE (sudoku "sudoku.cxx;sudoku.plist;sudoku.icns;sudoku.rc" "fltk_images;fltk;${AUDIOLIBS}")
 CREATE_EXAMPLE (symbols symbols.cxx fltk)
 CREATE_EXAMPLE (tabs tabs.fl fltk)
 CREATE_EXAMPLE (table table.cxx fltk)
@@ -129,10 +139,39 @@ CREATE_EXAMPLE (tile tile.cxx fltk)
 CREATE_EXAMPLE (tiled_image tiled_image.cxx fltk)
 CREATE_EXAMPLE (tree tree.fl fltk)
 CREATE_EXAMPLE (twowin twowin.cxx fltk)
+SET (UNITTEST_SRCS
+  unittests.cxx
+  unittest_about.cxx
+  unittest_points.cxx
+  unittest_complex_shapes.cxx
+  unittest_fast_shapes.cxx
+  unittest_circles.cxx
+  unittest_text.cxx
+  unittest_symbol.cxx
+  unittest_images.cxx
+  unittest_viewport.cxx
+  unittest_scrollbarsize.cxx
+  unittest_schemes.cxx
+  unittest_simple_terminal.cxx
+)
+if (OPENGL_FOUND)
+  CREATE_EXAMPLE (unittests "${UNITTEST_SRCS}" "fltk_gl;fltk;${OPENGL_LIBRARIES}") # opt. Fl_Gl_Window
+else()
+  CREATE_EXAMPLE (unittests "${UNITTEST_SRCS}" fltk) # w/o Fl_Gl_Window
+endif()
 CREATE_EXAMPLE (utf8 utf8.cxx fltk)
 CREATE_EXAMPLE (valuators valuators.fl fltk)
-CREATE_EXAMPLE (unittests unittests.cxx fltk)
 CREATE_EXAMPLE (windowfocus windowfocus.cxx fltk)
+CREATE_EXAMPLE (wizard wizard.cxx fltk)
+
+# create additional test programs (used by developers for testing)
+if (extra_tests)
+  # message ("")
+  foreach (name ${extra_tests})
+    # message (STATUS "Will build additional test program ${name}")
+    create_example (${name} ${name}.cxx "fltk_images;fltk_gl;fltk")
+  endforeach ()
+endif ()
 
 # OpenGL demos...
 if (OPENGL_FOUND)
@@ -147,7 +186,7 @@ endif (OPENGL_FOUND)
 
 # Cairo demo - must also be built w/o Cairo (displays a message box)
 if (FLTK_HAVE_CAIRO)
-  CREATE_EXAMPLE (cairo_test cairo_test.cxx "fltk_cairo;fltk")
+  CREATE_EXAMPLE (cairo_test cairo_test.cxx "fltk_cairo;fltk;cairo")
 else ()
   CREATE_EXAMPLE (cairo_test cairo_test.cxx fltk)
 endif (FLTK_HAVE_CAIRO)
@@ -206,11 +245,13 @@ if (OPTION_BUILD_SHARED_LIBS)
       CREATE_EXAMPLE (shape-shared shape.cxx "fltk_gl_SHARED;fltk_SHARED;${OPENGL_LIBRARIES}")
     endif (OPENGL_FOUND)
 
+    if (FLTK_HAVE_CAIRO)
+      CREATE_EXAMPLE (cairo_test-shared cairo_test.cxx "fltk_cairo_SHARED;fltk_SHARED;cairo")
+    endif ()
+
   endif (MSVC) # (not MSVC)
 
 endif (OPTION_BUILD_SHARED_LIBS)
-
-endif (NOT ANDROID)
 
 #####################################################
 # We need some support files for the demo programs

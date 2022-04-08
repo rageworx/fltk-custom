@@ -1,7 +1,7 @@
 //
-// Definition of Apple Cocoa window driver.
+// Definition of Windows window driver for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2020 by Bill Spitzak and others.
+// Copyright 1998-2021 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -16,8 +16,8 @@
 
 
 #include <config.h>
-#include <FL/fl_draw.H>
 #include <FL/Fl.H>
+#include <FL/fl_draw.H>
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Image.H>
 #include <FL/Fl_Bitmap.H>
@@ -33,12 +33,6 @@
 #if USE_COLORMAP
 extern HPALETTE fl_select_palette(void); // in fl_color_win32.cxx
 #endif
-
-
-Fl_Window_Driver *Fl_Window_Driver::newWindowDriver(Fl_Window *w)
-{
-  return new Fl_WinAPI_Window_Driver(w);
-}
 
 
 Fl_WinAPI_Window_Driver::Fl_WinAPI_Window_Driver(Fl_Window *win)
@@ -475,10 +469,13 @@ void Fl_WinAPI_Window_Driver::hide() {
     }
   }
 
-  if (hide_common()) return;
+  if (hide_common()) {
+    delete[] doit; // note: `count` and `doit` may be NULL (see PR #241)
+    return;
+  }
 
   // make sure any custom icons get freed
-//  icons(NULL, 0); // free_icons() is called by the Fl_Window destructor
+  // icons(NULL, 0); // free_icons() is called by the Fl_Window destructor
   // this little trick keeps the current clipboard alive, even if we are about
   // to destroy the window that owns the selection.
   if (GetClipboardOwner()==ip->xid)
@@ -492,7 +489,7 @@ void Fl_WinAPI_Window_Driver::hide() {
     fl_release_dc(fl_window, (HDC)fl_graphics_driver->gc());
     fl_window = (HWND)-1;
     fl_graphics_driver->gc(0);
-# ifdef FLTK_USE_CAIRO
+# ifdef FLTK_HAVE_CAIROEXT
     if (Fl::cairo_autolink_context()) Fl::cairo_make_current((Fl_Window*) 0);
 # endif
   }
@@ -514,8 +511,9 @@ void Fl_WinAPI_Window_Driver::hide() {
       if (ii != 0) doit[0]->show(); // Fix for STR#3165
       doit[ii]->show();
     }
-    delete[] doit;
   }
+  delete[] doit; // note: `count` and `doit` may be NULL (see PR #241)
+
   // Try to stop the annoying "raise another program" behavior
   if (pWindow->non_modal() && Fl::first_window() && Fl::first_window()->shown())
     Fl::first_window()->show();

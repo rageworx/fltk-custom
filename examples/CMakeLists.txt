@@ -79,8 +79,15 @@ set (FLUID_SOURCES
 ############################################################
 
 set (IMAGE_SOURCES
-  clipboard
   howto-simple-svg
+)
+
+############################################################
+# examples requiring cairo
+############################################################
+
+set (CAIRO_SOURCES
+  cairo-draw-x
 )
 
 ############################################################
@@ -117,18 +124,35 @@ foreach (src ${IMAGE_SOURCES})
 endforeach (src)
 
 ############################################################
+# create example programs requiring cairo
+############################################################
+
+if (FLTK_HAVE_CAIRO)
+  set (cairo_libs "fltk;cairo")
+  if (TARGET fltk_cairo)
+    set (cairo_libs fltk_cairo ${cairo_libs})
+  endif ()
+else ()
+  set(cairo_libs "fltk")
+endif ()
+
+foreach (src ${CAIRO_SOURCES})
+  CREATE_EXAMPLE (${src} ${src}.cxx "${cairo_libs}")
+endforeach (src)
+
+############################################################
 # create example programs with OpenGL + libGLEW
 ############################################################
 
 # Note: macOS does not need libGLEW
 
-if (APPLE AND (NOT OPTION_APPLE_X11) AND (NOT OPTION_APPLE_SDL))
+if (APPLE AND (NOT OPTION_APPLE_X11))
   if (NOT LIB_GLEW)
     set (LIB_GLEW TRUE)
   endif ()
   set (REQUIRED_LIBS fltk_gl fltk ${OPENGL_LIBRARIES})
 else ()
-  set (REQUIRED_LIBS fltk_gl fltk ${OPENGL_LIBRARIES} GLEW)
+  set (REQUIRED_LIBS fltk_gl fltk ${LIB_GLEW} ${OPENGL_LIBRARIES})
 endif ()
 
 if (OPENGL_FOUND AND LIB_GLEW)

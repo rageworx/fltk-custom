@@ -18,12 +18,12 @@
    Fl_Spinner widget . */
 
 #ifndef Fl_Spinner_H
-#  define Fl_Spinner_H
+#define Fl_Spinner_H
 
-#  include <FL/Enumerations.H>
-#  include <FL/Fl_Group.H>
-#  include <FL/Fl_Input.H>
-#  include <FL/Fl_Repeat_Button.H>
+#include <FL/Enumerations.H>
+#include <FL/Fl_Group.H>
+#include <FL/Fl_Input.H>
+#include <FL/Fl_Repeat_Button.H>
 
 /**
   This widget is a combination of a numerical input widget and repeat buttons.
@@ -36,10 +36,10 @@
 */
 class FL_EXPORT Fl_Spinner : public Fl_Group {
 
-  double	value_;			// Current value
-  double	minimum_;		// Minimum value
-  double	maximum_;		// Maximum value
-  double	step_;			// Amount to add/subtract for up/down
+  double        value_;                 // Current value
+  double        minimum_;               // Minimum value
+  double        maximum_;               // Maximum value
+  double        step_;                  // Amount to add/subtract for up/down
   const char    *format_;               // Format string for input field
   int           wrap_;                  // wrap around at bounds (1/0)
 
@@ -63,10 +63,10 @@ protected:
 
   Fl_Spinner_Input input_;              // Input field for the value
   Fl_Repeat_Button
-		up_button_,		// Up button
-		down_button_;		// Down button
+                up_button_,             // Up button
+                down_button_;           // Down button
 
-  public:
+public:
 
   // Constructor
   Fl_Spinner(int X, int Y, int W, int H, const char *L = 0);
@@ -79,21 +79,22 @@ protected:
   const char *format() const { return (format_); }
 
   /** Sets the format string for the value. */
-  void		format(const char *f) { format_ = f; update(); }
+  void format(const char *f) { format_ = f; update(); }
 
   /** Gets the maximum value of the widget. */
-  double	maximum() const { return (maximum_); }
+  double maximum() const { return (maximum_); }
+
   /** Sets the maximum value of the widget. */
-  void		maximum(double m) { maximum_ = m; }
+  void maximum(double m) { maximum_ = m; }
 
   /** Gets the minimum value of the widget. */
-  double	minimum() const { return (minimum_); }
+  double minimum() const { return (minimum_); }
 
   /** Sets the minimum value of the widget. */
-  void		minimum(double m) { minimum_ = m; }
+  void minimum(double m) { minimum_ = m; }
 
   /** Sets the minimum and maximum values for the widget. */
-  void		range(double a, double b) { minimum_ = a; maximum_ = b; }
+  void range(double a, double b) { minimum_ = a; maximum_ = b; }
 
   // Sets the amount to change the value when the user clicks a button.
   // Docs in src/Fl_Spinner.cxx
@@ -103,7 +104,7 @@ protected:
     Gets the amount to change the value when the user clicks a button.
     \see Fl_Spinner::step(double)
   */
-  double	step() const { return (step_); }
+  double step() const { return (step_); }
 
   /** Sets whether the spinner wraps around at upper and lower bounds.
 
@@ -158,25 +159,25 @@ protected:
   void type(uchar v);
 
   /** Gets the numeric representation in the input field.
-   \see Fl_Spinner::type(uchar)
+    \see Fl_Spinner::type(uchar)
   */
-  uchar		type() const { return (input_.type()); }
+  uchar type() const { return (input_.type()); }
 
   /** Gets the current value of the widget. */
-  double	value() const { return (value_); }
+  double value() const { return (value_); }
 
   /**
     Sets the current value of the input widget.
     Before setting value to a non-integer value, the spinner
     type() should be changed to floating point.
   */
-  void		value(double v) { value_ = v; update(); }
+  void value(double v) { value_ = v; update(); }
 
   /**
     Sets the background color of the spinner widget's input field.
   */
-  //void      color(Fl_Color v) { input_.color(v); }
-  void	    color(Fl_Color v) { input_.color(v); up_button_.color(v); down_button_.color(v); }
+  void color(Fl_Color v) { input_.color(v); }
+
   /**
     Returns the background color of the spinner widget's input field.
   */
@@ -190,7 +191,7 @@ protected:
   /**
     Returns the selection color of the spinner widget's input field.
   */
-  Fl_Color	selection_color() const { return input_.selection_color(); }
+  Fl_Color selection_color() const { return input_.selection_color(); }
 
   /**
    Sets the maximum width of the input field.
@@ -202,11 +203,13 @@ protected:
    */
   int maximum_size() const { return input_.maximum_size(); }
 
+#ifdef FLTK_EXT_VERSION
   /* rageworx's additional methods : */
   Fl_Boxtype box() const { return input_.box(); }
   void       box( Fl_Boxtype new_box ) {	input_.box( new_box ); }
   Fl_Repeat_Button* up_button()   { return &up_button_; }
   Fl_Repeat_Button* down_button() { return &down_button_; }
+#endif /// of FLTK_EXT_VERSION
 };
 
 #endif // !Fl_Spinner_H

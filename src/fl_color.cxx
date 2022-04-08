@@ -1,7 +1,7 @@
 //
 // Color functions for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2016 by Bill Spitzak and others.
+// Copyright 1998-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -24,12 +24,12 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Device.H>
 #include <FL/Fl_Graphics_Driver.H>
-#include <FL/Fl.H>
 
 // fl_cmap needs to be defined globally (here) and is used in the device
-// specific graphics drivers
+// specific graphics drivers. It is required to 'FL_EXPORT' this symbol
+// to be able to build the shared FLTK libraries.
 
-unsigned fl_cmap[256] = {
+FL_EXPORT unsigned fl_cmap[256] = {
 #include "fl_cmap.h" // this is a file produced by "cmap.cxx":
 };
 
@@ -64,6 +64,19 @@ void Fl::set_color(Fl_Color i, uchar red, uchar green, uchar blue) {
                 ((unsigned)red<<24)+((unsigned)green<<16)+((unsigned)blue<<8));
 }
 
+/**
+ Sets an entry in the fl_color index table.
+
+ You can set it to any 8-bit RGBA color.
+ */
+void Fl::set_color(Fl_Color i, uchar red, uchar green, uchar blue, uchar alpha) {
+  Fl::set_color((Fl_Color)(i & 255),
+                ((unsigned)red<<24)
+                |((unsigned)green<<16)
+                |((unsigned)blue<<8)
+                |(alpha^0xff));
+}
+
 
 void Fl::set_color(Fl_Color i, unsigned c)
 {
@@ -94,6 +107,26 @@ void Fl::get_color(Fl_Color i, uchar &red, uchar &green, uchar &blue) {
   red   = uchar(c>>24);
   green = uchar(c>>16);
   blue  = uchar(c>>8);
+}
+
+/**
+ Returns the RGBA value(s) for the given FLTK color index.
+
+ This form returns the red, green, blue, and alpha values
+ separately in referenced variables.
+
+ \see unsigned get_color(Fl_Color c)
+ */
+void Fl::get_color(Fl_Color i, uchar &red, uchar &green, uchar &blue, uchar &alpha) {
+  unsigned c;
+
+  if (i & 0xffffff00) c = (unsigned)i;
+  else c = fl_cmap[i];
+
+  red   = uchar(c>>24);
+  green = uchar(c>>16);
+  blue  = uchar(c>>8);
+  alpha = uchar(c^0x000000ff);
 }
 
 /**

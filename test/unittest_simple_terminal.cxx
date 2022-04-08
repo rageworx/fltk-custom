@@ -1,7 +1,7 @@
 //
 // Unit tests for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2017 by Bill Spitzak and others.
+// Copyright 1998-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -13,6 +13,8 @@
 //
 //     https://www.fltk.org/bugs.php
 //
+
+#include "unittests.h"
 
 #include <time.h>
 #include <FL/Fl_Group.H>
@@ -88,7 +90,7 @@ public:
       { 0x33333300, FL_COURIER_BOLD, 14 },  // "\033[8m"      8   white 20%
       { 0x1a1a1a00, FL_COURIER_BOLD, 14 },  // "\033[9m"      9   white 10%
     };
-    int tty_h = (h/3.5);
+    int tty_h = (int)(h/3.5);
     int tty_y1 = y+(tty_h*0)+20;
     int tty_y2 = y+(tty_h*1)+40;
     int tty_y3 = y+(tty_h*2)+60;
@@ -115,4 +117,4 @@ public:
   }
 };
 
-UnitTest simple_terminal("simple terminal", SimpleTerminal::create);
+UnitTest simple_terminal(kTestSimpleTerminal, "Simple Terminal", SimpleTerminal::create);

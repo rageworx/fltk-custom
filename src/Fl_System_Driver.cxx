@@ -1,7 +1,7 @@
 //
 // A base class for platform specific system calls.
 //
-// Copyright 1998-2016 by Bill Spitzak and others.
+// Copyright 1998-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -22,6 +22,7 @@
 
 #include "Fl_System_Driver.H"
 #include <FL/Fl.H>
+#include "Fl_Timeout.h"
 #include <FL/Fl_File_Icon.H>
 #include <FL/fl_utf8.h>
 #include <stdlib.h>
@@ -43,7 +44,7 @@ const int Fl_System_Driver::fl_YNegative =   0x0020;
 // and/or use their own table. It is defined here "static" and assigned
 // in the constructor to avoid static initialization race conditions.
 //
-// As of June 2018 these platforms are Windows and Android. X11 does not
+// As of January 2022 the only platform is Windows. X11 does not
 // use a key table at all.
 // Platforms that use their own key tables must assign them in their
 // constructors (which overwrites the pointer and size).
@@ -400,8 +401,16 @@ unsigned Fl_System_Driver::utf8from_mb(char* dst, unsigned dstlen, const char* s
   return srclen;
 }
 
-int Fl_System_Driver::clocale_printf(FILE *output, const char *format, va_list args) {
+int Fl_System_Driver::clocale_vprintf(FILE *output, const char *format, va_list args) {
   return vfprintf(output, format, args);
+}
+
+int Fl_System_Driver::clocale_vsnprintf(char *output, size_t output_size, const char *format, va_list args) {
+  return 0; // overridden in platform drivers
+}
+
+int Fl_System_Driver::clocale_vsscanf(const char *input, const char *format, va_list args) {
+  return 0; // overridden in platform drivers
 }
 
 int Fl_System_Driver::filename_expand(char *to,int tolen, const char *from) {
@@ -492,6 +501,43 @@ void Fl_System_Driver::open_callback(void (*)(const char *)) {
 void Fl_System_Driver::gettime(time_t *sec, int *usec) {
   *sec =  time(NULL);
   *usec = 0;
+}
+
+/**
+  Execute platform independent parts of Fl::wait(double).
+
+  Platform drivers \b MUST override this virtual method to do
+  their own stuff and call this base class method to run
+  the platform independent wait functions.
+
+  Overridden methods will typically call this method early and perform
+  platform-specific operations after that in order to work with the
+ \p time_to_wait value possibly modified by this method.
+  However, some platform drivers may need to do extra stuff before
+  calling this method, for instance setting up a memory pool on macOS.
+
+  \param[in] time_to_wait max time to wait
+
+  \return   new (max) time to wait after elapsing timeouts
+*/
+double Fl_System_Driver::wait(double time_to_wait) {
+
+  // delete all widgets that were listed during callbacks
+  Fl::do_widget_deletion();
+
+  Fl_Timeout::do_timeouts();
+  Fl::run_checks();
+  Fl::run_idle();
+
+  // the idle function may turn off idle, we can then wait,
+  // or it leaves Fl::idle active and we set time_to_wait to 0
+  if (Fl::idle) {
+    time_to_wait = 0.0;
+  } else {
+    // limit time by next timer interval
+    time_to_wait = Fl_Timeout::time_to_wait(time_to_wait);
+  }
+  return time_to_wait;
 }
 
 /**

@@ -18,6 +18,17 @@
 //     https://www.fltk.org/bugs.php
 //
 
+#include "Fl_Window_Type.h"
+
+#include "fluid.h"
+#include "widget_browser.h"
+#include "undo.h"
+#include "alignment_panel.h"
+#include "file.h"
+#include "code.h"
+#include "widget_panel.h"
+#include "factory.h"
+
 #include <FL/Fl.H>
 #include <FL/Fl_Overlay_Window.H>
 #include <FL/fl_message.H>
@@ -25,31 +36,20 @@
 #include <FL/platform.H>
 #include <FL/Fl_Menu_Item.H>
 #include <FL/Fl_Round_Button.H>
-#include "Fl_Widget_Type.h"
-#include "undo.h"
+#include "../src/flstring.h"
+
 #include <math.h>
 #include <stdlib.h>
-#include "alignment_panel.h"
 #include <stdio.h>
-
-extern int gridx;
-extern int gridy;
-extern int snap;
-extern int show_guides;
 
 int include_H_from_C = 1;
 int use_FL_COMMAND = 0;
-extern int i18n_type;
-extern const char* i18n_include;
-extern const char* i18n_function;
-extern const char* i18n_file;
-extern const char* i18n_set;
+int utf8_in_src = 0;
+int avoid_early_includes = 0;
 
 extern Fl_Preferences   fluid_prefs;
 
 inline int fl_min(int a, int b) { return (a < b ? a : b); }
-
-#include "widget_panel.h"
 
 // Update the XYWH values in the widget panel...
 static void update_xywh() {
@@ -99,9 +99,7 @@ void grid_cb(Fl_Int_Input *i, long v) {
   for (p = Fl_Type::first; p; p = p->next) {
     if (p->is_window()) {
       w = (Fl_Window_Type *)p;
-      ((Fl_Window *)(w->o))->size_range(gridx, gridy,
-                                        Fl::w(), Fl::h(),
-                                        gridx, gridy, 0);
+      ((Fl_Window *)(w->o))->size_range(gridx, gridy, Fl::w(), Fl::h());
     }
   }
 }
@@ -121,31 +119,43 @@ void i18n_type_cb(Fl_Choice *c, void *) {
   switch (i18n_type = c->value()) {
   case 0 : /* None */
       i18n_include_input->hide();
+      i18n_conditional_input->hide();
       i18n_file_input->hide();
       i18n_set_input->hide();
       i18n_function_input->hide();
+      i18n_static_function_input->hide();
       break;
   case 1 : /* GNU gettext */
       i18n_include_input->value("<libintl.h>");
       i18n_include = i18n_include_input->value();
+      i18n_conditional_input->value("");
+      i18n_conditional = i18n_conditional_input->value();
       i18n_function_input->value("gettext");
       i18n_function = i18n_function_input->value();
+      i18n_static_function_input->value("gettext_noop");
+      i18n_static_function = i18n_static_function_input->value();
       i18n_include_input->show();
+      i18n_conditional_input->show();
       i18n_file_input->hide();
       i18n_set_input->hide();
       i18n_function_input->show();
+      i18n_static_function_input->show();
       break;
   case 2 : /* POSIX cat */
       i18n_include_input->value("<nl_types.h>");
+      i18n_include = i18n_include_input->value();
+      i18n_conditional_input->value("");
+      i18n_conditional = i18n_conditional_input->value();
       i18n_file_input->value("");
       i18n_file = i18n_file_input->value();
       i18n_set_input->value("1");
       i18n_set = i18n_set_input->value();
       i18n_include_input->show();
-      i18n_include = i18n_include_input->value();
+      i18n_conditional_input->show();
       i18n_file_input->show();
       i18n_set_input->show();
       i18n_function_input->hide();
+      i18n_static_function_input->hide();
       break;
   }
 
@@ -157,10 +167,14 @@ void i18n_text_cb(Fl_Input *i, void *) {
 
   if (i == i18n_function_input)
     i18n_function = i->value();
+  else if (i == i18n_static_function_input)
+    i18n_static_function = i->value();
   else if (i == i18n_file_input)
     i18n_file = i->value();
   else if (i == i18n_include_input)
     i18n_include = i->value();
+  else if (i == i18n_conditional_input)
+    i18n_conditional = i->value();
 
   set_modflag(1);
 }
@@ -174,38 +188,45 @@ void i18n_int_cb(Fl_Int_Input *i, void *) {
   set_modflag(1);
 }
 
-extern const char* header_file_name;
-extern const char* code_file_name;
-
 void show_project_cb(Fl_Widget *, void *) {
   if(project_window==0) make_project_window();
   include_H_from_C_button->value(include_H_from_C);
   use_FL_COMMAND_button->value(use_FL_COMMAND);
+  utf8_in_src_button->value(utf8_in_src);
+  avoid_early_includes_button->value(avoid_early_includes);
   header_file_input->value(header_file_name);
   code_file_input->value(code_file_name);
   i18n_type_chooser->value(i18n_type);
   i18n_function_input->value(i18n_function);
+  i18n_static_function_input->value(i18n_static_function);
   i18n_file_input->value(i18n_file);
   i18n_set_input->value(i18n_set);
   i18n_include_input->value(i18n_include);
+  i18n_conditional_input->value(i18n_conditional);
   switch (i18n_type) {
   case 0 : /* None */
       i18n_include_input->hide();
+      i18n_conditional_input->hide();
       i18n_file_input->hide();
       i18n_set_input->hide();
       i18n_function_input->hide();
+      i18n_static_function_input->hide();
       break;
   case 1 : /* GNU gettext */
       i18n_include_input->show();
+      i18n_conditional_input->show();
       i18n_file_input->hide();
       i18n_set_input->hide();
       i18n_function_input->show();
+      i18n_static_function_input->show();
       break;
   case 2 : /* POSIX cat */
       i18n_include_input->show();
+      i18n_conditional_input->show();
       i18n_file_input->show();
       i18n_set_input->show();
       i18n_function_input->hide();
+      i18n_static_function_input->hide();
       break;
   }
   project_window->hotspot(project_window);
@@ -261,6 +282,20 @@ void use_FL_COMMAND_button_cb(Fl_Check_Button* b, void*) {
   if (use_FL_COMMAND != b->value()) {
     set_modflag(1);
     use_FL_COMMAND = b->value();
+  }
+}
+
+void utf8_in_src_cb(Fl_Check_Button *b, void*) {
+  if (utf8_in_src != b->value()) {
+    set_modflag(1);
+    utf8_in_src = b->value();
+  }
+}
+
+void avoid_early_includes_cb(Fl_Check_Button *b, void*) {
+  if (avoid_early_includes != b->value()) {
+    set_modflag(1);
+    avoid_early_includes = b->value();
   }
 }
 
@@ -350,7 +385,12 @@ int Overlay_Window::handle(int e) {
   return ret;
 }
 
-Fl_Type *Fl_Window_Type::make() {
+/**
+ Make and add a new WIndow node.
+ \param[in] strategy is kAddAsLastChild or kAddAfterCurrent
+ \return new node
+ */
+Fl_Type *Fl_Window_Type::make(Strategy strategy) {
   Fl_Type *p = Fl_Type::current;
   while (p && !p->is_code_block()) p = p->parent;
   if (!p) {
@@ -364,16 +404,14 @@ Fl_Type *Fl_Window_Type::make() {
   }
   // Set the size ranges for this window; in order to avoid opening the
   // X display we use an arbitrary maximum size...
-  ((Fl_Window *)(this->o))->size_range(gridx, gridy,
-                                       3072, 2048,
-                                       gridx, gridy, 0);
+  ((Fl_Window *)(this->o))->size_range(gridx, gridy, 6144, 4096);
   myo->factory = this;
   myo->drag = 0;
   myo->numselected = 0;
   Overlay_Window *w = new Overlay_Window(100,100);
   w->window = myo;
   myo->o = w;
-  myo->add(p);
+  myo->add(p, strategy);
   myo->modal = 0;
   myo->non_modal = 0;
   return myo;
@@ -418,15 +456,21 @@ void Fl_Window_Type::open() {
   }
 
   w->image(Fl::scheme_bg_);
-  w->size_range(gridx, gridy, Fl::w(), Fl::h(), gridx, gridy, 0);
+  w->size_range(gridx, gridy, Fl::w(), Fl::h());
 }
 
 // Read an image of the window
 uchar *Fl_Window_Type::read_image(int &ww, int &hh) {
   Overlay_Window *w = (Overlay_Window *)o;
 
+  int hidden = !w->shown();
+  w->show(); // make it the front window
+
   // Read the screen image...
-  return (w->read_image(ww, hh));
+  uchar *idata = w->read_image(ww, hh);
+  if (hidden)
+    w->hide();
+  return idata;
 }
 
 
@@ -1084,7 +1128,7 @@ extern Fl_Menu_Item Main_Menu[];
 
 // Calculate new bounding box of selected widgets:
 void Fl_Window_Type::fix_overlay() {
-  Main_Menu[40].label("Hide O&verlays");
+  overlay_item->label("Hide O&verlays");
   overlays_invisible = 0;
   recalc = 1;
   ((Overlay_Window *)(this->o))->redraw_overlay();
@@ -1115,8 +1159,10 @@ void redraw_overlays() {
 void toggle_overlays(Fl_Widget *,void *) {
   overlays_invisible = !overlays_invisible;
 
-  if (overlays_invisible) Main_Menu[40].label("Show O&verlays");
-  else Main_Menu[40].label("Hide O&verlays");
+  if (overlays_invisible)
+    overlay_item->label("Show O&verlays");
+  else
+    overlay_item->label("Hide O&verlays");
 
   for (Fl_Type *o=Fl_Type::first; o; o=o->next)
     if (o->is_window()) {
@@ -1170,9 +1216,66 @@ void Fl_Window_Type::moveallchildren()
   update_xywh();
 }
 
+int Fl_Window_Type::popupx = 0x7FFFFFFF; // mark as invalid (MAXINT)
+int Fl_Window_Type::popupy = 0x7FFFFFFF;
+
 int Fl_Window_Type::handle(int event) {
-  static Fl_Type* selection;
+  static Fl_Type* selection = NULL;
   switch (event) {
+  case FL_DND_ENTER:
+    Fl::belowmouse(o);
+  case FL_DND_DRAG:
+    {
+      // find the innermost item clicked on:
+      selection = this;
+      for (Fl_Type* i=next; i && i->level>level; i=i->next)
+        if (i->is_group()) {
+          Fl_Widget_Type* myo = (Fl_Widget_Type*)i;
+          for (Fl_Widget *o1 = myo->o; o1; o1 = o1->parent())
+            if (!o1->visible()) goto CONTINUE_DND;
+          if (Fl::event_inside(myo->o)) {
+            selection = myo;
+            if (Fl::event_clicks()==1)
+              reveal_in_browser(myo);
+          }
+        }
+    CONTINUE_DND:
+      if (selection && !selection->selected) {
+        select_only(selection);
+        ((Overlay_Window *)o)->redraw_overlay();
+      }
+    }
+  case FL_DND_RELEASE:
+    return 1;
+  case FL_PASTE:
+    { Fl_Type *prototype = typename_to_prototype(Fl::event_text());
+      if (prototype==NULL)
+        return 0;
+
+      in_this_only = this;
+      popupx = Fl::event_x();
+      popupy = Fl::event_y();
+      // If the selected widget at dnd start and the drop target are the same,
+      // or in the same group, add after selection. Otherwise, just add
+      // at the end of the selected group.
+      if (   Fl_Type::current_dnd->group()
+          && selection->group()
+          && Fl_Type::current_dnd->group()==selection->group())
+      {
+        Fl_Type *cc = Fl_Type::current;
+        Fl_Type::current = Fl_Type::current_dnd;
+        add_new_widget_from_user(prototype, kAddAfterCurrent);
+        Fl_Type::current = cc;
+      } else {
+        add_new_widget_from_user(prototype, kAddAsLastChild);
+      }
+      popupx = 0x7FFFFFFF;
+      popupy = 0x7FFFFFFF; // mark as invalid (MAXINT)
+      in_this_only = NULL;
+      widget_browser->display(Fl_Type::current);
+      widget_browser->rebuild();
+      return 1;
+    }
   case FL_PUSH:
     x1 = mx = Fl::event_x();
     y1 = my = Fl::event_y();
@@ -1181,8 +1284,10 @@ int Fl_Window_Type::handle(int event) {
     if (Fl::event_button() >= 3) {
       in_this_only = this; // modifies how some menu items work.
       static const Fl_Menu_Item* myprev;
+      popupx = mx; popupy = my;
       const Fl_Menu_Item* m = New_Menu->popup(mx,my,"New",myprev);
       if (m && m->callback()) {myprev = m; m->do_callback(this->o);}
+      popupx = 0x7FFFFFFF; popupy = 0x7FFFFFFF; // mark as invalid (MAXINT)
       in_this_only = 0;
       return 1;
     }
@@ -1310,9 +1415,8 @@ int Fl_Window_Type::handle(int event) {
     case FL_Up:    dx = 0; dy = -1; goto ARROW;
     case FL_Down:  dx = 0; dy = +1; goto ARROW;
     ARROW:
-      // for some reason BOTTOM/TOP are swapped... should be fixed...
-      drag = (Fl::event_state(FL_SHIFT)) ? (RIGHT|TOP) : DRAG;
-      if (Fl::event_state(FL_CTRL)) {dx *= gridx; dy *= gridy;}
+      drag = (Fl::event_state(FL_SHIFT)) ? (RIGHT|BOTTOM) : DRAG;
+      if (Fl::event_state(FL_COMMAND)) {dx *= gridx; dy *= gridy;}
       moveallchildren();
       drag = 0;
       return 1;
@@ -1338,9 +1442,6 @@ int Fl_Window_Type::handle(int event) {
 }
 
 ////////////////////////////////////////////////////////////////
-
-#include <stdio.h>
-#include "../src/flstring.h"
 
 void Fl_Window_Type::write_code1() {
   Fl_Widget_Type::write_code1();
@@ -1382,7 +1483,6 @@ void Fl_Window_Type::write_properties() {
   if (o->visible()) write_string("visible");
 }
 
-extern int pasteoffset;
 void Fl_Window_Type::read_property(const char *c) {
   if (!strcmp(c,"modal")) {
     modal = 1;
@@ -1432,7 +1532,12 @@ int Fl_Window_Type::read_fdesign(const char* propname, const char* value) {
 Fl_Widget_Class_Type Fl_Widget_Class_type;
 Fl_Widget_Class_Type *current_widget_class = 0;
 
-Fl_Type *Fl_Widget_Class_Type::make() {
+/**
+ Create and add a new Widget Class node.
+ \param[in] strategy add after current or as last child
+ \return new node
+ */
+Fl_Type *Fl_Widget_Class_Type::make(Strategy strategy) {
   Fl_Type *p = Fl_Type::current;
   while (p && (!p->is_decl_block() || (p->is_widget() && p->is_class()))) p = p->parent;
   Fl_Widget_Class_Type *myo = new Fl_Widget_Class_Type();
@@ -1444,16 +1549,14 @@ Fl_Type *Fl_Widget_Class_Type::make() {
   }
   // Set the size ranges for this window; in order to avoid opening the
   // X display we use an arbitrary maximum size...
-  ((Fl_Window *)(this->o))->size_range(gridx, gridy,
-                                       3072, 2048,
-                                       gridx, gridy, 0);
+  ((Fl_Window *)(this->o))->size_range(gridx, gridy, 6144, 4096);
   myo->factory = this;
   myo->drag = 0;
   myo->numselected = 0;
   Overlay_Window *w = new Overlay_Window(100,100);
   w->window = myo;
   myo->o = w;
-  myo->add(p);
+  myo->add(p, strategy);
   myo->modal = 0;
   myo->non_modal = 0;
   myo->wc_relative = 0;
@@ -1498,54 +1601,56 @@ void Fl_Widget_Class_Type::write_code1() {
   const char *c = subclass();
   if (!c) c = "Fl_Group";
 
+  write_c("\n");
   write_comment_h();
   write_h("\nclass %s : public %s {\n", name(), c);
   if (strstr(c, "Window")) {
-    write_h("  void _%s();\n", trimclassname(name()));
+    write_h("%svoid _%s();\n", indent(1), trimclassname(name()));
     write_h("public:\n");
-    write_h("  %s(int X, int Y, int W, int H, const char *L = 0);\n", trimclassname(name()));
-    write_h("  %s(int W, int H, const char *L = 0);\n", trimclassname(name()));
-    write_h("  %s();\n", trimclassname(name()));
+    write_h("%s%s(int X, int Y, int W, int H, const char *L = 0);\n", indent(1), trimclassname(name()));
+    write_h("%s%s(int W, int H, const char *L = 0);\n", indent(1), trimclassname(name()));
+    write_h("%s%s();\n", indent(1), trimclassname(name()));
 
     // a constructor with all four dimensions plus label
-    write_c("%s::%s(int X, int Y, int W, int H, const char *L)\n", name(), trimclassname(name()));
-    write_c("  : %s(X, Y, W, H, L) {\n", c);
-    write_c("  _%s();\n", trimclassname(name()));
+    write_c("%s::%s(int X, int Y, int W, int H, const char *L) :\n", name(), trimclassname(name()));
+    write_c("%s%s(X, Y, W, H, L)\n{\n", indent(1), c);
+    write_c("%s_%s();\n", indent(1), trimclassname(name()));
     write_c("}\n\n");
 
     // a constructor with just the size and label. The window manager will position the window
-    write_c("%s::%s(int W, int H, const char *L)\n", name(), trimclassname(name()));
-    write_c("  : %s(0, 0, W, H, L) {\n", c);
-    write_c("  clear_flag(16);\n");
-    write_c("  _%s();\n", trimclassname(name()));
+    write_c("%s::%s(int W, int H, const char *L) :\n", name(), trimclassname(name()));
+    write_c("%s%s(0, 0, W, H, L)\n{\n", indent(1), c);
+    write_c("%sclear_flag(16);\n", indent(1));
+    write_c("%s_%s();\n", indent(1), trimclassname(name()));
     write_c("}\n\n");
 
     // a constructor that takes size and label from the Fluid database
-    write_c("%s::%s()\n", name(), trimclassname(name()));
-    write_c("  : %s(0, 0, %d, %d, ", c, o->w(), o->h());
+    write_c("%s::%s() :\n", name(), trimclassname(name()));
+    write_c("%s%s(0, 0, %d, %d, ", indent(1), c, o->w(), o->h());
     const char *cstr = label();
     if (cstr) write_cstring(cstr);
     else write_c("0");
-    write_c(") {\n");
-    write_c("  clear_flag(16);\n");
-    write_c("  _%s();\n", trimclassname(name()));
+    write_c(")\n{\n");
+    write_c("%sclear_flag(16);\n", indent(1));
+    write_c("%s_%s();\n", indent(1), trimclassname(name()));
     write_c("}\n\n");
 
     write_c("void %s::_%s() {\n", name(), trimclassname(name()));
-//    write_c("  %s *w = this;\n", name());
+//    write_c("%s%s *w = this;\n", indent(1), name());
   } else {
     write_h("public:\n");
-    write_h("  %s(int X, int Y, int W, int H, const char *L = 0);\n", trimclassname(name()));
-
-    write_c("%s::%s(int X, int Y, int W, int H, const char *L)\n", name(), trimclassname(name()));
+    write_h("%s%s(int X, int Y, int W, int H, const char *L = 0);\n",
+            indent(1), trimclassname(name()));
+    write_c("%s::%s(int X, int Y, int W, int H, const char *L) :\n", name(), trimclassname(name()));
     if (wc_relative)
-      write_c("  : %s(0, 0, W, H, L) {\n", c);
+      write_c("%s%s(0, 0, W, H, L)\n{\n", indent(1), c);
     else
-      write_c("  : %s(X, Y, W, H, L) {\n", c);
+      write_c("%s%s(X, Y, W, H, L)\n{\n", indent(1), c);
   }
 
-//  write_c("  %s *o = this;\n", name());
+//  write_c("%s%s *o = this;\n", indent(1), name());
 
+  indentation++;
   write_widget_code();
 }
 
@@ -1563,6 +1668,7 @@ void Fl_Widget_Class_Type::write_code2() {
   write_c("%send();\n", indent());
   if (((Fl_Window*)o)->resizable() == o)
     write_c("%sresizable(this);\n", indent());
+  indentation--;
   write_c("}\n");
 }
 

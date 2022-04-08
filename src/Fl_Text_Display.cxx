@@ -1,5 +1,5 @@
 //
-// Copyright 2001-2020 by Bill Spitzak and others.
+// Copyright 2001-2021 by Bill Spitzak and others.
 // Original code Copyright Mark Edel.  Permission to distribute under
 // the LGPL for the FLTK library granted by Mark Edel.
 //
@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <FL/fl_utf8.h>
-#include <FL/fl_string.h>     // fl_strdup()
+#include <FL/fl_string_functions.h>     // fl_strdup()
 #include "flstring.h"
 #include <limits.h>
 #include <ctype.h>
@@ -164,6 +164,9 @@ Fl_Text_Display::Fl_Text_Display(int X, int Y, int W, int H, const char* l)
   textfont_ = FL_HELVETICA;             // textfont()
   textsize_ = FL_NORMAL_SIZE;           // textsize()
   textcolor_ = FL_FOREGROUND_COLOR;     // textcolor()
+  grammar_underline_color_ = FL_RED;
+  spelling_underline_color_ = FL_BLUE;
+  secondary_selection_color_ = FL_GRAY;
   mLineNumLeft = 0;             // XXX: UNUSED
   mLineNumWidth = 0;
 
@@ -393,6 +396,17 @@ void Fl_Text_Display::buffer( Fl_Text_Buffer *buf ) {
  Style buffers, tables and their associated memory are managed by the caller.
 
  Styles are ranged from 65 ('A') to 126.
+
+ \note Style information in the style buffer must have the same byte offset as
+ the corresponding character in the text buffer. UTF-8 characters can have a
+ maximum length of four bytes. Style information must take
+ this into account and fill the unused bytes with 0. See `fl_utf8len()`.
+
+ Text: "*g* r &uuml; *n*" , where normal style is 'A', and bold is 'B'
+ \code
+ Text Buffer(hex):  67 72 c3 bc 6e : gr..n
+ Style Buffer(hex): 42 41 41 00 42 : BAA.B
+ \endcode
 
  \param styleBuffer this buffer works in parallel to the text buffer. For every
    character in the text buffer, the style buffer has a byte at the same offset
@@ -2048,141 +2062,148 @@ int Fl_Text_Display::handle_vline(
     X = text_area.x - mHorizOffset;
   }
 
-  startX = X;
-  startIndex = 0;
-  if (!lineStr) {
-    // just clear the background
-    if (mode==DRAW_LINE) {
-      style = position_style(lineStartPos, lineLen, -1);
-      draw_string( style|BG_ONLY_MASK, text_area.x, Y, text_area.x+text_area.w, lineStr, lineLen );
+  // In DRAW_LINE mode, the first iteration of the loop will draw all
+  // backgrounds. The second iteration will draw the text, so that text
+  // overlapping background color changes will not be clipped.
+  for (int loop=1; loop<=2; loop++) {
+    int mask = (loop==1) ? BG_ONLY_MASK : TEXT_ONLY_MASK;
+    startX = X;
+    startIndex = 0;
+    if (!lineStr) {
+      // just clear the background
+      if (mode==DRAW_LINE) {
+        style = position_style(lineStartPos, lineLen, -1);
+        if (loop==1)
+          draw_string( style|BG_ONLY_MASK, text_area.x, Y, text_area.x+text_area.w, lineStr, lineLen );
+      }
+      if (mode==FIND_INDEX) {
+        IS_UTF8_ALIGNED2(buffer(), lineStartPos)
+        return lineStartPos;
+      }
+      return 0;
     }
-    if (mode==FIND_INDEX) {
-      IS_UTF8_ALIGNED2(buffer(), lineStartPos)
-      return lineStartPos;
-    }
-    return 0;
-  }
-  char currChar = 0, prevChar = 0;
-  styleX = startX; startStyle = startIndex;
-  // draw the line
-  style = position_style(lineStartPos, lineLen, 0);
-  for (i=0; i<lineLen; ) {
-    currChar = lineStr[i]; // one byte is enough to handele tabs and other cases
-    int len = fl_utf8len1(currChar);
-    if (len<=0) len = 1; // OUCH!
-    charStyle = position_style(lineStartPos, lineLen, i);
-    if (charStyle!=style || currChar=='\t' || prevChar=='\t') {
-      // draw a segment whenever the style changes or a Tab is found
-      double w = 0;
-      if (prevChar=='\t') {
-        // draw a single Tab space
-        double tab = col_to_x(mBuffer->tab_distance());
-        double xAbs = (mode==GET_WIDTH) ? startX : startX+mHorizOffset-text_area.x;
-        w = ((int(xAbs/tab)+1)*tab) - xAbs;
-        styleX = startX+w; startStyle = i;
-        if (mode==DRAW_LINE)
-          draw_string( style|BG_ONLY_MASK, int(startX), Y, int(startX+w), 0, 0 );
-        if (mode==FIND_INDEX && startX+w>rightClip) {
-          // find x pos inside block
-          free(lineStr);
-          if (cursor_pos && (startX+w/2<rightClip))  // STR #2788
-            return lineStartPos + startIndex + len;  // STR #2788
-          return lineStartPos + startIndex;
-        }
-      } else {
-        // draw the text segment from the previous style change up to this point
-        if ( (style&0xff)==(charStyle&0xff)) {
-          w = string_width( lineStr+startStyle, i-startStyle, style ) - startX + styleX;
+    char currChar = 0, prevChar = 0;
+    styleX = startX; startStyle = startIndex;
+    // draw the line
+    style = position_style(lineStartPos, lineLen, 0);
+    for (i=0; i<lineLen; ) {
+      currChar = lineStr[i]; // one byte is enough to handele tabs and other cases
+      int len = fl_utf8len1(currChar);
+      if (len<=0) len = 1; // OUCH!
+      charStyle = position_style(lineStartPos, lineLen, i);
+      if (charStyle!=style || currChar=='\t' || prevChar=='\t') {
+        // draw a segment whenever the style changes or a Tab is found
+        double w = 0;
+        if (prevChar=='\t') {
+          // draw a single Tab space
+          double tab = col_to_x(mBuffer->tab_distance());
+          double xAbs = (mode==GET_WIDTH) ? startX : startX+mHorizOffset-text_area.x;
+          w = ((int(xAbs/tab)+1)*tab) - xAbs;
+          styleX = startX+w; startStyle = i;
+          if (mode==DRAW_LINE && loop==1)
+            draw_string( style|BG_ONLY_MASK, int(startX), Y, int(startX+w), 0, 0 );
+          if (mode==FIND_INDEX && startX+w>rightClip) {
+            // find x pos inside block
+            free(lineStr);
+            if (cursor_pos && (startX+w/2<rightClip))  // STR #2788
+              return lineStartPos + startIndex + len;  // STR #2788
+            return lineStartPos + startIndex;
+          }
         } else {
-          w = string_width( lineStr+startIndex, i-startIndex, style );
-        }
-        if (mode==DRAW_LINE) {
-          if (startIndex!=startStyle) {
-            fl_push_clip(int(startX), Y, int(w)+1, mMaxsize);
-            draw_string( style, int(styleX), Y, int(startX+w), lineStr+startStyle, i-startStyle );
-            fl_pop_clip();
+          // draw the text segment from the previous style change up to this point
+          if ( (style&0xff)==(charStyle&0xff)) {
+            w = string_width( lineStr+startStyle, i-startStyle, style ) - startX + styleX;
           } else {
-            draw_string( style, int(startX), Y, int(startX+w), lineStr+startIndex, i-startIndex );
+            w = string_width( lineStr+startIndex, i-startIndex, style );
+          }
+          if (mode==DRAW_LINE) {
+            if (startIndex!=startStyle) {
+              fl_push_clip(int(startX), Y, int(w)+1, mMaxsize);
+              draw_string( style|mask, int(styleX), Y, int(startX+w), lineStr+startStyle, i-startStyle );
+              fl_pop_clip();
+            } else {
+              draw_string( style|mask, int(startX), Y, int(startX+w), lineStr+startIndex, i-startIndex );
+            }
+          }
+          if (mode==FIND_INDEX && startX+w>rightClip) {
+            // find x pos inside block
+            int di;
+            if (startIndex!=startStyle) {
+              di = find_x(lineStr+startStyle, i-startStyle, style, -int(rightClip-styleX)); // STR #2788
+              di = lineStartPos + startStyle + di;
+            } else {
+              di = find_x(lineStr+startIndex, i-startIndex, style, -int(rightClip-startX)); // STR #2788
+              di = lineStartPos + startIndex + di;
+            }
+            free(lineStr);
+            IS_UTF8_ALIGNED2(buffer(), (lineStartPos+startIndex+di))
+            return di;
+          }
+          if ( (style&0xff)!=(charStyle&0xff)) {
+            startStyle = i;
+            styleX = startX+w;
           }
         }
-        if (mode==FIND_INDEX && startX+w>rightClip) {
-          // find x pos inside block
-          int di;
-          if (startIndex!=startStyle) {
-            di = find_x(lineStr+startStyle, i-startStyle, style, -int(rightClip-styleX)); // STR #2788
-            di = lineStartPos + startStyle + di;
-          } else {
-            di = find_x(lineStr+startIndex, i-startIndex, style, -int(rightClip-startX)); // STR #2788
-            di = lineStartPos + startIndex + di;
-          }
-          free(lineStr);
-          IS_UTF8_ALIGNED2(buffer(), (lineStartPos+startIndex+di))
-          return di;
+        style = charStyle;
+        startX += w;
+        startIndex = i;
+      }
+      i += len;
+      prevChar = currChar;
+    }
+    double w = 0;
+    if (currChar=='\t') {
+      // draw a single Tab space
+      double tab = col_to_x(mBuffer->tab_distance());
+      double xAbs = (mode==GET_WIDTH) ? startX : startX+mHorizOffset-text_area.x;
+      w = ((int(xAbs/tab)+1)*tab) - xAbs;
+      if (mode==DRAW_LINE && loop==1)
+        draw_string( style|BG_ONLY_MASK, int(startX), Y, int(startX+w), 0, 0 );
+      if (mode==FIND_INDEX) {
+        // find x pos inside block
+        free(lineStr);
+        if (cursor_pos) // STR #2788
+          return lineStartPos + startIndex + ( rightClip-startX>w/2 ? 1 : 0 ); // STR #2788
+        return lineStartPos + startIndex + ( rightClip-startX>w ? 1 : 0 );
+      }
+    } else {
+      w = string_width( lineStr+startIndex, i-startIndex, style );
+      if (mode==DRAW_LINE) {
+        // STR 2531
+        if (startIndex!=startStyle) {
+          fl_push_clip(int(startX), Y, int(w)+1, mMaxsize);
+          draw_string( style|mask, int(styleX), Y, int(startX+w), lineStr+startStyle, i-startStyle );
+          fl_pop_clip();
+        } else {
+          draw_string( style|mask, int(startX), Y, int(startX+w), lineStr+startIndex, i-startIndex );
         }
-        if ( (style&0xff)!=(charStyle&0xff)) {
-          startStyle = i;
-          styleX = startX+w;
+      }
+      if (mode==FIND_INDEX) {
+        // find x pos inside block
+        int di;
+        if (startIndex!=startStyle) {
+          di = find_x(lineStr+startStyle, i-startStyle, style, -int(rightClip-styleX)); // STR #2788
+          di = lineStartPos + startStyle + di;
+        } else {
+          di = find_x(lineStr+startIndex, i-startIndex, style, -int(rightClip-startX)); // STR #2788
+          di = lineStartPos + startIndex + di;
         }
+        free(lineStr);
+        IS_UTF8_ALIGNED2(buffer(), (lineStartPos+startIndex+di))
+        return di;
       }
-      style = charStyle;
-      startX += w;
-      startIndex = i;
     }
-    i += len;
-    prevChar = currChar;
-  }
-  double w = 0;
-  if (currChar=='\t') {
-    // draw a single Tab space
-    double tab = col_to_x(mBuffer->tab_distance());
-    double xAbs = (mode==GET_WIDTH) ? startX : startX+mHorizOffset-text_area.x;
-    w = ((int(xAbs/tab)+1)*tab) - xAbs;
-    if (mode==DRAW_LINE)
-      draw_string( style|BG_ONLY_MASK, int(startX), Y, int(startX+w), 0, 0 );
-    if (mode==FIND_INDEX) {
-      // find x pos inside block
+    if (mode==GET_WIDTH) {
       free(lineStr);
-      if (cursor_pos) // STR #2788
-        return lineStartPos + startIndex + ( rightClip-startX>w/2 ? 1 : 0 ); // STR #2788
-      return lineStartPos + startIndex + ( rightClip-startX>w ? 1 : 0 );
+      return int(startX+w);
     }
-  } else {
-    w = string_width( lineStr+startIndex, i-startIndex, style );
-    if (mode==DRAW_LINE) {
-      // STR 2531
-      if (startIndex!=startStyle) {
-        fl_push_clip(int(startX), Y, int(w)+1, mMaxsize);
-        draw_string( style, int(styleX), Y, int(startX+w), lineStr+startStyle, i-startStyle );
-        fl_pop_clip();
-      } else {
-        draw_string( style, int(startX), Y, int(startX+w), lineStr+startIndex, i-startIndex );
-      }
-    }
-    if (mode==FIND_INDEX) {
-      // find x pos inside block
-      int di;
-      if (startIndex!=startStyle) {
-        di = find_x(lineStr+startStyle, i-startStyle, style, -int(rightClip-styleX)); // STR #2788
-        di = lineStartPos + startStyle + di;
-      } else {
-        di = find_x(lineStr+startIndex, i-startIndex, style, -int(rightClip-startX)); // STR #2788
-        di = lineStartPos + startIndex + di;
-      }
-      free(lineStr);
-      IS_UTF8_ALIGNED2(buffer(), (lineStartPos+startIndex+di))
-      return di;
-    }
-  }
-  if (mode==GET_WIDTH) {
-    free(lineStr);
-    return int(startX+w);
-  }
 
-  // clear the rest of the line
-  startX += w;
-  style = position_style(lineStartPos, lineLen, i);
-  if (mode==DRAW_LINE)
-    draw_string( style|BG_ONLY_MASK, int(startX), Y, text_area.x+text_area.w, lineStr, lineLen );
+    // clear the rest of the line
+    startX += w;
+    style = position_style(lineStartPos, lineLen, i);
+    if (mode==DRAW_LINE && loop==1)
+      draw_string( style|BG_ONLY_MASK, int(startX), Y, text_area.x+text_area.w, lineStr, lineLen );
+  }
 
   free(lineStr);
   IS_UTF8_ALIGNED2(buffer(), (lineStartPos+lineLen))
@@ -2293,7 +2314,7 @@ void Fl_Text_Display::draw_string(int style,
                                   const char *string, int nChars) const {
   IS_UTF8_ALIGNED(string)
 
-  const Style_Table_Entry * styleRec;
+  const Style_Table_Entry *styleRec = NULL;
 
   /* Draw blank area rather than text, if that was the request */
   if ( style & FILL_MASK ) {
@@ -2310,6 +2331,7 @@ void Fl_Text_Display::draw_string(int style,
   int fsize = textsize();
   Fl_Color foreground;
   Fl_Color background;
+  Fl_Color bgbasecolor;
 
   if ( style & STYLE_LOOKUP_MASK ) {
     int si = (style & STYLE_LOOKUP_MASK) - 'A';
@@ -2319,27 +2341,54 @@ void Fl_Text_Display::draw_string(int style,
     styleRec = mStyleTable + si;
     font  = styleRec->font;
     fsize = styleRec->size;
+    bgbasecolor = (styleRec->attr&ATTR_BGCOLOR) ? styleRec->bgcolor : color();
 
     if (style & PRIMARY_MASK) {
       if (Fl::focus() == (Fl_Widget*)this) {
-        if (Fl::screen_driver()->has_marked_text() && Fl::compose_state)
-          background = color();// Mac OS: underline marked text
-        else
+        if (Fl::screen_driver()->has_marked_text() && Fl::compose_state) {
+          background = bgbasecolor; // Mac OS: underline marked text
+        } else {
           background = selection_color();
         }
-      else background = fl_color_average(color(), selection_color(), 0.4f);
+      } else {
+        background = fl_color_average(bgbasecolor, selection_color(), 0.4f);
+      }
     } else if (style & HIGHLIGHT_MASK) {
-      if (Fl::focus() == (Fl_Widget*)this) background = fl_color_average(color(), selection_color(), 0.5f);
-      else background = fl_color_average(color(), selection_color(), 0.6f);
-    } else background = color();
+      if (Fl::focus() == (Fl_Widget*)this) {
+        background = fl_color_average(bgbasecolor, selection_color(), 0.5f);
+      } else {
+        background = fl_color_average(bgbasecolor, selection_color(), 0.6f);
+      }
+    } else if (style & SECONDARY_MASK) {
+      if (Fl::focus() == (Fl_Widget*)this) {
+        background = fl_color_average(bgbasecolor, secondary_selection_color(), 0.5f);
+      } else {
+        background = fl_color_average(bgbasecolor, secondary_selection_color(), 0.6f);
+      }
+    } else {
+      background = bgbasecolor;
+    }
     foreground = (style & PRIMARY_MASK) ? fl_contrast(styleRec->color, background) : styleRec->color;
   } else if (style & PRIMARY_MASK) {
-    if (Fl::focus() == (Fl_Widget*)this) background = selection_color();
-    else background = fl_color_average(color(), selection_color(), 0.4f);
+    if (Fl::focus() == (Fl_Widget*)this) {
+      background = selection_color();
+    } else {
+      background = fl_color_average(color(), selection_color(), 0.4f);
+    }
     foreground = fl_contrast(textcolor(), background);
   } else if (style & HIGHLIGHT_MASK) {
-    if (Fl::focus() == (Fl_Widget*)this) background = fl_color_average(color(), selection_color(), 0.5f);
-    else background = fl_color_average(color(), selection_color(), 0.6f);
+    if (Fl::focus() == (Fl_Widget*)this) {
+      background = fl_color_average(color(), selection_color(), 0.5f);
+    } else {
+      background = fl_color_average(color(), selection_color(), 0.6f);
+    }
+    foreground = fl_contrast(textcolor(), background);
+  } else if (style & SECONDARY_MASK) {
+    if (Fl::focus() == (Fl_Widget*)this) {
+      background = secondary_selection_color();
+    } else {
+      background = fl_color_average(color(), secondary_selection_color(), 0.4f);
+    }
     foreground = fl_contrast(textcolor(), background);
   } else {
     foreground = textcolor();
@@ -2358,11 +2407,44 @@ void Fl_Text_Display::draw_string(int style,
   if (!(style & BG_ONLY_MASK)) {
     fl_color( foreground );
     fl_font( font, fsize );
+    int baseline = Y + mMaxsize - fl_descent();
     // Make sure antialiased ÄÖÜ do not leak on line above:
     // on X11+Xft the antialiased part of characters such as ÄÖÜ leak on the bottom pixel of the line above
     static int can_leak = Fl::screen_driver()->text_display_can_leak();
-    if (can_leak) fl_push_clip(X, Y, toX - X, mMaxsize);
-    fl_draw( string, nChars, X, Y + mMaxsize - fl_descent());
+    // Clip top and bottom only. Add margin to avoid clipping horizontally
+    if (can_leak) fl_push_clip(x(), Y, w(), mMaxsize);
+    fl_draw( string, nChars, X, baseline);
+    if (styleRec) {
+      if (styleRec->attr & ATTR_LINES_MASK) {
+        int pitch = fsize/7;
+        int prevAA = fl_antialias();
+        fl_antialias(1);
+        switch (styleRec->attr & ATTR_LINES_MASK) {
+          case ATTR_UNDERLINE:
+            fl_color(foreground);
+            fl_line_style(FL_SOLID, pitch);
+            goto DRAW_UNDERLINE;
+            break;
+          case ATTR_GRAMMAR:
+            fl_color(grammar_underline_color());
+            goto DRAW_DOTTED_UNDERLINE;
+          case ATTR_SPELLING:
+            fl_color(spelling_underline_color());
+          DRAW_DOTTED_UNDERLINE:
+            fl_line_style(FL_DOT, pitch);
+          DRAW_UNDERLINE:
+            fl_xyline(X, baseline + fl_descent()/2, toX);
+            break;
+          case ATTR_STRIKE_THROUGH:
+            fl_color(foreground);
+            fl_line_style(FL_SOLID, pitch);
+            fl_xyline(X, baseline - (fl_height()-fl_descent())/3, toX);
+            break;
+        }
+        fl_line_style(FL_SOLID, 1);
+        fl_antialias(prevAA);
+      }
+    }
     if (Fl::screen_driver()->has_marked_text() && Fl::compose_state && (style & PRIMARY_MASK)) {
       fl_color( fl_color_average(foreground, background, 0.6f) );
       fl_line(X, Y + mMaxsize - 1, X + (int)fl_width(string, nChars), Y + mMaxsize - 1);
@@ -2405,21 +2487,31 @@ void Fl_Text_Display::clear_rect(int style,
   if ( width == 0 )
     return;
 
+  Fl_Color bgbasecolor = color();
+  if ( style & STYLE_LOOKUP_MASK ) {
+    int si = (style & STYLE_LOOKUP_MASK) - 'A';
+    if (si < 0) si = 0;
+    else if (si >= mNStyles) si = mNStyles - 1;
+    const Style_Table_Entry *styleRec = mStyleTable + si;
+    if (styleRec->attr&ATTR_BGCOLOR_EXT_)
+      bgbasecolor = styleRec->bgcolor;
+  }
+
   Fl_Color c;
   if (style & PRIMARY_MASK) {
     if (Fl::focus()==(Fl_Widget*)this) {
       c = selection_color();
     } else {
-      c = fl_color_average(color(), selection_color(), 0.4f);
+      c = fl_color_average(bgbasecolor, selection_color(), 0.4f);
     }
   } else if (style & HIGHLIGHT_MASK) {
     if (Fl::focus()==(Fl_Widget*)this) {
-      c = fl_color_average(color(), selection_color(), 0.5f);
+      c = fl_color_average(bgbasecolor, selection_color(), 0.5f);
     } else {
-      c = fl_color_average(color(), selection_color(), 0.6f);
+      c = fl_color_average(bgbasecolor, selection_color(), 0.6f);
     }
   } else {
-    c = color();
+    c = bgbasecolor;
   }
   fl_color(active_r() ? c : fl_inactive(c));
   fl_rectf( X, Y, width, height );
@@ -2450,7 +2542,6 @@ void Fl_Text_Display::draw_cursor( int X, int Y ) {
   if ( X < text_area.x - 1 || X > text_area.x + text_area.w )
     return;
 
-  Fl::insertion_point_location(X, bot, fontHeight);
   /* For cursors other than the block, make them around 2/3 of a character
    width, rounded to an even number of pixels so that X will draw an
    odd number centered on the stem at x. */
@@ -2501,6 +2592,11 @@ void Fl_Text_Display::draw_cursor( int X, int Y ) {
   for ( int k = 0; k < nSegs; k++ ) {
     fl_line( segs[ k ].x1, segs[ k ].y1, segs[ k ].x2, segs[ k ].y2 );
   }
+
+  //fix issue #270
+  if (Fl::focus() == this) {
+       fl_set_spot(textfont(), textsize(), X, bot, text_area.w, text_area.h, window());
+  }
 }
 
 
@@ -2524,6 +2620,10 @@ void Fl_Text_Display::draw_cursor( int X, int Y ) {
  Note that style is a somewhat incorrect name, drawing method would
  be more appropriate.
 
+ If lineIndex is pointing to the last character in a line, and the second
+ to last character has the ATTR_BGCOLOR_EXT set, the background color will
+ extend into the remaining line.
+
  \param lineStartPos beginning of this line
  \param lineLen number of bytes in line
  \param lineIndex position of character within line
@@ -2542,9 +2642,21 @@ int Fl_Text_Display::position_style( int lineStartPos, int lineLen, int lineInde
 
   pos = lineStartPos + min( lineIndex, lineLen );
 
-  if ( lineIndex >= lineLen )
+  if ( styleBuf && lineIndex==lineLen && lineLen>0) {
+    style = ( unsigned char ) styleBuf->byte_at( pos-1 );
+    if (style == mUnfinishedStyle && mUnfinishedHighlightCB) {
+      (mUnfinishedHighlightCB)( pos, mHighlightCBArg);
+      style = (unsigned char) styleBuf->byte_at( pos);
+    }
+    int si = (style & STYLE_LOOKUP_MASK) - 'A';
+    if (si < 0) si = 0;
+    else if (si >= mNStyles) si = mNStyles - 1;
+    const Style_Table_Entry *styleRec = mStyleTable + si;
+    if ((styleRec->attr&ATTR_BGCOLOR_EXT_)==0)
+      style = FILL_MASK;
+  } else if ( lineIndex >= lineLen ) {
     style = FILL_MASK;
-  else if ( styleBuf != NULL ) {
+  } else if ( styleBuf != NULL ) {
     style = ( unsigned char ) styleBuf->byte_at( pos );
     if (style == mUnfinishedStyle && mUnfinishedHighlightCB) {
       /* encountered "unfinished" style, trigger parsing */
@@ -4184,18 +4296,25 @@ int Fl_Text_Display::handle(int event) {
 
 /*
  Convert an x pixel position into a column number.
+ The width of a column is calculated as the average width of a few
+ representative characters, giving a good estimate for proportional fonts.
+ This method does not take the possition of the scroll bars into account.
+ \param[in] x offset to the left edge of the text in FLTK units.
+ \return approximation to the corresponding text column
+ \see col_to_x()
  */
-double Fl_Text_Display::x_to_col(double y) const
+double Fl_Text_Display::x_to_col(double x) const
 {
   if (!mColumnScale) {
     mColumnScale = string_width("Mitg", 4, 'A') / 4.0;
   }
-  return (y/mColumnScale)+0.5;
+  return (x/mColumnScale)+0.5;
 }
 
 
 /**
  Convert a column number into an x pixel position.
+ \see x_to_col()
  */
 double Fl_Text_Display::col_to_x(double col) const
 {

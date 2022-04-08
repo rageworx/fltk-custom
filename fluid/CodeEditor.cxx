@@ -2,7 +2,7 @@
 // Code editor widget for the Fast Light Tool Kit (FLTK).
 // Syntax highlighting rewritten by erco@seriss.com 09/15/20.
 //
-// Copyright 1998-2020 by Bill Spitzak and others.
+// Copyright 1998-2021 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -19,14 +19,27 @@
 // Include necessary headers...
 //
 
+#include "CodeEditor.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "CodeEditor.h"
 
-Fl_Text_Display::Style_Table_Entry CodeEditor::
-                styletable[] = {        // Style table
+// ---- CodeEditor implementation
+
+/** \class CodeEditor
+ A widget derived from Fl_Text_Editor that implements C++ code highlighting.
+
+ CodeEditor is used in Fluid whenever the user can edit C++ source
+ code or header text.
+ */
+
+/**
+ Lookup table for all supported styles.
+ Every table entry describes a rendering style for the corresponding text.
+ */
+Fl_Text_Display::Style_Table_Entry CodeEditor::styletable[] = {   // Style table
                   { FL_FOREGROUND_COLOR, FL_COURIER,        11 }, // A - Plain
                   { FL_DARK_GREEN,       FL_COURIER_ITALIC, 11 }, // B - Line comments
                   { FL_DARK_GREEN,       FL_COURIER_ITALIC, 11 }, // C - Block comments
@@ -37,18 +50,13 @@ Fl_Text_Display::Style_Table_Entry CodeEditor::
                   { 220, /* med cyan */  FL_COURIER,        11 }  // H - Single quote chars
                 };
 
-// attempt to make the fluid code editor widget honour textsize setting
-void CodeEditor::textsize(Fl_Fontsize s) {
-  Fl_Text_Editor::textsize(s); // call base class method
-  // now attempt to update our styletable to honour the new size...
-  int entries = sizeof(styletable) / sizeof(styletable[0]);
-  for(int iter = 0; iter < entries; iter++) {
-    styletable[iter].size = s;
-  }
-} // textsize
-
-
-// 'style_parse()' - Parse text and produce style data.
+/**
+ Parse text and produce style data.
+ \param[in] in_tbuff text buffer to parse
+ \param[inout] in_sbuff style buffer we modify
+ \param[in] in_len byte length to parse
+ \param[in] in_style starting style letter
+ */
 void CodeEditor::style_parse(const char *in_tbuff,         // text buffer to parse
                              char       *in_sbuff,         // style buffer we modify
                              int         in_len,           // byte length to parse
@@ -99,10 +107,19 @@ void CodeEditor::style_parse(const char *in_tbuff,         // text buffer to par
   }
 }
 
-// 'style_unfinished_cb()' - Update unfinished styles.
-void CodeEditor::style_unfinished_cb(int, void*) { }
+/**
+ Update unfinished styles.
+ */
+void CodeEditor::style_unfinished_cb(int, void*) {
+}
 
-// 'style_update()' - Update the style buffer...
+/**
+ Update the style buffer.
+ \param[in] pos insert position in text
+ \param[in] nInserted number of bytes inserted
+ \param[in] nDeleted number of bytes deleted
+ \param[in] cbArg pointer back to the code editr
+ */
 void CodeEditor::style_update(int pos, int nInserted, int nDeleted,
                               int /*nRestyled*/, const char * /*deletedText*/,
                               void *cbArg) {
@@ -150,6 +167,10 @@ void CodeEditor::style_update(int pos, int nInserted, int nDeleted,
   free(style);
 }
 
+/**
+ Find the right indentation depth after pressing the Enter key.
+ \param[in] e pointer back to the code editor
+ */
 int CodeEditor::auto_indent(int, CodeEditor* e) {
   if (e->buffer()->selected()) {
     e->insert_position(e->buffer()->primary_selection()->start());
@@ -165,7 +186,7 @@ int CodeEditor::auto_indent(int, CodeEditor* e) {
   *ptr = '\0';
   if (*text) {
     // use only a single 'insert' call to avoid redraw issues
-    int n = strlen(text);
+    size_t n = strlen(text);
     char *b = (char*)malloc(n+2);
     *b = '\n';
     strcpy(b+1, text);
@@ -183,7 +204,11 @@ int CodeEditor::auto_indent(int, CodeEditor* e) {
   return 1;
 }
 
-// Create a CodeEditor widget...
+/**
+ Create a CodeEditor widget.
+ \param[in] X, Y, W, H position and size of the widget
+ \param[in] L optional label
+ */
 CodeEditor::CodeEditor(int X, int Y, int W, int H, const char *L) :
   Fl_Text_Editor(X, Y, W, H, L) {
   buffer(new Fl_Text_Buffer);
@@ -209,7 +234,9 @@ CodeEditor::CodeEditor(int X, int Y, int W, int H, const char *L) :
                   (Fl_Text_Editor::Key_Func)auto_indent);
 }
 
-// Destroy a CodeEditor widget...
+/**
+ Destroy a CodeEditor widget.
+ */
 CodeEditor::~CodeEditor() {
   Fl_Text_Buffer *buf = mStyleBuffer;
   mStyleBuffer = 0;
@@ -220,7 +247,35 @@ CodeEditor::~CodeEditor() {
   delete buf;
 }
 
+/**
+ Attempt to make the fluid code editor widget honour textsize setting.
+ This works by updating the fontsizes in the style table.
+ \param[in] s the new general height of the text font
+ */
+void CodeEditor::textsize(Fl_Fontsize s) {
+  Fl_Text_Editor::textsize(s); // call base class method
+  // now attempt to update our styletable to honour the new size...
+  int entries = sizeof(styletable) / sizeof(styletable[0]);
+  for(int iter = 0; iter < entries; iter++) {
+    styletable[iter].size = s;
+  }
+} // textsize
 
+// ---- CodeViewer implementation
+
+/** \class CodeViewer
+ A widget derived from CodeEditor with highlighting for code blocks.
+
+ This widget is used by the SourceView system to show the design's
+ source an header code. The secondary highlighting show the text
+ part that corresponds to the selected widget(s).
+ */
+
+/**
+ Create a CodeViewer widget.
+ \param[in] X, Y, W, H position and size of the widget
+ \param[in] L optional label
+ */
 CodeViewer::CodeViewer(int X, int Y, int W, int H, const char *L)
 : CodeEditor(X, Y, W, H, L)
 {
@@ -229,10 +284,11 @@ CodeViewer::CodeViewer(int X, int Y, int W, int H, const char *L)
   cursor_style(CARET_CURSOR);
 }
 
-
+/**
+ Tricking Fl_Text_Display into using bearable colors for this specific task.
+ */
 void CodeViewer::draw()
 {
-  // Tricking Fl_Text_Display into using bearable colors for this specific task
   Fl_Color c = Fl::get_color(FL_SELECTION_COLOR);
   Fl::set_color(FL_SELECTION_COLOR, fl_color_average(FL_BACKGROUND_COLOR, FL_FOREGROUND_COLOR, 0.9f));
   CodeEditor::draw();

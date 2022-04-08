@@ -20,21 +20,6 @@
 #include "Fl_Quartz_Copy_Surface_Driver.H"
 #include "../Cocoa/Fl_Cocoa_Window_Driver.H"
 
-/**
- \cond DriverDev
- \addtogroup DriverDeveloper
- \{
- */
-
-Fl_Copy_Surface_Driver *Fl_Copy_Surface_Driver::newCopySurfaceDriver(int w, int h)
-{
-  return new Fl_Quartz_Copy_Surface_Driver(w, h);
-}
-
-/**
- \}
- \endcond
- */
 
 Fl_Quartz_Copy_Surface_Driver::Fl_Quartz_Copy_Surface_Driver(int w, int h) : Fl_Copy_Surface_Driver(w, h) {
   driver(new Fl_Quartz_Printer_Graphics_Driver);
@@ -50,13 +35,14 @@ Fl_Quartz_Copy_Surface_Driver::Fl_Quartz_Copy_Surface_Driver(int w, int h) : Fl_
     static CGDataConsumerCallbacks callbacks = { Fl_Quartz_Copy_Surface_Driver::MyPutBytes, NULL };
     myconsumer = CGDataConsumerCreate((void*) pdfdata, &callbacks);
   }
-  CGRect bounds = CGRectMake(0, 0, w, h );
+  float d = fl_graphics_driver->scale();
+  CGRect bounds = CGRectMake(0, 0, w * d, h * d);
   gc = CGPDFContextCreate(myconsumer, &bounds, NULL);
   CGDataConsumerRelease(myconsumer);
   if (gc) {
     CGContextBeginPage(gc, &bounds);
-    CGContextTranslateCTM(gc, 0.5, h-0.5);
-    CGContextScaleCTM(gc, 1.0f, -1.0f);
+    CGContextScaleCTM(gc, d, -d);
+    CGContextTranslateCTM(gc, 0.5, -h + 0.5);
     CGContextSaveGState(gc);
   }
 }

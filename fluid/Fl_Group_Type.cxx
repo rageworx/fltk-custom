@@ -18,12 +18,22 @@
 //     https://www.fltk.org/bugs.php
 //
 
+#include "Fl_Group_Type.h"
+
+#include "fluid.h"
+#include "file.h"
+#include "code.h"
+#include "widget_browser.h"
+
 #include <FL/Fl.H>
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Table.H>
+#include <FL/Fl_Menu_Item.H>
 #include <FL/fl_message.H>
-#include "Fl_Widget_Type.h"
+#include <FL/Fl_Scroll.H>
 #include "../src/flstring.h"
+
+#include <stdio.h>
 
 // Override group's resize behavior to do nothing to children:
 void igroup::resize(int X, int Y, int W, int H) {
@@ -33,8 +43,13 @@ void igroup::resize(int X, int Y, int W, int H) {
 
 Fl_Group_Type Fl_Group_type;    // the "factory"
 
-Fl_Type *Fl_Group_Type::make() {
-  return Fl_Widget_Type::make();
+/**
+ Create and add a new Group node.
+ \param[in] strategy add after current or as last child
+ \return new Group node
+ */
+Fl_Type *Fl_Group_Type::make(Strategy strategy) {
+  return Fl_Widget_Type::make(strategy);
 }
 
 void fix_group_size(Fl_Type *tt) {
@@ -55,8 +70,6 @@ void fix_group_size(Fl_Type *tt) {
   t->o->resize(X,Y,R-X,B-Y);
 }
 
-extern int force_parent;
-
 void group_cb(Fl_Widget *, void *) {
   // Find the current widget:
   Fl_Type *qq = Fl_Type::current;
@@ -67,17 +80,18 @@ void group_cb(Fl_Widget *, void *) {
   }
   Fl_Widget_Type* q = (Fl_Widget_Type*)qq;
   force_parent = 1;
-  Fl_Group_Type *n = (Fl_Group_Type*)(Fl_Group_type.make());
+  Fl_Group_Type *n = (Fl_Group_Type*)(Fl_Group_type.make(kAddAsLastChild));
   n->move_before(q);
   n->o->resize(q->o->x(),q->o->y(),q->o->w(),q->o->h());
   for (Fl_Type *t = Fl_Type::first; t;) {
     if (t->level != n->level || t == n || !t->selected) {
       t = t->next; continue;}
     Fl_Type *nxt = t->remove();
-    t->add(n);
+    t->add(n, kAddAsLastChild);
     t = nxt;
   }
   fix_group_size(n);
+  widget_browser->rebuild();
 }
 
 void ungroup_cb(Fl_Widget *, void *) {
@@ -102,11 +116,10 @@ void ungroup_cb(Fl_Widget *, void *) {
     n = nxt;
   }
   delete q;
+  widget_browser->rebuild();
 }
 
 ////////////////////////////////////////////////////////////////
-
-#include <stdio.h>
 
 void Fl_Group_Type::write_code1() {
   Fl_Widget_Type::write_code1();
@@ -379,8 +392,6 @@ void Fl_Group_Type::copy_properties() {
 
 ////////////////////////////////////////////////////////////////
 // some other group subclasses that fluid does not treat specially:
-
-#include <FL/Fl_Scroll.H>
 
 const char scroll_type_name[] = "Fl_Scroll";
 

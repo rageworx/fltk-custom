@@ -1,7 +1,7 @@
 //
 // Fl_Graphics_Driver class for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2010-2021 by Bill Spitzak and others.
+// Copyright 2010-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -51,8 +51,14 @@ Fl_Graphics_Driver::Fl_Graphics_Driver()
   font_descriptor_ = NULL;
   scale_ = 1;
   p_size = 0;
-  p = NULL;
+  xpoint = NULL;
 };
+
+/** Destructor */
+Fl_Graphics_Driver::~Fl_Graphics_Driver() {
+  if (xpoint) free(xpoint);
+}
+
 
 /** Return the graphics driver used when drawing to the platform's display */
 Fl_Graphics_Driver &Fl_Graphics_Driver::default_driver()
@@ -123,6 +129,8 @@ void Fl_Graphics_Driver::set_spot(int font, int size, int X, int Y, int W, int H
 {
   // nothing to do, reimplement in driver if needed
 }
+
+void Fl_Graphics_Driver::set_status(int X, int Y, int W, int H) {}
 
 
 /** see fl_reset_spot() */
@@ -447,10 +455,7 @@ void Fl_Graphics_Driver::draw_image(Fl_Draw_Image_Cb cb, void* data, int X,int Y
 void Fl_Graphics_Driver::draw_image_mono(Fl_Draw_Image_Cb cb, void* data, int X,int Y,int W,int H, int D) {}
 
 /** Support function for image drawing */
-Fl_Bitmask Fl_Graphics_Driver::create_bitmask(int w, int h, const uchar *array) {return 0; }
-
-/** Support function for image drawing */
-void Fl_Graphics_Driver::delete_bitmask(Fl_Bitmask bm) {}
+void Fl_Graphics_Driver::delete_bitmask(fl_uintptr_t /*bm*/) {}
 
 /** see fl_point() */
 void Fl_Graphics_Driver::point(int x, int y) {}
@@ -460,6 +465,11 @@ void Fl_Graphics_Driver::rect(int x, int y, int w, int h) {}
 
 /** see fl_rectf() */
 void Fl_Graphics_Driver::rectf(int x, int y, int w, int h) {}
+
+void Fl_Graphics_Driver::colored_rectf(int x, int y, int w, int h, uchar r, uchar g, uchar b) {
+  color(r, g, b);
+  rectf(x, y, w, h);
+}
 
 /** see fl_line(int, int, int, int) */
 void Fl_Graphics_Driver::line(int x, int y, int x1, int y1) {}
@@ -519,13 +529,13 @@ void Fl_Graphics_Driver::end_points() {}
 void Fl_Graphics_Driver::end_line() {}
 
 void Fl_Graphics_Driver::fixloop() {  // remove equal points from closed path
-  while (n>2 && p[n-1].x == p[0].x && p[n-1].y == p[0].y) n--;
+  while (n>2 && xpoint[n-1].x == xpoint[0].x && xpoint[n-1].y == xpoint[0].y) n--;
 }
 
 /** see fl_end_loop() */
 void Fl_Graphics_Driver::end_loop() {
   fixloop();
-  if (n>2) transformed_vertex((float)p[0].x, (float)p[0].y);
+  if (n>2) transformed_vertex(xpoint[0].x, xpoint[0].y);
   end_line();
 }
 
@@ -537,9 +547,9 @@ void Fl_Graphics_Driver::end_complex_polygon() {}
 
 /** see fl_gap() */
 void Fl_Graphics_Driver::gap() {
-  while (n>gap_+2 && p[n-1].x == p[gap_].x && p[n-1].y == p[gap_].y) n--;
+  while (n>gap_+2 && xpoint[n-1].x == xpoint[gap_].x && xpoint[n-1].y == xpoint[gap_].y) n--;
   if (n > gap_+2) {
-    transformed_vertex((float)p[gap_].x, (float)p[gap_].y);
+    transformed_vertex(xpoint[gap_].x, xpoint[gap_].y);
     gap_ = n;
   } else {
     n = gap_;
@@ -660,15 +670,21 @@ float Fl_Graphics_Driver::override_scale() { return scale();}
 void Fl_Graphics_Driver::restore_scale(float) { }
 
 void Fl_Graphics_Driver::transformed_vertex0(float x, float y) {
-  if (!n || x != p[n-1].x || y != p[n-1].y) {
+  if (!n || x != xpoint[n-1].x || y != xpoint[n-1].y) {
     if (n >= p_size) {
-      p_size = p ? 2*p_size : 16;
-      p = (XPOINT*)realloc((void*)p, p_size*sizeof(*p));
+      p_size = xpoint ? 2*p_size : 16;
+      xpoint = (XPOINT*)realloc((void*)xpoint, p_size*sizeof(*xpoint));
     }
-    p[n].x = x;
-    p[n].y = y;
+    xpoint[n].x = x;
+    xpoint[n].y = y;
     n++;
   }
+}
+
+void Fl_Graphics_Driver::antialias(int state) {}
+
+int Fl_Graphics_Driver::antialias() {
+  return 0;
 }
 
 /**

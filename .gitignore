@@ -1,20 +1,39 @@
-# ignore file for git - generated from subversion with:
-# git svn show-ignore
+#
+# Files to be ignored by Git (do not commit)
+#
 
-.vs
 *.o
 *.exe
-*.bak
+
+# CMake
+bin/
+**/cmake_install.cmake
+**/CMakeCache.txt
+**/CMakeFiles/
+etc/UseFLTK.cmake
+cmake_uninstall.cmake
+UseFLTK.cmake
+FLTK.sln
+FLTK-Targets.cmake
+FLTKConfig.cmake
+etc/FLTKConfig.cmake
+
+# MSVC
+*.tlog
+.vs/
+
+# VS Code (Visual Studio Code) Editor
+.vscode/
 
 # /
 /autom4te*.cache
+/build
 /clang
 /config.cache
-/config.guess
 /config.h
 /config.log
 /config.status
-/config.sub
+/configure
 /fltk-config
 /fltk.list
 /fltk.spec
@@ -23,9 +42,13 @@
 /TAGS
 
 # /FL
-/FL/abi-version.h
+/FL/fl_config.h
 /FL/Makefile
 /FL/*.bck
+
+# /cairo/
+/cairo/*.so*
+/cairo/*.dll
 
 # /documentation/
 /documentation/.xvpics
@@ -66,33 +89,7 @@
 /documentation/src/fltk-book.tex
 
 # /examples/
-/examples/*.exe
-/examples/clipboard
-/examples/fltk-versions
-/examples/howto-add_fd-and-popen
-/examples/howto-browser-with-icons
-/examples/howto-drag-and-drop
-/examples/howto-parse-args
-/examples/howto-text-over-image-button
-/examples/menubar-add
-/examples/nativefilechooser-simple-app
-/examples/progress-simple
-/examples/shapedwindow
-/examples/table-as-container
-/examples/table-simple
-/examples/table-sort
-/examples/table-spreadsheet
-/examples/table-spreadsheet-with-keyboard-nav
-/examples/table-with-keynav
-/examples/tabs-simple
-/examples/textdisplay-with-colors
-/examples/texteditor-simple
-/examples/tree-as-container
-/examples/tree-custom-draw-items
-/examples/tree-custom-sort
-/examples/tree-of-tables
-/examples/tree-simple
-/examples/wizard-simple
+# see examples/.gitignore
 
 # /fluid/
 /fluid/fluid
@@ -103,12 +100,10 @@
 /fluid/*.ilk
 /fluid/*.pdb
 /fluid/TAGS
-
-# /fluid/fluid.app/Contents/MacOS/
-/fluid/fluid.app/Contents/MacOS/fluid
-
-# /fluid/pixmaps/
+/fluid/fluid.app
 /fluid/pixmaps/*.bck
+
+/fluid/documentation/html/
 
 # /ide/VisualC2008/
 /ide/VisualC2008/fltk.ncb

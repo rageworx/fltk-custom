@@ -1,7 +1,7 @@
 //
 // Main event handling code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2021 by Bill Spitzak and others.
+// Copyright 1998-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -23,6 +23,7 @@
 #include "Fl_Screen_Driver.H"
 #include "Fl_Window_Driver.H"
 #include "Fl_System_Driver.H"
+#include "Fl_Timeout.h"
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Tooltip.H>
 #include <FL/fl_draw.H>
@@ -228,24 +229,22 @@ int Fl::event_inside(const Fl_Widget *o) /*const*/ {
 }
 
 //
-//
-// timer support
-//
+// cross-platform timer support
 //
 
 void Fl::add_timeout(double time, Fl_Timeout_Handler cb, void *argp) {
-  Fl::screen_driver()->add_timeout(time, cb, argp);
+  Fl_Timeout::add_timeout(time, cb, argp);
 }
 
 void Fl::repeat_timeout(double time, Fl_Timeout_Handler cb, void *argp) {
-  Fl::screen_driver()->repeat_timeout(time, cb, argp);
+  Fl_Timeout::repeat_timeout(time, cb, argp);
 }
 
 /**
  Returns true if the timeout exists and has not been called yet.
  */
 int Fl::has_timeout(Fl_Timeout_Handler cb, void *argp) {
-  return Fl::screen_driver()->has_timeout(cb, argp);
+  return Fl_Timeout::has_timeout(cb, argp);
 }
 
 /**
@@ -256,7 +255,7 @@ int Fl::has_timeout(Fl_Timeout_Handler cb, void *argp) {
         This may change in the future.
  */
 void Fl::remove_timeout(Fl_Timeout_Handler cb, void *argp) {
-  Fl::screen_driver()->remove_timeout(cb, argp);
+  Fl_Timeout::remove_timeout(cb, argp);
 }
 
 
@@ -298,7 +297,7 @@ static Check *first_check, *next_check, *free_check;
    if (!state_changed) return;
    state_changed = false;
    do_expensive_calculation();
-   widget-&gt;redraw();
+   widget->redraw();
   }
 
   main() {
@@ -390,7 +389,7 @@ void Fl::add_clipboard_notify(Fl_Clipboard_Notify_Handler h, void *data) {
 
   clip_notify_list = node;
 
-  Fl::system_driver()->clipboard_notify_change();
+  Fl::screen_driver()->clipboard_notify_change();
 }
 
 void Fl::remove_clipboard_notify(Fl_Clipboard_Notify_Handler h) {
@@ -403,7 +402,7 @@ void Fl::remove_clipboard_notify(Fl_Clipboard_Notify_Handler h) {
       *prev = node->next;
       delete node;
 
-      Fl::system_driver()->clipboard_notify_change();
+      Fl::screen_driver()->clipboard_notify_change();
 
       return;
     }
@@ -429,9 +428,45 @@ void fl_trigger_clipboard_notify(int source) {
 }
 
 ////////////////////////////////////////////////////////////////
-// wait/run/check/ready:
+// idle/wait/run/check/ready:
 
 void (*Fl::idle)(); // see Fl::add_idle.cxx for the add/remove functions
+
+/*
+  Private, undocumented method to run idle callbacks.
+
+  FLTK guarantees that idle callbacks will never be called recursively,
+  i.e. while an idle callback is being executed.
+
+  This method should (must) be the only way to run idle callbacks to
+  ensure that the `in_idle' flag is respected.
+
+  Idle callbacks are executed whenever Fl::wait() is called and no events
+  are waiting to be serviced.
+
+  If Fl::idle is set (non-NULL) this points at a function that executes
+  the first idle callback and appends it to the end of the list of idle
+  callbacks. For details see static function call_idle() in Fl_add_idle.cxx.
+
+  If it is NULL then no idle callbacks are active and Fl::run_idle() returns
+  immediately.
+
+  Note: idle callbacks can be queued in nested FLTK event loops like
+  ```
+    while (win->shown())
+      Fl::wait();
+  ```
+  if an event (timeout or button click etc.) handler calls Fl::add_idle()
+  or even in Fl::flush() if a draw() method calls Fl::add_idle().
+*/
+void Fl::run_idle() {
+  static char in_idle;
+  if (Fl::idle && !in_idle) {
+    in_idle = 1;
+    Fl::idle();
+    in_idle = 0;
+  }
+}
 
 /**
  Waits a maximum of \p time_to_wait seconds or until "something happens".
@@ -444,9 +479,7 @@ void (*Fl::idle)(); // see Fl::add_idle.cxx for the add/remove functions
  occurs (this will happen on X11 if a signal happens).
 */
 double Fl::wait(double time_to_wait) {
-  // delete all widgets that were listed during callbacks
-  do_widget_deletion();
-  return screen_driver()->wait(time_to_wait);
+  return system_driver()->wait(time_to_wait);
 }
 
 #define FOREVER 1e20
@@ -533,7 +566,7 @@ int Fl::check() {
 */
 int Fl::ready()
 {
-  return screen_driver()->ready();
+  return system_driver()->ready();
 }
 
 int Fl::program_should_quit_ = 0;
@@ -1341,7 +1374,7 @@ int Fl::handle_(int e, Fl_Window* window)
       return 1;
     }
     // Finally try sending it to the window, the event occurred in
-    if (send_event(FL_MOUSEWHEEL, window, window)) return 1;
+    if (send_event(FL_MOUSEWHEEL, window, window->top_window())) return 1;
   default:
     break;
   }
@@ -1388,12 +1421,12 @@ void Fl::selection(Fl_Widget &owner, const char* text, int len) {
   \see Fl::paste(Fl_Widget &receiver, int clipboard, const char* type)
 */
 void Fl::paste(Fl_Widget &receiver) {
-  Fl::system_driver()->paste(receiver, 0, Fl::clipboard_plain_text);
+  Fl::screen_driver()->paste(receiver, 0, Fl::clipboard_plain_text);
 }
 
 void Fl::paste(Fl_Widget &receiver, int clipboard, const char *type)
 {
-  Fl::system_driver()->paste(receiver, clipboard, type);
+  Fl::screen_driver()->paste(receiver, clipboard, type);
 }
 
 ////////////////////////////////////////////////////////////////
@@ -1885,31 +1918,6 @@ int Fl::dnd()
   return Fl::screen_driver()->dnd();
 }
 
-/**
- Resets marked text.
-
- In many languages, typing a character can involve multiple keystrokes. For
- example, the Ä can be composed of two dots (¨) on top of the
- character, followed by the letter A (on a Mac with U.S. keyboard, you'd
- type Alt-U, Shift-A. To inform the user that the dots may be followed by
- another character, the ¨ is underlined).
-
- Call this function if character composition needs to be aborted for some
- reason. One such example would be the text input widget losing focus.
- */
-void Fl::reset_marked_text() {
-  Fl::screen_driver()->reset_marked_text();
-}
-
-/**
-  Sets window coordinates and height of insertion point.
-
- \see Fl::compose(int& del) for a detailed description.
-*/
-void Fl::insertion_point_location(int x, int y, int height) {
-  Fl::screen_driver()->insertion_point_location(x, y, height);
-}
-
 int Fl::event_key(int k) {
   return system_driver()->event_key(k);
 }
@@ -1927,12 +1935,12 @@ const char * fl_filename_name(const char *name) {
 }
 
 void Fl::copy(const char *stuff, int len, int clipboard, const char *type) {
-  Fl::system_driver()->copy(stuff, len, clipboard, type);
+  Fl::screen_driver()->copy(stuff, len, clipboard, type);
 }
 
 int Fl::clipboard_contains(const char *type)
 {
-  return Fl::system_driver()->clipboard_contains(type);
+  return Fl::screen_driver()->clipboard_contains(type);
 }
 
 

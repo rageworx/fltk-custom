@@ -1,7 +1,7 @@
 //
 // Unit tests for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2017 by Bill Spitzak and others.
+// Copyright 1998-2022 by Bill Spitzak and others.
 //
 // Nods to Edmanuel Torres for the widget layout (STR#2672)
 //
@@ -15,6 +15,8 @@
 //
 //     https://www.fltk.org/bugs.php
 //
+
+#include "unittests.h"
 
 #include <FL/Fl_Choice.H>
 
@@ -70,7 +72,7 @@ public:
            if ( strcmp(name, "plastic") == 0) { schemechoice->value(1); }
       else if ( strcmp(name, "gtk+")    == 0) { schemechoice->value(2); }
       else if ( strcmp(name, "gleam")   == 0) { schemechoice->value(3); }
-      else if ( strcmp(name, "flat")    == 0) { schemechoice->value(4); }
+      else if ( strcmp(name, "flat")   == 0) { schemechoice->value(4); }
     }
     schemechoice->callback(SchemeChoice_CB, (void*)this);
 
@@ -326,4 +328,4 @@ public:
   }
 };
 
-UnitTest schemestest("schemes test", SchemesTest::create);
+UnitTest schemestest(kTestSchemes, "Schemes Test", SchemesTest::create);

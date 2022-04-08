@@ -56,7 +56,7 @@
 #include <stdlib.h>
 #include <FL/fl_utf8.h>
 #include <FL/filename.H>        // fl_open_uri()
-#include <FL/fl_string.h>       // fl_strdup()
+#include <FL/fl_string_functions.h>       // fl_strdup()
 #include "flstring.h"
 #include <ctype.h>
 #include <errno.h>
@@ -683,7 +683,7 @@ Fl_Help_View::draw()
     }
     if ( ver_vis ) {
       if ( scrollbar_.w() != scrollsize ) {             // scrollsize changed?
-	scrollbar_.resize(scorn_x, y()+hf, scrollsize, scorn_y - y()-hf);
+	scrollbar_.resize(scorn_x, y()+hf, scrollsize, scorn_y - y() - hf);
         init_sizes();
       }
       draw_child(scrollbar_);
@@ -1195,7 +1195,7 @@ Fl_Help_View::draw()
 
   \todo complex HTML entities for Unicode code points \> 0x80 are currently treated
     like one byte (not character!) and do not (yet) match correctly ("<" matches "&lt;"
-    but "?? doesn't match "&euro;", and "ü" doesn't match "&uuml;")
+    but "€" doesn't match "&euro;", and "ü" doesn't match "&uuml;")
 
   \param[in]  s   search string in UTF-8 encoding
   \param[in]  p   starting position for search (0,...), Default = 0

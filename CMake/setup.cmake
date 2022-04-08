@@ -1,8 +1,8 @@
 #
 # CMakeLists.txt to build the FLTK project using CMake (www.cmake.org)
-# Written by Michael Surette
+# Originally written by Michael Surette
 #
-# Copyright 1998-2020 by Bill Spitzak and others.
+# Copyright 1998-2022 by Bill Spitzak and others.
 #
 # This library is free software. Distribution and use rights are outlined in
 # the file "COPYING" which should have been included with this file.  If this
@@ -37,7 +37,6 @@ set (FLTK_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 include(GNUInstallDirs)
 
-
 set (FLTK_BINDIR ${CMAKE_INSTALL_BINDIR} CACHE PATH
   "Binary install path relative to CMAKE_INSTALL_PREFIX unless set to an absolute path.")
 set (FLTK_LIBDIR ${CMAKE_INSTALL_LIBDIR} CACHE PATH
@@ -51,6 +50,20 @@ set (FLTK_MANDIR ${CMAKE_INSTALL_MANDIR} CACHE PATH
 set (FLTK_DOCDIR ${CMAKE_INSTALL_DATADIR}/doc CACHE PATH
   "Non-arch doc install path relative to CMAKE_INSTALL_PREFIX unless set to an absolute path.")
 
+
+#######################################################################
+# initialize internally used variables
+# some of these variables are used to *append* other values later
+#######################################################################
+
+set (FLTK_LDLIBS "")
+set (FLTK_LIBRARIES "")
+set (GLLIBS "")
+set (IMAGELIBS "")
+set (LDFLAGS "")
+set (LIBS "")
+set (LINK_LIBS "")
+set (STATICIMAGELIBS "")
 
 #######################################################################
 # platform dependent information
@@ -68,6 +81,14 @@ endif (WIN32 AND NOT CYGWIN)
 include(TestBigEndian)
 TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
 
+if (CMAKE_GENERATOR MATCHES "Xcode")
+  if (NOT (CMAKE_VERSION VERSION_LESS 3.9)) # CMake 3.9 and up
+    # Tell Xcode to regenerate scheme information automatically whenever the
+    # CMake configuration changes without asking the user
+    set (CMAKE_XCODE_GENERATE_SCHEME 1)
+  endif()
+endif()
+
 if (APPLE)
   set (HAVE_STRCASECMP 1)
   set (HAVE_DIRENT_H 1)
@@ -81,9 +102,6 @@ if (APPLE)
     if (NOT(${CMAKE_SYSTEM_VERSION} VERSION_LESS 17.0.0)) # a.k.a. macOS version ≥ 10.13
       set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_LIBCPP_HAS_THREAD_API_PTHREAD")
     endif (NOT(${CMAKE_SYSTEM_VERSION} VERSION_LESS 17.0.0))
-  elseif (OPTION_APPLE_SDL)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SDL2_INCLUDE_DIRS} -U__APPLE__")
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SDL2_INCLUDE_DIRS} -U__APPLE__")
   else ()
     set (__APPLE_QUARTZ__ 1)
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework Cocoa")
@@ -98,11 +116,11 @@ if (WIN32)
   if (MSVC)
     add_definitions (-DWIN32_LEAN_AND_MEAN)
     add_definitions (-D_CRT_SECURE_NO_WARNINGS)
+    if (NOT MSVC_VERSION VERSION_LESS 1900) # Visual Studio 2015
+      add_compile_options (/utf-8)          # equivalent to `/source-charset:utf-8 /execution-charset:utf-8`
+    endif ()
     set (BORDER_WIDTH 2)
   endif (MSVC)
-  if (CMAKE_C_COMPILER_ID STREQUAL GNU)
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-subsystem,windows")
-  endif (CMAKE_C_COMPILER_ID STREQUAL GNU)
   if (MINGW AND EXISTS /mingw)
     list(APPEND CMAKE_PREFIX_PATH /mingw)
   endif (MINGW AND EXISTS /mingw)

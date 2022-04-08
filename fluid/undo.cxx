@@ -1,7 +1,7 @@
 //
 // FLUID undo support for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2017 by Bill Spitzak and others.
+// Copyright 1998-2021 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -14,10 +14,16 @@
 //     https://www.fltk.org/bugs.php
 //
 
-#include <FL/Fl.H>
-#include "Fl_Type.h"
 #include "undo.h"
+
+#include "fluid.h"
+#include "file.h"
+#include "Fl_Type.h"
+#include "widget_browser.h"
+
+#include <FL/Fl.H>
 #include <FL/Fl_Preferences.H>
+#include <FL/Fl_Menu_Bar.H>
 #include <FL/filename.H>
 #include "../src/flstring.h"
 
@@ -28,12 +34,6 @@
 #else
 #  include <unistd.h>
 #endif // _WIN32 && !__CYGWIN__
-
-
-extern Fl_Preferences   fluid_prefs;    // FLUID preferences
-extern Fl_Menu_Item     Main_Menu[];    // Main menu
-extern Fl_Menu_Bar     *main_menubar;   // Main menubar
-
 
 
 //
@@ -61,7 +61,7 @@ static char *undo_filename(int level) {
 
   if (!undo_path_len) {
     fluid_prefs.getUserdataPath(undo_path, sizeof(undo_path));
-    undo_path_len = strlen(undo_path);
+    undo_path_len = (unsigned int)strlen(undo_path);
   }
 
   // append filename: "undo_PID_LEVEL.fl"
@@ -82,6 +82,7 @@ void redo_cb(Fl_Widget *, void *) {
   undo_suspend();
   if (!read_file(undo_filename(undo_current + 1), 0)) {
     // Unable to read checkpoint file, don't redo...
+    widget_browser->rebuild();
     undo_resume();
     return;
   }
@@ -90,6 +91,7 @@ void redo_cb(Fl_Widget *, void *) {
 
   // Update modified flag...
   set_modflag(undo_current != undo_save);
+  widget_browser->rebuild();
 
   // Update undo/redo menu items...
   if (undo_current >= undo_last) Main_Menu[redo_item].deactivate();
@@ -108,11 +110,18 @@ void undo_cb(Fl_Widget *, void *) {
   }
 
   undo_suspend();
+  // Undo first deletes all widgets which resets the widget_tree browser.
+  // Save the current scroll position, so we don't scroll back to 0 at undo.
+  if (widget_browser) widget_browser->save_scroll_position();
   if (!read_file(undo_filename(undo_current - 1), 0)) {
     // Unable to read checkpoint file, don't undo...
+    widget_browser->rebuild();
     undo_resume();
     return;
   }
+  // Restore old browser position.
+  // Ideally, we would save the browser position insied the undo file.
+  if (widget_browser) widget_browser->restore_scroll_position();
 
   undo_current --;
 
@@ -122,6 +131,7 @@ void undo_cb(Fl_Widget *, void *) {
   // Update undo/redo menu items...
   if (undo_current <= 0) Main_Menu[undo_item].deactivate();
   Main_Menu[redo_item].activate();
+  widget_browser->rebuild();
   undo_resume();
 }
 

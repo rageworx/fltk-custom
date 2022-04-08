@@ -1,7 +1,7 @@
 //
 // Windows-specific code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2018 by Bill Spitzak and others.
+// Copyright 1998-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -54,13 +54,15 @@ void fl_cleanup_dc_list(void);
 #include <FL/platform.H>
 #include "Fl_Window_Driver.H"
 #include "Fl_Screen_Driver.H"
+#include "Fl_Timeout.h"
+#include "print_button.h"
 #include <FL/Fl_Graphics_Driver.H> // for fl_graphics_driver
 #include "drivers/WinAPI/Fl_WinAPI_Window_Driver.H"
 #include "drivers/WinAPI/Fl_WinAPI_System_Driver.H"
 #include "drivers/WinAPI/Fl_WinAPI_Screen_Driver.H"
 #include "drivers/GDI/Fl_GDI_Graphics_Driver.H"
 #include <FL/fl_utf8.h>
-#include <FL/fl_string.h>
+#include <FL/fl_string_functions.h>
 #include <FL/Fl_Window.H>
 #include <FL/fl_draw.H>
 #include <FL/Enumerations.H>
@@ -94,8 +96,17 @@ extern void fl_trigger_clipboard_notify(int source);
 extern HBRUSH fl_brush_action(int action);
 extern void fl_cleanup_pens(void);
 
+// MSVC 2010 can't find round() although <math.h> is included above,
+// which is surprising because ceil() works fine.
+// We could (should?) probably add configure/CMake feature tests for
+// round() and ceil() rather than depending on MSVC version numbers.
+// AlbrechtS, 02/2010 - Note: we don't know about MSVC 2012 - 2015, see
+// https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros
 
-//
+#if defined(_MSC_VER) && _MSC_VER <= 1600
+#define round(A) int((A) + 0.5)
+#endif // _MSC_VER <= 1600
+
 // USE_ASYNC_SELECT - define it if you have WSAAsyncSelect()...
 // USE_ASYNC_SELECT is OBSOLETED in 1.3 for the following reasons:
 /*
@@ -319,8 +330,6 @@ static struct FD {
 
 extern unsigned int fl_codepage;
 
-void fl_set_status(int x, int y, int w, int h) {}
-
 void Fl_WinAPI_System_Driver::add_fd(int n, int events, void (*cb)(FL_SOCKET, void *), void *v) {
   remove_fd(n, events);
   int i = nfds++;
@@ -406,19 +415,11 @@ static void process_awake_handler_requests(void) {
 // It *should* return negative on error, 0 if nothing happens before
 // timeout, and >0 if any callbacks were done.  This version
 // always returns 1.
-double Fl_WinAPI_Screen_Driver::wait(double time_to_wait) {
+double Fl_WinAPI_System_Driver::wait(double time_to_wait) {
+
+  time_to_wait = Fl_System_Driver::wait(time_to_wait);
 
   int have_message = 0;
-
-  Fl::run_checks();
-
-  // idle processing
-  static char in_idle;
-  if (Fl::idle && !in_idle) {
-    in_idle = 1;
-    Fl::idle();
-    in_idle = 0;
-  }
 
   if (nfds) {
     // For Windows we need to poll for socket input FIRST, since
@@ -462,6 +463,9 @@ double Fl_WinAPI_Screen_Driver::wait(double time_to_wait) {
   fl_unlock_function();
 
   time_to_wait = (time_to_wait > 10000 ? 10000 : time_to_wait);
+
+  time_to_wait = Fl_Timeout::time_to_wait(time_to_wait);
+
   int t_msec = (int)(time_to_wait * 1000.0 + 0.5);
   MsgWaitForMultipleObjects(0, NULL, FALSE, t_msec, QS_ALLINPUT);
 
@@ -517,8 +521,8 @@ double Fl_WinAPI_Screen_Driver::wait(double time_to_wait) {
   return 1;
 }
 
-// just like Fl_WinAPI_Screen_Driver::wait(0.0) except no callbacks are done:
-int Fl_WinAPI_Screen_Driver::ready() {
+// just like Fl_WinAPI_System_Driver::wait(0.0) except no callbacks are done:
+int Fl_WinAPI_System_Driver::ready() {
   if (PeekMessage(&fl_msg, NULL, 0, 0, PM_NOREMOVE))
     return 1;
   if (!nfds)
@@ -531,7 +535,6 @@ int Fl_WinAPI_Screen_Driver::ready() {
   return get_wsock_mod() ? s_wsock_select(0, &fdt[0], &fdt[1], &fdt[2], &t) : 0;
 }
 
-//FILE *LOG=fopen("log.log","w");
 
 void Fl_WinAPI_Screen_Driver::open_display_platform() {
   static char beenHereDoneThat = 0;
@@ -540,26 +543,42 @@ void Fl_WinAPI_Screen_Driver::open_display_platform() {
     return;
 
   beenHereDoneThat = 1;
-  typedef void *fl_DPI_AWARENESS_CONTEXT;
-  typedef BOOL(WINAPI * SetProcessDpiAwarenessContext_type)(fl_DPI_AWARENESS_CONTEXT);
-  SetProcessDpiAwarenessContext_type fl_SetProcessDpiAwarenessContext =
-      (SetProcessDpiAwarenessContext_type)GetProcAddress(LoadLibrary("User32.DLL"), "SetProcessDpiAwarenessContext");
-  if (fl_SetProcessDpiAwarenessContext) {
-    const fl_DPI_AWARENESS_CONTEXT fl_DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = (fl_DPI_AWARENESS_CONTEXT)(-4);
-    is_dpi_aware = fl_SetProcessDpiAwarenessContext(fl_DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+  // test whether DpiAwareness has been set before via a manifest
+  /*enum PROCESS_DPI_AWARENESS { // in shellscalingapi.h from Window 8.1
+    PROCESS_DPI_UNAWARE,
+    PROCESS_SYSTEM_DPI_AWARE,
+    PROCESS_PER_MONITOR_DPI_AWARE
+  };*/
+  typedef HRESULT(WINAPI * GetProcessDpiAwareness_type)(HANDLE, int *);
+  GetProcessDpiAwareness_type fl_GetProcessDpiAwareness =
+      (GetProcessDpiAwareness_type)GetProcAddress(LoadLibrary("Shcore.DLL"), "GetProcessDpiAwareness");
+  int awareness;
+  if (!fl_GetProcessDpiAwareness || fl_GetProcessDpiAwareness(NULL, &awareness) != S_OK) {
+    awareness = 0; //corresponds to PROCESS_DPI_UNAWARE;
   }
-  if (!is_dpi_aware) {
-    typedef HRESULT(WINAPI * SetProcessDpiAwareness_type)(int);
-    SetProcessDpiAwareness_type fl_SetProcessDpiAwareness =
-        (SetProcessDpiAwareness_type)GetProcAddress(LoadLibrary("Shcore.DLL"), "SetProcessDpiAwareness");
-    if (fl_SetProcessDpiAwareness) {
-      const int fl_PROCESS_PER_MONITOR_DPI_AWARE = 2;
-      if (fl_SetProcessDpiAwareness(fl_PROCESS_PER_MONITOR_DPI_AWARE) == S_OK) is_dpi_aware = true;
+  if (awareness == 2 /*PROCESS_PER_MONITOR_DPI_AWARE*/) is_dpi_aware = true;
+  if (awareness == 0 /*PROCESS_DPI_UNAWARE*/) { // DpiAwareness has not been set via a manifest
+    typedef void *fl_DPI_AWARENESS_CONTEXT;
+    typedef BOOL(WINAPI * SetProcessDpiAwarenessContext_type)(fl_DPI_AWARENESS_CONTEXT);
+    SetProcessDpiAwarenessContext_type fl_SetProcessDpiAwarenessContext =
+    (SetProcessDpiAwarenessContext_type)GetProcAddress(LoadLibrary("User32.DLL"), "SetProcessDpiAwarenessContext");
+    if (fl_SetProcessDpiAwarenessContext) {
+      const fl_DPI_AWARENESS_CONTEXT fl_DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = (fl_DPI_AWARENESS_CONTEXT)(-4);
+      is_dpi_aware = fl_SetProcessDpiAwarenessContext(fl_DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+    }
+    if (!is_dpi_aware) {
+      typedef HRESULT(WINAPI * SetProcessDpiAwareness_type)(int);
+      SetProcessDpiAwareness_type fl_SetProcessDpiAwareness =
+      (SetProcessDpiAwareness_type)GetProcAddress(LoadLibrary("Shcore.DLL"), "SetProcessDpiAwareness");
+      if (fl_SetProcessDpiAwareness) {
+        const int fl_PROCESS_PER_MONITOR_DPI_AWARE = 2;
+        if (fl_SetProcessDpiAwareness(fl_PROCESS_PER_MONITOR_DPI_AWARE) == S_OK) is_dpi_aware = true;
+      }
     }
   }
   OleInitialize(0L);
-
   get_imm_module();
+  fl_create_print_window();
 }
 
 
@@ -584,7 +603,7 @@ void Fl_WinAPI_Screen_Driver::desktop_scale_factor() {
     dpi[ns][0] = float(dpiX);
     dpi[ns][1] = float(dpiY);
     scale(ns, dpiX / 96.f);
-  //fprintf(LOG, "desktop_scale_factor ns=%d factor=%.2f dpi=%.1f\n", ns, scale(ns), dpi[ns][0]);
+    // fprintf(LOG, "desktop_scale_factor ns=%d factor=%.2f dpi=%.1f\n", ns, scale(ns), dpi[ns][0]);
   }
 }
 
@@ -603,6 +622,9 @@ public:
     // to work around it anyway.
     if (clipboard_wnd != NULL)
       fl_clipboard_notify_untarget(clipboard_wnd);
+#if USE_GDIPLUS
+    Fl_GDIplus_Graphics_Driver::shutdown();
+#endif
   }
 };
 static Fl_Win32_At_Exit win32_at_exit;
@@ -745,7 +767,7 @@ void fl_update_clipboard(void) {
 }
 
 // call this when you create a selection:
-void Fl_WinAPI_System_Driver::copy(const char *stuff, int len, int clipboard, const char *type) {
+void Fl_WinAPI_Screen_Driver::copy(const char *stuff, int len, int clipboard, const char *type) {
   if (!stuff || len < 0)
     return;
   if (clipboard >= 2)
@@ -770,7 +792,7 @@ void Fl_WinAPI_System_Driver::copy(const char *stuff, int len, int clipboard, co
 }
 
 // Call this when a "paste" operation happens:
-void Fl_WinAPI_System_Driver::paste(Fl_Widget &receiver, int clipboard, const char *type) {
+void Fl_WinAPI_Screen_Driver::paste(Fl_Widget &receiver, int clipboard, const char *type) {
   if (!clipboard || (fl_i_own_selection[clipboard] && strcmp(type, Fl::clipboard_plain_text) == 0)) {
     // We already have it, do it quickly without window server.
     // Notice that the text is clobbered if set_selection is
@@ -921,7 +943,7 @@ void Fl_WinAPI_System_Driver::paste(Fl_Widget &receiver, int clipboard, const ch
   }
 }
 
-int Fl_WinAPI_System_Driver::clipboard_contains(const char *type) {
+int Fl_WinAPI_Screen_Driver::clipboard_contains(const char *type) {
   int retval = 0;
   if (!OpenClipboard(NULL))
     return 0;
@@ -989,7 +1011,7 @@ void fl_clipboard_notify_retarget(HWND wnd) {
     fl_clipboard_notify_target(fl_xid(Fl::first_window()));
 }
 
-void Fl_WinAPI_System_Driver::clipboard_notify_change() {
+void Fl_WinAPI_Screen_Driver::clipboard_notify_change() {
   // untarget clipboard monitor if no handlers are registered
   if (clipboard_wnd != NULL && fl_clipboard_notify_empty()) {
     fl_clipboard_notify_untarget(clipboard_wnd);
@@ -1691,9 +1713,9 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 /* Implementation note about the API to get the dimensions of the top/left borders and the title bar
 
- Function fake_X_wm_style() below is used before calling CreateWindowExW() to create
+ Function fake_X_wm() below is used before calling CreateWindowExW() to create
  a window and before calling SetWindowPos(). Both of these Windows functions need the window size
- including borders and title bar. Function fake_X_wm_style() uses AdjustWindowRectExForDpi() or
+ including borders and title bar. Function fake_X_wm() uses AdjustWindowRectExForDpi() or
  AdjustWindowRectEx() to get the sizes of borders and title bar. The gotten values don't always match
  what is seen on the display, but they are the **required** values so the subsequent calls to
  CreateWindowExW() or SetWindowPos() correctly size the window.
@@ -1707,7 +1729,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
  DwmGetWindowAttribute().
  */
 
-////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////
 // This function gets the dimensions of the top/left borders and
 // the title bar, if there is one, based on the FL_BORDER, FL_MODAL
 // and FL_NONMODAL flags, and on the window's size range.
@@ -1718,13 +1740,15 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 //   1   |  fix   |   yes
 //   2   |  size  |   yes
 
-static int fake_X_wm_style(const Fl_Window *w, int &X, int &Y, int &bt, int &bx, int &by, DWORD style, DWORD styleEx,
-                           int w_maxw, int w_minw, int w_maxh, int w_minh, uchar w_size_range_set) {
+int Fl_WinAPI_Window_Driver::fake_X_wm(int &X, int &Y, int &bt, int &bx, int &by, DWORD style, DWORD styleEx) {
+
+  const Fl_Window *w = pWindow;
+
   int W = 0, H = 0, xoff = 0, yoff = 0, dx = 0, dy = 0;
   int ret = bx = by = bt = 0;
 
   int fallback = 1;
-  float s = Fl::screen_driver()->scale(Fl_Window_Driver::driver(w)->screen_num());
+  float s = Fl::screen_driver()->scale(screen_num());
   if (!w->parent()) {
     if (fl_xid(w) || style) {
       // The block below calculates the window borders by requesting the
@@ -1751,9 +1775,9 @@ static int fake_X_wm_style(const Fl_Window *w, int &X, int &Y, int &bt, int &bx,
       static AdjustWindowRectExForDpi_type fl_AdjustWindowRectExForDpi =
         (AdjustWindowRectExForDpi_type)GetProcAddress(LoadLibrary("User32.DLL"), "AdjustWindowRectExForDpi");
       BOOL ok;
-      if ( fl_AdjustWindowRectExForDpi) {
+      if (is_dpi_aware && fl_AdjustWindowRectExForDpi) {
         Fl_WinAPI_Screen_Driver *sd = (Fl_WinAPI_Screen_Driver*)Fl::screen_driver();
-        UINT dpi = UINT(sd->dpi[Fl_Window_Driver::driver(w)->screen_num()][0]);
+        UINT dpi = UINT(sd->dpi[screen_num()][0]);
         ok = fl_AdjustWindowRectExForDpi(&r, style, FALSE, styleEx, dpi);
       } else
         ok = AdjustWindowRectEx(&r, style, FALSE, styleEx);
@@ -1764,12 +1788,12 @@ static int fake_X_wm_style(const Fl_Window *w, int &X, int &Y, int &bt, int &bx,
         H = r.bottom - r.top;
         bx = drawingX - r.left;
         by = r.bottom - int(drawingY + w->h() * s); // height of the bottom frame
-        bt = drawingY - r.top - by;          // height of top caption bar
+        bt = drawingY - r.top - by;                 // height of top caption bar
         xoff = bx;
         yoff = by + bt;
         dx = W - int(w->w() * s);
         dy = H - int(w->h() * s);
-        if (w_size_range_set && (w_maxw != w_minw || w_maxh != w_minh))
+        if (maxw() != minw() || maxh() != minh())
           ret = 2;
         else
           ret = 1;
@@ -1780,7 +1804,7 @@ static int fake_X_wm_style(const Fl_Window *w, int &X, int &Y, int &bt, int &bx,
   // This is the original (pre 1.1.7) routine to calculate window border sizes.
   if (fallback) {
     if (w->border() && !w->parent()) {
-      if (w_size_range_set && (w_maxw != w_minw || w_maxh != w_minh)) {
+      if (maxw() != minw() || maxh() != minh()) {
         ret = 2;
         bx = GetSystemMetrics(SM_CXSIZEFRAME);
         by = GetSystemMetrics(SM_CYSIZEFRAME);
@@ -1843,10 +1867,6 @@ static int fake_X_wm_style(const Fl_Window *w, int &X, int &Y, int &bt, int &bx,
   return ret;
 }
 
-int Fl_WinAPI_Window_Driver::fake_X_wm(int &X, int &Y, int &bt, int &bx, int &by) {
-  return fake_X_wm_style(pWindow, X, Y, bt, bx, by, 0, 0, maxw(), minw(), maxh(), minh(), size_range_set());
-}
-
 ////////////////////////////////////////////////////////////////
 
 void Fl_WinAPI_Window_Driver::resize(int X, int Y, int W, int H) {
@@ -1888,8 +1908,6 @@ void Fl_WinAPI_Window_Driver::resize(int X, int Y, int W, int H) {
   if (!border())
     flags |= SWP_NOACTIVATE;
   if (resize_from_program && shown()) {
-    if (!pWindow->resizable())
-      pWindow->size_range(w(), h(), w(), h());
     int dummy_x, dummy_y, bt, bx, by;
     // compute window position and size in scaled units
     float s = Fl::screen_driver()->scale(screen_num());
@@ -1957,7 +1975,6 @@ private:
 
 void fl_fix_focus(); // in Fl.cxx
 
-// int fl_background_pixel = -1; // color to use for background
 UINT fl_wake_msg = 0;
 int fl_disable_transient_for; // secret method of removing TRANSIENT_FOR
 
@@ -2054,26 +2071,12 @@ Fl_X *Fl_WinAPI_Window_Driver::makeWindow() {
     style |= WS_CHILD;
     styleEx |= WS_EX_WINDOWEDGE | WS_EX_CONTROLPARENT;
     parent = fl_xid(w->window());
-  } else {
-    if (!size_range_set()) {
-      if (w->resizable()) {
-        Fl_Widget *o = w->resizable();
-        int minw = o->w();
-        if (minw > 100)
-          minw = 100;
-        int minh = o->h();
-        if (minh > 100)
-          minh = 100;
-        w->size_range(w->w() - o->w() + minw, w->h() - o->h() + minh, 0, 0);
-      } else {
-        w->size_range(w->w(), w->h(), w->w(), w->h());
-      }
-    }
+  } else { // top level window
     styleEx |= WS_EX_WINDOWEDGE | WS_EX_CONTROLPARENT;
 
     int wintype = 0;
-    if (w->border() && !w->parent()) {
-      if (size_range_set() && (maxw() != minw() || maxh() != minh()))
+    if (w->border()) {
+      if (is_resizable())
         wintype = 2;
       else
         wintype = 1;
@@ -2102,7 +2105,9 @@ Fl_X *Fl_WinAPI_Window_Driver::makeWindow() {
     }
 
     int xwm = xp, ywm = yp, bt, bx, by; // these are in graphical units
-    fake_X_wm_style(w, xwm, ywm, bt, bx, by, style, styleEx, maxw(), minw(), maxh(), minh(), size_range_set());
+
+    fake_X_wm(xwm, ywm, bt, bx, by, style, styleEx);
+
     if (by + bt) {
       wp += 2 * bx;
       hp += 2 * by + bt;
@@ -2594,20 +2599,8 @@ int Fl_WinAPI_Window_Driver::set_cursor(const Fl_RGB_Image *image, int hotx, int
 ////////////////////////////////////////////////////////////////
 // Implement the virtual functions for the base Fl_Window class:
 
-// If the box is a filled rectangle, we can make the redisplay *look*
-// faster by using X's background pixel erasing.  We can make it
-// actually *be* faster by drawing the frame only, this is done by
-// setting fl_boxcheat, which is seen by code in fl_drawbox.cxx:
-// For Windows it looks like all windows share a background color, so
-// I use FL_GRAY for this and only do this cheat for windows that are
-// that color.
-// Actually it is totally disabled.
-// Fl_Widget *fl_boxcheat;
-// static inline int can_boxcheat(uchar b) {return (b == 1 || (b & 2) && b <= 15);}
-
 void Fl_WinAPI_Window_Driver::show() {
   if (!shown()) {
-    // if (can_boxcheat(box())) fl_background_pixel = fl_xpixel(color());
     makeWindow();
   } else {
     // Once again, we would lose the capture if we activated the window.
@@ -2618,10 +2611,6 @@ void Fl_WinAPI_Window_Driver::show() {
       BringWindowToTop(i->xid);
     // ShowWindow(i->xid,fl_capture?SW_SHOWNOACTIVATE:SW_RESTORE);
   }
-#ifdef USE_PRINT_BUTTON
-  void preparePrintFront(void);
-  preparePrintFront();
-#endif
 }
 
 // the current context
@@ -2663,7 +2652,7 @@ void fl_free_fonts(void) {
     s = fl_fonts + i;
     for (f = s->first; f; f = ff) {
       ff = f->next;
-      delete f;
+      delete (Fl_GDI_Font_Descriptor*)f;
       s->first = ff;
     }
   }
@@ -2793,83 +2782,5 @@ void Fl_WinAPI_Window_Driver::capture_titlebar_and_borders(Fl_RGB_Image *&top, F
   fl_graphics_driver->gc(save_gc);
   Fl_Surface_Device::pop_current();
 }
-
-
-#ifdef USE_PRINT_BUTTON
-// to test the Fl_Printer class creating a "Print front window" button in a separate window
-// contains also preparePrintFront call above
-#include <FL/Fl_Printer.H>
-#include <FL/Fl_Button.H>
-void printFront(Fl_Widget *o, void *data) {
-  Fl_Printer printer;
-  o->window()->hide();
-  Fl_Window *win = Fl::first_window();
-  if (!win)
-    return;
-  int w, h;
-  if (printer.begin_job(1)) {
-    o->window()->show();
-    return;
-  }
-  if (printer.begin_page()) {
-    o->window()->show();
-    return;
-  }
-  printer.printable_rect(&w, &h);
-  int wh, ww;
-  wh = win->decorated_h();
-  ww = win->decorated_w();
-  // scale the printer device so that the window fits on the page
-  float scale = 1;
-  if (ww > w || wh > h) {
-    scale = (float)w / ww;
-    if ((float)h / wh < scale)
-      scale = (float)h / wh;
-    printer.scale(scale, scale);
-  }
-// #define ROTATE 20.0
-#ifdef ROTATE
-  printer.scale(scale * 0.8, scale * 0.8);
-  printer.printable_rect(&w, &h);
-  printer.origin(w / 2, h / 2);
-  printer.rotate(ROTATE);
-  printer.print_widget(win, -win->w() / 2, -win->h() / 2);
-  // printer.print_window_part(win, 0, 0, win->w(), win->h(), -win->w() / 2, -win->h() / 2);
-#else
-  printer.print_window(win);
-#endif
-  printer.end_page();
-  printer.end_job();
-  o->window()->show();
-}
-
-#include <FL/Fl_Copy_Surface.H>
-void copyFront(Fl_Widget *o, void *data) {
-  o->window()->hide();
-  Fl_Window *win = Fl::first_window();
-  if (!win)
-    return;
-  Fl_Copy_Surface *surf = new Fl_Copy_Surface(win->decorated_w(), win->decorated_h());
-  surf->set_current();
-  surf->draw_decorated_window(win); // draw the window content
-  delete surf;                      // put the window on the clipboard
-  Fl_Display_Device::display_device()->set_current();
-  o->window()->show();
-}
-
-void preparePrintFront(void) {
-  static BOOL first = TRUE;
-  if (!first)
-    return;
-  first = FALSE;
-  static Fl_Window w(0, 0, 120, 60);
-  static Fl_Button bp(0, 0, w.w(), 30, "Print front window");
-  bp.callback(printFront);
-  static Fl_Button bc(0, 30, w.w(), 30, "Copy front window");
-  bc.callback(copyFront);
-  w.end();
-  w.show();
-}
-#endif // USE_PRINT_BUTTON
 
 #endif // defined(_WIN32) and !defined(FL_DOXYGEN)

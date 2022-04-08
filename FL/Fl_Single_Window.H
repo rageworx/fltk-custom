@@ -45,7 +45,7 @@ public:
     position, size, and label (title) string.
   */
   Fl_Single_Window(int X, int Y, int W, int H, const char *l=0);
-  
+
   int make_current();
 };
 

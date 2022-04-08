@@ -21,7 +21,7 @@
 #include <FL/Fl_SVG_Image.H>
 #include <FL/fl_utf8.h>
 #include <FL/fl_draw.H>
-#include <FL/fl_string.h>
+#include <FL/fl_string_functions.h>
 #include "Fl_Screen_Driver.H"
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,12 +32,21 @@ static double strtoll(const char *str, char **endptr, int base) {
 }
 #endif
 
+#ifdef _MSC_VER
+#pragma warning (push)                  // Save #pragma warning status
+#pragma warning (disable: 4244)         // Switch off conversion warnings
+#endif
+
 #define NANOSVG_ALL_COLOR_KEYWORDS      // Include full list of color keywords.
 #define NANOSVG_IMPLEMENTATION          // Expands implementation
 #include "../nanosvg/nanosvg.h"
 
 #define NANOSVGRAST_IMPLEMENTATION      // Expands implementation
 #include "../nanosvg/nanosvgrast.h"
+
+#ifdef _MSC_VER
+#pragma warning (pop)                  // Restore #pragma warning status
+#endif
 
 #if defined(HAVE_LIBZ)
 #include <zlib.h>
@@ -170,6 +179,7 @@ void Fl_SVG_Image::init_(const char *filename, const char *in_filedata, Fl_SVG_I
     h(copy_source->h());
   }
   rasterized_ = false;
+  raster_w_ = raster_h_ = 0;
 }
 
 

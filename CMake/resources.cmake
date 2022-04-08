@@ -52,17 +52,14 @@ include (FindPkgConfig)
 fl_find_header (HAVE_ALSA_ASOUNDLIB_H alsa/asoundlib.h)
 fl_find_header (HAVE_DLFCN_H dlfcn.h)
 fl_find_header (HAVE_GL_GLU_H GL/glu.h)
-fl_find_header (HAVE_LIBPNG_PNG_H libpng/png.h)
 fl_find_header (HAVE_LOCALE_H locale.h)
 fl_find_header (HAVE_OPENGL_GLU_H OpenGL/glu.h)
-fl_find_header (HAVE_PNG_H png.h)
 fl_find_header (HAVE_STDIO_H stdio.h)
 fl_find_header (HAVE_STRINGS_H strings.h)
 fl_find_header (HAVE_SYS_SELECT_H sys/select.h)
 fl_find_header (HAVE_SYS_STDTYPES_H sys/stdtypes.h)
 
 fl_find_header (HAVE_X11_XREGION_H "X11/Xlib.h;X11/Xregion.h")
-fl_find_header (HAVE_XDBE_H "X11/Xlib.h;X11/extensions/Xdbe.h")
 
 if (WIN32 AND NOT CYGWIN)
   # we don't use pthreads on Windows (except for Cygwin, see options.cmake)
@@ -71,6 +68,17 @@ else ()
   fl_find_header (HAVE_PTHREAD_H pthread.h)
 endif (WIN32 AND NOT CYGWIN)
 
+# Do we have PTHREAD_MUTEX_RECURSIVE ?
+
+if (HAVE_PTHREAD_H)
+  try_compile(HAVE_PTHREAD_MUTEX_RECURSIVE
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/CMake/pthread_mutex_recursive.c
+  )
+else ()
+  set (HAVE_PTHREAD_MUTEX_RECURSIVE 0)
+endif ()
+
 # Special case for Microsoft Visual Studio generator (MSVC):
 #
 # The header files <GL/glu.h> and <locale.h> are located in the SDK's
@@ -78,42 +86,22 @@ endif (WIN32 AND NOT CYGWIN)
 # menu it doesn't have the correct paths to find these header files.
 # The CMake folks recommend not to search for these files at all, because
 # they must always be there, but we do anyway.
-# If we don't find them we issue a warning and suggest to rerun CMake from
-# a "Developer Command Prompt for Visual Studio xxxx", but we fix the issue
-# by setting the *local* instance (not the cache variable) of the corresponding
-# CMake variable to '1' since we "know" the header file is available.
-#
-# If the user builds the solution, everything should run smoothly despite
-# the fact that the header files were not found.
-#
-# If the configuration is changed somehow (e.g. by editing CMakeLists.txt)
-# CMake will be rerun from within Visual Studio, find the header file, and
-# set the cache variable for the header file to its correct path. The latter is
-# only informational so you can see that (and where) the headers were found.
+# If we don't find them we issue a warning and continue anyway.
 #
 # Note: these cache variables can only be seen in "advanced" mode.
 
 if (MSVC)
-  set (MSVC_RERUN_MESSAGE FALSE)
 
   if (NOT HAVE_GL_GLU_H)
-    message (STATUS "Warning: Header file GL/glu.h was not found.")
+    message (STATUS "Info: Header file GL/glu.h was not found. Continuing...")
     set (HAVE_GL_GLU_H 1)
-    set (MSVC_RERUN_MESSAGE TRUE)
   endif (NOT HAVE_GL_GLU_H)
 
   if (NOT HAVE_LOCALE_H)
-    message (STATUS "Warning: Header file locale.h was not found.")
+    message (STATUS "Info: Header file locale.h was not found. Continuing...")
     set (HAVE_LOCALE_H 1)
-    set (MSVC_RERUN_MESSAGE TRUE)
   endif (NOT HAVE_LOCALE_H)
 
-  if (MSVC_RERUN_MESSAGE)
-    message (STATUS "The FLTK team recommends to rerun CMake from a")
-    message (STATUS "\"Developer Command Prompt for Visual Studio xxxx\"")
-  endif (MSVC_RERUN_MESSAGE)
-
-  unset (MSVC_RERUN_MESSAGE)
 endif (MSVC)
 
 # Simulate the behavior of autoconf macro AC_HEADER_DIRENT, see:
@@ -138,11 +126,12 @@ endif (NOT HAVE_DIRENT_H)
 
 mark_as_advanced (HAVE_ALSA_ASOUNDLIB_H HAVE_DIRENT_H HAVE_DLFCN_H)
 mark_as_advanced (HAVE_GL_GLU_H)
-mark_as_advanced (HAVE_LIBPNG_PNG_H HAVE_LOCALE_H HAVE_NDIR_H)
-mark_as_advanced (HAVE_OPENGL_GLU_H HAVE_PNG_H HAVE_PTHREAD_H)
+mark_as_advanced (HAVE_OPENGL_GLU_H)
+mark_as_advanced (HAVE_LOCALE_H HAVE_NDIR_H)
+mark_as_advanced (HAVE_PTHREAD_H HAVE_PTHREAD_MUTEX_RECURSIVE)
 mark_as_advanced (HAVE_STDIO_H HAVE_STRINGS_H HAVE_SYS_DIR_H)
 mark_as_advanced (HAVE_SYS_NDIR_H HAVE_SYS_SELECT_H)
-mark_as_advanced (HAVE_SYS_STDTYPES_H HAVE_XDBE_H)
+mark_as_advanced (HAVE_SYS_STDTYPES_H)
 mark_as_advanced (HAVE_X11_XREGION_H)
 
 #----------------------------------------------------------------------
@@ -169,7 +158,7 @@ endif ((NOT APPLE) OR OPTION_APPLE_X11)
 find_library (LIB_freetype freetype)
 find_library (LIB_GL GL)
 find_library (LIB_MesaGL MesaGL)
-find_library (LIB_GLEW GLEW)
+find_library (LIB_GLEW NAMES GLEW glew32)
 find_library (LIB_jpeg jpeg)
 find_library (LIB_png png)
 find_library (LIB_zlib z)

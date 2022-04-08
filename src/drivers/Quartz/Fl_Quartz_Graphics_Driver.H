@@ -2,7 +2,7 @@
 // Definition of Apple Quartz graphics driver
 // for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2010-2018 by Bill Spitzak and others.
+// Copyright 2010-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -59,15 +59,14 @@ protected:
   virtual void cache_size(Fl_Image* img, int &width, int &height);
 public:
   Fl_Quartz_Graphics_Driver();
-  virtual ~Fl_Quartz_Graphics_Driver() { if (p) free(p); }
   virtual int has_feature(driver_feature mask) { return mask & NATIVE; }
   virtual void gc(void *ctxt) { gc_ = (CGContextRef)ctxt; global_gc(); }
   virtual void *gc() {return gc_;}
   char can_do_alpha_blending();
 
   // --- bitmap stuff
-  Fl_Bitmask create_bitmask(int w, int h, const uchar *array);
-  void delete_bitmask(Fl_Bitmask bm);
+  CGImageRef create_bitmask(int w, int h, const uchar *array); // NOT virtual
+  virtual void delete_bitmask(fl_uintptr_t bm);
   void draw_pixmap(Fl_Pixmap *pxm, int XP, int YP, int WP, int HP, int cx, int cy);
   void draw_bitmap(Fl_Bitmap *pxm, int XP, int YP, int WP, int HP, int cx, int cy);
   void draw_rgb(Fl_RGB_Image *img, int XP, int YP, int WP, int HP, int cx, int cy);
@@ -172,6 +171,10 @@ protected:
   virtual void overlay_rect(int x, int y, int w , int h);
   virtual float override_scale();
   virtual void restore_scale(float);
+  virtual void antialias(int state);
+  virtual int antialias();
+  virtual void set_spot(int font, int size, int X, int Y, int W, int H, Fl_Window *win);
+  virtual void reset_spot();
 };
 
 class Fl_Quartz_Printer_Graphics_Driver : public Fl_Quartz_Graphics_Driver {

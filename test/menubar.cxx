@@ -30,7 +30,7 @@
 #include <FL/fl_draw.H>
 #include <FL/Fl_Simple_Terminal.H>
 #include <FL/fl_ask.H>
-#include <FL/fl_string.h>
+#include <FL/fl_string_functions.h>
 
 #define TERMINAL_HEIGHT 120
 
@@ -252,7 +252,7 @@ int main(int argc, char **argv) {
   menus[3] = &mb;
   Fl_Box b(200,200,200,100,"Press right button\nfor a pop-up menu");
   window.resizable(&mb);
-  window.size_range(300,400,0,400);
+  window.size_range(300,400,0,400+TERMINAL_HEIGHT);
 #ifdef __APPLE__
   Fl_Choice ch2(500,100,150,25,"Use:");
   ch2.menu(menu_location);
@@ -281,7 +281,7 @@ int main(int argc, char **argv) {
   Fl_Menu_Item custom[] = {
     {"Preferences…",  0, test_cb, NULL, FL_MENU_DIVIDER},
     {"Radio1",        0, test_cb, NULL, FL_MENU_RADIO | FL_MENU_VALUE},
-    {"Radio2",        0, test_cb, NULL, FL_MENU_RADIO},
+    {"Radio2",        0, test_cb, NULL, FL_MENU_RADIO | FL_MENU_DIVIDER},
     {0}
   };
   Fl_Mac_App_Menu::custom_application_menu_items(custom);

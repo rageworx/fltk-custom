@@ -3,7 +3,7 @@ dnl the "configure" script is made from this by running GNU "autoconf"
 dnl
 dnl Configuration script for the Fast Light Tool Kit (FLTK).
 dnl
-dnl Copyright 1998-2021 by Bill Spitzak and others.
+dnl Copyright 1998-2022 by Bill Spitzak and others.
 dnl
 dnl This library is free software. Distribution and use rights are outlined in
 dnl the file "COPYING" which should have been included with this file.  If this
@@ -72,7 +72,7 @@ AC_PATH_TOOL(PKGCONFIG, pkg-config)
 
 dnl Architecture and optimization options...
 ARCHFLAGS="${ARCHFLAGS:=}"
-AC_ARG_WITH([archflags], AS_HELP_STRING([--with-archflags="flags"], [use custom architecture flags (default=none, macOS values include "-arch arm64e", "-arch i386", "-arch ppc", and "-arch x86_64")]), [
+AC_ARG_WITH([archflags], AS_HELP_STRING([--with-archflags="flags"], [use custom architecture flags (default=none, macOS values include "-arch arm64", "-arch i386", "-arch ppc", and "-arch x86_64")]), [
     ARCHFLAGS="$withval"
 ])
 AC_SUBST(ARCHFLAGS)
@@ -85,7 +85,8 @@ AC_SUBST(OPTIM)
 
 
 dnl Other options
-AC_ARG_ENABLE([cairo], AS_HELP_STRING([--enable-cairo], [use Cairo library])) AC_ARG_ENABLE([cairoext], AS_HELP_STRING([--enable-cairoext], [use FLTK code instrumentation for cairo extended use]))
+AC_ARG_ENABLE([cairo], AS_HELP_STRING([--enable-cairo], [use Cairo library]))
+AC_ARG_ENABLE([cairoext], AS_HELP_STRING([--enable-cairoext], [use FLTK code instrumentation for cairo extended use]))
 
 AC_ARG_ENABLE([cp936], AS_HELP_STRING([--enable-cp936], [turn on CP936]))
 AS_IF([test x$enable_cp936 = xyes], [
@@ -109,6 +110,8 @@ AC_ARG_ENABLE([localzlib], AS_HELP_STRING([--enable-localzlib], [use local ZLIB 
 
 AC_ARG_ENABLE([pango], AS_HELP_STRING([--enable-pango], [turn on Pango support]))
 
+AC_ARG_ENABLE([wayland], AS_HELP_STRING([--enable-wayland], [turn on Wayland support]))
+
 AC_ARG_ENABLE([print], AS_HELP_STRING([--disable-print], [turn off print support (X11)]))
 AS_IF([test x$enable_print = xno], [
     AC_DEFINE([FL_NO_PRINT_SUPPORT], [Disable X11 print support?])
@@ -127,8 +130,6 @@ AC_ARG_ENABLE([x11], AS_HELP_STRING([--enable-x11], [use X11 with Cygwin or macO
 
 AC_ARG_ENABLE([xcursor], AS_HELP_STRING([--disable-xcursor], [turn off Xcursor support]))
 
-AC_ARG_ENABLE([xdbe], AS_HELP_STRING([--disable-xdbe], [turn off Xdbe support]))
-
 AC_ARG_ENABLE([xfixes], AS_HELP_STRING([--disable-xfixes], [turn off Xfixes support]))
 
 AC_ARG_ENABLE([xft], AS_HELP_STRING([--disable-xft], [turn off Xft support]))
@@ -136,6 +137,21 @@ AC_ARG_ENABLE([xft], AS_HELP_STRING([--disable-xft], [turn off Xft support]))
 AC_ARG_ENABLE([xinerama], AS_HELP_STRING([--disable-xinerama], [turn off Xinerama support]))
 
 AC_ARG_ENABLE([xrender], AS_HELP_STRING([--disable-xrender], [turn off Xrender support]))
+
+AS_CASE([$host_os], [cygwin* | mingw*], [
+  AC_ARG_ENABLE([gdiplus], AS_HELP_STRING([--disable-gdiplus], [don't use GDI+ for antialiased graphics]))
+
+ gdiplus_found=no
+    AS_IF([test x$enable_gdiplus != xno], [
+        AC_CHECK_HEADERS([wtypes.h gdiplus.h], [
+            AC_DEFINE([USE_GDIPLUS])
+            LIBS="-lgdiplus $LIBS"
+            gdiplus_found=yes
+        ], [],
+    [[#include <wtypes.h>]])
+    ])
+
+])
 
 AS_IF([test x$enable_pango = xyes -a x$enable_xft = xno], [
     AC_MSG_ERROR([--disable-xft and --enable-pango are incompatible because Xft is necessary for Pango.])
@@ -207,7 +223,7 @@ CAIROLIBS=""
 
 AS_IF([test x$enable_cairoext = xyes], [
     AS_IF([$PKGCONFIG --exists cairo], [
-        AC_DEFINE([FLTK_USE_CAIRO])
+        AC_DEFINE([FLTK_HAVE_CAIROEXT])
         AC_DEFINE([FLTK_HAVE_CAIRO])
         CAIRODIR="cairo"
         CAIROFLAGS="$($PKGCONFIG --cflags cairo)"
@@ -242,6 +258,7 @@ AC_SUBST(FLTKCAIROOPTION)
 
 AC_SUBST(FLLIBNAME)
 AC_SUBST(GLDEMOS)
+AC_SUBST(GLWLDEMO)
 AC_SUBST(GLLIBNAME)
 AC_SUBST(IMGLIBNAME)
 AC_SUBST(CAIROLIBNAME)
@@ -721,7 +738,6 @@ AS_IF([test x$enable_localpng != xyes], [
             syspnginc_ok=yes
         ])
         AC_CHECK_HEADER([libpng/png.h], [
-            AC_DEFINE([HAVE_LIBPNG_PNG_H])
             syspnginc_ok=yes
         ])
         AS_IF([test x$syspnginc_ok = xyes], [
@@ -798,7 +814,6 @@ AC_SUBST([JPEGINC])
 AC_SUBST([PNG])
 AC_SUBST([PNGINC])
 AC_SUBST([HAVE_PNG_H])
-AC_SUBST([HAVE_LIBPNG_H])
 AC_SUBST([ZLIB])
 AC_SUBST([ZLIBINC])
 
@@ -855,16 +870,35 @@ AS_IF([test "x$enable_threads" != xno -a x$check_pthread = xyes], [
                 ])
             ])
         done
+
+        dnl Check if we have PTHREAD_MUTEX_RECURSIVE
+        AC_CACHE_CHECK([whether we have PTHREAD_MUTEX_RECURSIVE], ac_cv_pthread_mutex_recursive,[
+            AC_LANG_PUSH([C])
+            AC_COMPILE_IFELSE(
+                [AC_LANG_PROGRAM(
+                    [[#include <pthread.h>
+                    ]], [[
+                        return PTHREAD_MUTEX_RECURSIVE;
+                    ]])],
+                [ac_cv_pthread_mutex_recursive=yes],
+                [ac_cv_pthread_mutex_recursive=no])
+            AC_LANG_POP([])
+        ])
+        AS_IF([test x$ac_cv_pthread_mutex_recursive = xyes], [
+            AC_DEFINE([HAVE_PTHREAD_MUTEX_RECURSIVE])
+        ])
     ])
 ])
 
 AC_SUBST([PTHREAD_FLAGS])
+AC_SUBST([HAVE_PTHREAD_MUTEX_RECURSIVE])
 
 
 dnl Define OS-specific stuff...
 HLINKS=
 OSX_ONLY=:
 THREADS=
+LIBDECORDIR=""
 
 AC_ARG_WITH([links], AS_HELP_STRING([--with-links], [make header links for common misspellings (default=no)]))
 
@@ -887,6 +921,7 @@ AS_CASE([$host_os_gui], [cygwin* | mingw*], [
     LDFLAGS="-mwindows $LDFLAGS"
     DSOFLAGS="-mwindows $DSOFLAGS"
     LIBS="$LIBS -lole32 -luuid -lcomctl32 -lws2_32"
+
     BUILD="WIN"
     AS_IF([test "x$with_optim" = x], [
         dnl Avoid -Os optimization on Cygwin/MinGW
@@ -962,6 +997,74 @@ AS_CASE([$host_os_gui], [cygwin* | mingw*], [
         THREADS="threads$EXEEXT"
     ])
 
+    AS_IF([test x$enable_wayland = xyes], [
+      dnl Prepare for Wayland...
+
+      AS_IF([test x$PKGCONFIG = x], [
+          dnl pkg-config is not available, issue warning and abort...
+          AC_MSG_WARN([--enable-wayland: please install pkg-config.])
+          AC_MSG_ERROR([Aborting.])
+      ])
+
+      BUILD="WAYLAND"
+      AC_DEFINE([FLTK_USE_WAYLAND])
+      CFLAGS="$CFLAGS -DUSE_SYSTEM_LIBDECOR=0"
+      CXXFLAGS="$CXXFLAGS -DUSE_SYSTEM_LIBDECOR=0"
+      graphics="Wayland"
+      LIBS="$LIBS $($PKGCONFIG --libs wayland-cursor) $($PKGCONFIG --libs wayland-client) $($PKGCONFIG --libs xkbcommon)"
+      LIBS="$LIBS $($PKGCONFIG --libs dbus-1) -ldl"
+      CXXFLAGS="$CXXFLAGS -I../libdecor/src"
+      DSOFLAGS="$LIBS $DSOFLAGS"
+      enable_pango=yes
+      LIBDECORDIR="libdecor/build"
+      LDFLAGS="$LDFLAGS -rdynamic -no-pie"
+
+      AC_SEARCH_LIBS([dlopen], [dl])
+
+      AS_IF([test x$enable_gl != xno], [
+          AC_CHECK_HEADER([GL/gl.h], [AC_DEFINE([HAVE_GL])])
+          AC_CHECK_HEADER([GL/glu.h], [
+              AC_DEFINE([HAVE_GL_GLU_H])
+              GLLIBS="$($PKGCONFIG --libs wayland-egl) $($PKGCONFIG --libs egl) $($PKGCONFIG --libs glu) $($PKGCONFIG --libs gl) $GLLIBS"
+          ])
+          GLWLDEMO="egl"
+      ], [
+          LINKFLTKGL=""
+          GLLIBNAME=""
+          GLDSONAME=""
+          GLDEMOS=""
+          GLWLDEMO=""
+      ])
+
+      dnl Check for GTK-3 ...
+      gtk_found=no
+      CFLAGS="$($PKGCONFIG --cflags gtk+-3.0) $CFLAGS"
+      AC_CHECK_HEADERS([gtk/gtk.h], [
+          CFLAGS="$CFLAGS -DHAVE_GTK"
+          LIBS="$LIBS $($PKGCONFIG --libs gtk+-3.0)"
+          gtk_found=yes
+      ])
+
+      dnl Check for the Pango library ...
+      pango_found=no
+      CFLAGS="$($PKGCONFIG --cflags pangocairo) $CFLAGS"
+      CXXFLAGS="$($PKGCONFIG --cflags pangocairo) $CXXFLAGS"
+      LIBS="$LIBS $($PKGCONFIG --libs pangocairo)"
+
+      AC_CHECK_HEADERS([pango/pangocairo.h], [
+          AC_DEFINE([USE_PANGO])
+          AC_DEFINE([USE_XFT])
+          pango_found=yes
+      ])
+
+      dnl Early abort if Pango could not be found
+      AS_IF([test x$pango_found != xyes], [
+          AC_MSG_NOTICE([--enable-wayland: Pango libs and/or headers could not be found.])
+          AC_MSG_ERROR([Aborting.])
+      ])
+
+    ], [
+
     dnl Check for X11...
     AC_PATH_XTRA
 
@@ -978,7 +1081,7 @@ AS_CASE([$host_os_gui], [cygwin* | mingw*], [
     CXXFLAGS="$CXXFLAGS $X_CFLAGS"
     LDFLAGS="$X_LIBS $LDFLAGS"
     DSOFLAGS="$X_LIBS $DSOFLAGS"
-    AC_DEFINE([USE_X11])
+    AC_DEFINE([FLTK_USE_X11])
     BUILD="X11"
     AS_IF([test "x$x_includes" != x], [
         ac_cpp="$ac_cpp -I$x_includes"
@@ -1120,18 +1223,6 @@ AS_CASE([$host_os_gui], [cygwin* | mingw*], [
         ])
     ])
 
-    dnl Check for the Xdbe extension unless disabled...
-    xdbe_found=no
-    AS_IF([test x$enable_xdbe != xno], [
-        AC_CHECK_HEADER([X11/extensions/Xdbe.h], [
-            AC_CHECK_LIB([Xext], [XdbeQueryExtension], [
-                AC_DEFINE([HAVE_XDBE])
-                LIBS="-lXext $LIBS"
-                xdbe_found=yes
-            ])
-        ], [], [#include <X11/Xlib.h>])
-    ])
-
     dnl Check for the Xfixes extension unless disabled...
     xfixes_found=no
     AS_IF([test x$enable_xfixes != xno], [
@@ -1173,22 +1264,6 @@ AS_CASE([$host_os_gui], [cygwin* | mingw*], [
         AC_DEFINE([HAVE_X11_XREGION_H])
     ], [], [#include <X11/Xlib.h>])
 
-    dnl Check for overlay visuals...
-    AC_PATH_PROG([XPROP], [xprop])
-    AC_CACHE_CHECK([for X overlay visuals], [ac_cv_have_overlay], [
-        AS_IF([test "x$XPROP" != x], [
-            AS_IF([$XPROP -root 2>/dev/null | grep -c "SERVER_OVERLAY_VISUALS" >/dev/null], [
-                ac_cv_have_overlay=yes
-            ], [
-                ac_cv_have_overlay=no
-            ])
-        ], [
-            ac_cv_have_overlay=no
-        ])
-    ])
-
-    AS_IF([test x$ac_cv_have_overlay = xyes], [
-        AC_DEFINE([HAVE_OVERLAY])
     ])
 
     # Make symlinks since UNIX/Linux is case sensitive,
@@ -1213,6 +1288,8 @@ AC_SUBST([GLLIBS])
 AC_SUBST([HLINKS])
 AC_SUBST([OSX_ONLY])
 AC_SUBST([THREADS])
+
+AC_SUBST([LIBDECORDIR])
 
 AC_SUBST([INSTALL_DESKTOP])
 AC_SUBST([UNINSTALL_DESKTOP])
@@ -1341,17 +1418,21 @@ AS_IF([test -n "$GCC"], [
         [AC_MSG_RESULT(no)])
     CFLAGS="$OLDCFLAGS"
 
-    dnl Make sure that shared libraries don't have undefined references
-    # See if ld supports -no-undefined...
-    AC_MSG_CHECKING([if ld supports -no-undefined])
-    OLDLDFLAGS="$LDFLAGS"
-    LDFLAGS="$LDFLAGS -Wl,-no-undefined"
-    AC_LINK_IFELSE(
-        [AC_LANG_PROGRAM([[]], [[]])],
-        [DSOFLAGS="$DSOFLAGS -Wl,-no-undefined"
-         AC_MSG_RESULT(yes)],
-        [AC_MSG_RESULT(no)])
-    LDFLAGS="$OLDLDFLAGS"
+    AS_IF([test x$enable_wayland = xyes],[
+        DSOFLAGS="$DSOFLAGS -Wl,--allow-shlib-undefined"
+    ] , [
+        dnl Make sure that shared libraries don't have undefined references
+        # See if ld supports -no-undefined...
+        AC_MSG_CHECKING([if ld supports -no-undefined])
+        OLDLDFLAGS="$LDFLAGS"
+        LDFLAGS="$LDFLAGS -Wl,-no-undefined"
+        AC_LINK_IFELSE(
+          [AC_LANG_PROGRAM([[]], [[]])],
+          [DSOFLAGS="$DSOFLAGS -Wl,-no-undefined"
+          AC_MSG_RESULT(yes)],
+          [AC_MSG_RESULT(no)])
+        LDFLAGS="$OLDLDFLAGS"
+    ])
 
     # See if ld supports -Bsymbolic-functions...
     AC_MSG_CHECKING([if ld supports -Bsymbolic-functions])
@@ -1522,16 +1603,15 @@ echo "Configuration Summary"
 echo "-------------------------------------------------------------------------"
 
 AS_CASE([$host_os_gui], [cygwin* | mingw*], [
-    graphics="GDI"
+    AS_IF([test x$gdiplus_found = xyes], [graphics="GDI+"], [graphics="GDI"])
 ], [darwin*], [
     graphics="Quartz"
 ], [*], [
-    graphics="X11"
+    AS_IF([test x$enable_wayland != xyes], [
+        graphics="X11"
+    ])
     AS_IF([test x$xft_found = xyes], [
         graphics="$graphics + Xft"
-    ])
-    AS_IF([test x$xdbe_found = xyes], [
-        graphics="$graphics + Xdbe"
     ])
     AS_IF([test x$xfixes_found = xyes], [
         graphics="$graphics + Xfixes"
@@ -1616,7 +1696,7 @@ AC_SUBST([BINARY_DIR])
 
 dnl Write all of the files...
 AC_CONFIG_HEADERS([config.h:configh.in])
-AC_CONFIG_HEADERS([FL/abi-version.h:abi-version.in])
+AC_CONFIG_HEADERS([FL/fl_config.h:fl_config.in])
 AC_CONFIG_FILES([makeinclude fltk.list fltk-config fltk.spec FL/Makefile])
 AC_OUTPUT
 

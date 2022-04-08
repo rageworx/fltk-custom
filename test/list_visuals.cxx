@@ -9,7 +9,7 @@
 // This file may be #included in another program to make a function to
 // call to list the visuals.  Fl.H must be included first to indicate this.
 //
-// Copyright 1998-2016 by Bill Spitzak and others.
+// Copyright 1998-2021 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -26,9 +26,9 @@
 #  define NEED_MAIN 1 // when not included by another FLTK program
 #endif
 
-#include <FL/platform.H> // for USE_X11
+#include <FL/platform.H> // for FLTK_USE_X11
 
-#if USE_X11
+#ifdef FLTK_USE_X11
 
 #include <config.h>
 
@@ -75,10 +75,6 @@ typedef struct _OverlayInfo {
 
 #if HAVE_MULTIBUF
 #include <X11/extensions/multibuf.h>
-#endif
-
-#if HAVE_XDBE
-#include <X11/extensions/Xdbe.h>
 #endif
 
 static void print_mask(XVisualInfo* p) {
@@ -144,22 +140,6 @@ void list_visuals() {
   }
 #endif
 
-#if HAVE_XDBE
-  int event_base, error_base;
-  int numdouble = 0;
-  XdbeVisualInfo *dbe = 0;
-  if (XdbeQueryExtension(fl_display, &event_base, &error_base)) {
-    Drawable root = RootWindow(fl_display,fl_screen);
-    int numscreens = 1;
-    XdbeScreenVisualInfo *a = XdbeGetVisualInfo(fl_display,&root,&numscreens);
-    if (!a) printf("error getting double buffer visuals\n");
-    else {
-      dbe = a->visinfo;
-      numdouble = a->count;
-    }
-  }
-#endif
-
   for (int i=0; i<num; i++) {
     XVisualInfo *p = visualList+i;
 
@@ -200,11 +180,6 @@ void list_visuals() {
     }
 #endif
 
-#if HAVE_XDBE
-    for (j = 0; j < numdouble; j++) if (dbe[j].visual == p->visualid)
-      printf(" doublebuf(perflevel %d)",dbe[j].perflevel);
-#endif
-
     if (p->visualid==XVisualIDFromVisual(DefaultVisual(fl_display,fl_screen)))
       printf(" (default visual)");
 
@@ -213,16 +188,16 @@ void list_visuals() {
   if ( overlayInfo ) { XFree(overlayInfo); overlayInfo = 0; }
 }
 
-#endif // USE_X11
+#endif // FLTK_USE_X11
 
 #ifdef NEED_MAIN
 
-#  if ! USE_X11
+#  ifndef FLTK_USE_X11
 #    include <FL/fl_ask.H>
 #  endif
 
 int main(int argc, char** argv) {
-#  if USE_X11
+#  ifdef FLTK_USE_X11
   if (argc == 1);
   else if (argc == 2 && argv[1][0]!='-') dname = argv[1];
   else {fprintf(stderr,"usage: %s <display>\n",argv[0]); exit(1);}
@@ -231,7 +206,7 @@ int main(int argc, char** argv) {
 #  else
   fl_alert("Currently, this program works only under X.");
   return 1;
-#  endif // USE_X11
+#  endif // FLTK_USE_X11
 }
 
 #endif // NEED_MAIN

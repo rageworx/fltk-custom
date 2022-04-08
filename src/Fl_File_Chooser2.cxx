@@ -21,8 +21,11 @@
 
 // *** BEGIN OUT OF SOURCE DOCUMENTATION ***
 
-/** \defgroup group_comdlg Common Dialogs classes and functions
-    @{
+/** \defgroup group_comdlg Common Dialog Classes and Functions
+
+  \brief Common dialog functions for file selection, message output, and more.
+
+  @{
 */
 /** \class Fl_File_Chooser
   The Fl_File_Chooser widget displays a standard file selection
@@ -351,7 +354,7 @@
 #include <FL/platform.H>
 #include <FL/Fl_Shared_Image.H>
 #include <FL/fl_draw.H>
-#include <FL/fl_string.h>
+#include <FL/fl_string_functions.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1491,9 +1494,9 @@ Fl_File_Chooser::value(const char *filename)
     return;
   }
 
+  char fixpath[FL_PATH_MAX];                   // Path with slashes converted
   if (Fl::system_driver()->backslash_as_slash()) {
     // See if the filename contains backslashes...
-    char        fixpath[FL_PATH_MAX];                   // Path with slashes converted
     if (strchr(filename, '\\')) {
       // Convert backslashes to slashes...
       strlcpy(fixpath, filename, sizeof(fixpath));

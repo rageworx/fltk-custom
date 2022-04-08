@@ -21,7 +21,7 @@
 #include <FL/platform.H>
 #include <FL/math.h>
 #include <FL/fl_utf8.h>
-#include <FL/fl_string.h>
+#include <FL/fl_string_functions.h>
 #include "flstring.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -189,19 +189,18 @@ int Fl::scheme(const char *s) {
 
 int Fl::reload_scheme() {
   Fl_Window *win;
-
   if (scheme_ && !fl_ascii_strcasecmp(scheme_, "plastic")) {
     // Update the tile image to match the background color...
     uchar r, g, b;
     int nr, ng, nb;
     int i;
-//    static uchar levels[3] = { 0xff, 0xef, 0xe8 };
+    // static uchar levels[3] = { 0xff, 0xef, 0xe8 };
     // OSX 10.3 and higher use a background with less contrast...
     static uchar levels[3] = { 0xff, 0xf8, 0xf4 };
 
     get_color(FL_GRAY, r, g, b);
 
-//    printf("FL_GRAY = 0x%02x 0x%02x 0x%02x\n", r, g, b);
+    //printf("FL_GRAY = 0x%02x 0x%02x 0x%02x\n", r, g, b);
 
     for (i = 0; i < 3; i ++) {
       nr = levels[i] * r / 0xe8;
@@ -214,7 +213,7 @@ int Fl::reload_scheme() {
       if (nb > 255) nb = 255;
 
       sprintf(tile_cmap[i], "%c c #%02x%02x%02x", "Oo."[i], nr, ng, nb);
-//      puts(tile_cmap[i]);
+      // puts(tile_cmap[i]);
     }
 
     tile.uncache();
@@ -275,9 +274,9 @@ int Fl::reload_scheme() {
     set_boxtype(FL_THIN_DOWN_BOX,   FL_GLEAM_THIN_DOWN_BOX);
     set_boxtype(_FL_ROUND_UP_BOX,   FL_GLEAM_ROUND_UP_BOX);
     set_boxtype(_FL_ROUND_DOWN_BOX, FL_GLEAM_ROUND_DOWN_BOX);
-
     // Use slightly thinner scrollbars...
     Fl::scrollbar_size(15);
+#ifdef FLTK_EXT_VERSION
   } else if (scheme_ && !fl_ascii_strcasecmp(scheme_, "flat")) {
     // windows flat UI style, by Raphael Kim
     if (scheme_bg_) {
@@ -296,9 +295,9 @@ int Fl::reload_scheme() {
     set_boxtype(FL_THIN_DOWN_BOX,   FL_FLAT_THIN_DOWN_BOX);
     set_boxtype(_FL_ROUND_UP_BOX,   FL_FLAT_ROUND_UP_BOX);
     set_boxtype(_FL_ROUND_DOWN_BOX, FL_FLAT_ROUND_DOWN_BOX);
-
-    // Use slightly thinner scrollbars...
-    Fl::scrollbar_size(15);
+    // Use slightly thinner scrollbarslike gleam...
+    Fl::scrollbar_size(13);
+#endif /// of FLTK_EXT_VERSION
   } else {
     // Use the standard FLTK look-n-feel...
     if (scheme_bg_) {

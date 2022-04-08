@@ -1,7 +1,7 @@
 //
 // Rectangle drawing routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2018 by Bill Spitzak and others.
+// Copyright 1998-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -30,14 +30,6 @@ extern char fl_is_over_the_spot;
 extern char *fl_get_font_xfld(int fnum, int size);
 #endif
 
-/*
- * By linking this module, the following static method will instantiate the
- * X11 Xlib Graphics driver as the main display driver.
- */
-Fl_Graphics_Driver *Fl_Graphics_Driver::newMainGraphicsDriver()
-{
-  return new Fl_Xlib_Graphics_Driver();
-}
 
 GC Fl_Xlib_Graphics_Driver::gc_ = NULL;
 int Fl_Xlib_Graphics_Driver::fl_overlay = 0;
@@ -50,7 +42,7 @@ GC fl_gc = 0;
 
 Fl_Xlib_Graphics_Driver::Fl_Xlib_Graphics_Driver(void) {
   mask_bitmap_ = NULL;
-  p = NULL;
+  short_point = NULL;
 #if USE_PANGO
   Fl_Graphics_Driver::font(0, 0);
 #endif
@@ -60,7 +52,7 @@ Fl_Xlib_Graphics_Driver::Fl_Xlib_Graphics_Driver(void) {
 }
 
 Fl_Xlib_Graphics_Driver::~Fl_Xlib_Graphics_Driver() {
-  if (p) free(p);
+  if (short_point) free(short_point);
 }
 
 
@@ -93,19 +85,19 @@ void Fl_Xlib_Graphics_Driver::add_rectangle_to_region(Fl_Region r, int X, int Y,
 
 void Fl_Xlib_Graphics_Driver::transformed_vertex0(float fx, float fy) {
   short x = short(fx), y = short(fy);
-  if (!n || x != p[n-1].x || y != p[n-1].y) {
+  if (!n || x != short_point[n-1].x || y != short_point[n-1].y) {
     if (n >= p_size) {
-      p_size = p ? 2*p_size : 16;
-      p = (XPOINT*)realloc((void*)p, p_size*sizeof(*p));
+      p_size = short_point ? 2*p_size : 16;
+      short_point = (XPoint*)realloc((void*)short_point, p_size*sizeof(*short_point));
     }
-    p[n].x = x ;
-    p[n].y = y ;
+    short_point[n].x = x ;
+    short_point[n].y = y ;
     n++;
   }
 }
 
 void Fl_Xlib_Graphics_Driver::fixloop() {  // remove equal points from closed path
-  while (n>2 && p[n-1].x == p[0].x && p[n-1].y == p[0].y) n--;
+  while (n>2 && short_point[n-1].x == short_point[0].x && short_point[n-1].y == short_point[0].y) n--;
 }
 
 // FIXME: should be members of Fl_Xlib_Graphics_Driver
@@ -134,6 +126,13 @@ void Fl_Xlib_Graphics_Driver::set_spot(int font, int size, int X, int Y, int W, 
   static XIC ic = NULL;
 
   if (!fl_xim_ic || !fl_is_over_the_spot) return;
+  if (Fl::focus()) { // handle case when text widget is inside subwindow
+    Fl_Window *focuswin = Fl::focus()->window();
+    while (focuswin && focuswin->parent()) {
+      X += focuswin->x(); Y += focuswin->y();
+      focuswin = focuswin->window();
+    }
+  }
   //XSetICFocus(fl_xim_ic);
   if (X != fl_spot.x || Y != fl_spot.y) {
     fl_spot.x = X;
@@ -174,9 +173,11 @@ void Fl_Xlib_Graphics_Driver::set_spot(int font, int size, int X, int Y, int W, 
   if (fnt && must_free_fnt) free(fnt);
   if (!change) return;
 
-
+  float s = scale();
+  XRectangle fl_spot_unscaled = { short(fl_spot.x * s), short(fl_spot.y * s),
+    (unsigned short)(fl_spot.width * s), (unsigned short)(fl_spot.height * s) };
   preedit_attr = XVaCreateNestedList(0,
-                                     XNSpotLocation, &fl_spot,
+                                     XNSpotLocation, &fl_spot_unscaled,
                                      XNFontSet, fs, NULL);
   XSetICValues(fl_xim_ic, XNPreeditAttributes, preedit_attr, NULL);
   XFree(preedit_attr);

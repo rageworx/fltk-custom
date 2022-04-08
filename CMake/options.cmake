@@ -1,8 +1,8 @@
 #
 # Main CMakeLists.txt to build the FLTK project using CMake (www.cmake.org)
-# Written by Michael Surette
+# Originally written by Michael Surette
 #
-# Copyright 1998-2020 by Bill Spitzak and others.
+# Copyright 1998-2022 by Bill Spitzak and others.
 #
 # This library is free software. Distribution and use rights are outlined in
 # the file "COPYING" which should have been included with this file.  If this
@@ -14,6 +14,38 @@
 #
 #     https://www.fltk.org/bugs.php
 #
+
+#######################################################################
+# Important implementation note for FLTK developers
+#######################################################################
+#
+# *FIXME* In the current version of FLTK's CMake build files we're
+# using 'include_directories()' to define directories that must be
+# used in compile commands (typically "-Idirectories").
+#
+# include_directories() is a global command that affects *all* source
+# files in the current directory and all subdirectories. This can lead
+# to conflicts and should be replaced with target_include_directories()
+# which can be applied to particular targets and source files only.
+#
+# This could remove some of these potential build conflicts, for
+# instance # if the bundled image libs and Cairo or Pango are used
+# together (Pango depends on Cairo and Cairo depends on libpng).
+# However, this is not a proper solution!
+#
+# That said, order of "-I..." switches matters, and therefore the
+# bundled libraries (png, jpeg, zlib) *must* appear before any other
+# include_directories() statements that might introduce conflicts.
+# Currently 'resources.cmake' is included before this file and thus
+# 'include_directories (${FREETYPE_PATH})' is executed before this
+# file but this doesn't matter.
+#
+# This *MUST* be fixed using target_include_directories() as
+# appropriate but this would need a major rework.
+#
+# Albrecht-S April 6, 2022
+#
+#######################################################################
 
 set (DEBUG_OPTIONS_CMAKE 0)
 if (DEBUG_OPTIONS_CMAKE)
@@ -46,16 +78,155 @@ set (OPTION_ABI_VERSION ""
 set (FL_ABI_VERSION ${OPTION_ABI_VERSION})
 
 #######################################################################
+#  Bundled Library Options
+#######################################################################
+
+option (OPTION_USE_SYSTEM_ZLIB      "use system zlib"    ON)
+
+if (APPLE)
+  option (OPTION_USE_SYSTEM_LIBJPEG "use system libjpeg" OFF)
+  option (OPTION_USE_SYSTEM_LIBPNG  "use system libpng"  OFF)
+else ()
+  option (OPTION_USE_SYSTEM_LIBJPEG "use system libjpeg" ON)
+  option (OPTION_USE_SYSTEM_LIBPNG  "use system libpng"  ON)
+endif ()
+
+#######################################################################
+#  Bundled Compression Library : zlib
+#######################################################################
+
+if (OPTION_USE_SYSTEM_ZLIB)
+  find_package (ZLIB)
+endif ()
+
+if (OPTION_USE_SYSTEM_ZLIB AND ZLIB_FOUND)
+  set (FLTK_USE_BUILTIN_ZLIB FALSE)
+  set (FLTK_ZLIB_LIBRARIES ${ZLIB_LIBRARIES})
+  include_directories (${ZLIB_INCLUDE_DIRS})
+else()
+  if (OPTION_USE_SYSTEM_ZLIB)
+    message (STATUS "cannot find system zlib library - using built-in\n")
+  endif ()
+
+  add_subdirectory (zlib)
+  set (FLTK_USE_BUILTIN_ZLIB TRUE)
+  set (FLTK_ZLIB_LIBRARIES fltk_z)
+  set (ZLIB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zlib)
+  include_directories (${CMAKE_CURRENT_SOURCE_DIR}/zlib)
+endif ()
+
+set (HAVE_LIBZ 1)
+
+#######################################################################
+#  Bundled Image Library : libjpeg
+#######################################################################
+
+if (OPTION_USE_SYSTEM_LIBJPEG)
+  find_package (JPEG)
+endif ()
+
+if (OPTION_USE_SYSTEM_LIBJPEG AND JPEG_FOUND)
+  set (FLTK_USE_BUILTIN_JPEG FALSE)
+  set (FLTK_JPEG_LIBRARIES ${JPEG_LIBRARIES})
+  include_directories (${JPEG_INCLUDE_DIR})
+else ()
+  if (OPTION_USE_SYSTEM_LIBJPEG)
+    message (STATUS "cannot find system jpeg library - using built-in\n")
+  endif ()
+
+  add_subdirectory (jpeg)
+  set (FLTK_USE_BUILTIN_JPEG TRUE)
+  set (FLTK_JPEG_LIBRARIES fltk_jpeg)
+  include_directories (${CMAKE_CURRENT_SOURCE_DIR}/jpeg)
+endif ()
+
+set (HAVE_LIBJPEG 1)
+
+#######################################################################
+#  Bundled Image Library : libpng
+#######################################################################
+
+if (OPTION_USE_SYSTEM_LIBPNG)
+  find_package (PNG)
+endif ()
+
+if (OPTION_USE_SYSTEM_LIBPNG AND PNG_FOUND)
+
+  set (FLTK_USE_BUILTIN_PNG FALSE)
+  set (FLTK_PNG_LIBRARIES ${PNG_LIBRARIES})
+  include_directories (${PNG_INCLUDE_DIRS})
+  add_definitions (${PNG_DEFINITIONS})
+
+  set (_INCLUDE_SAVED ${CMAKE_REQUIRED_INCLUDES})
+  list (APPEND CMAKE_REQUIRED_INCLUDES ${PNG_INCLUDE_DIRS})
+
+  # Note: we do not check for <libpng/png.h> explicitly.
+  # This is assumed to exist if we have PNG_FOUND and don't find <png.h>
+
+  # FIXME - Force search by unsetting the chache variable. Maybe use
+  # FIXME - another cache variable to check for option changes?
+
+  unset (HAVE_PNG_H CACHE) # force search
+  check_include_file (png.h HAVE_PNG_H)
+  mark_as_advanced (HAVE_PNG_H)
+
+  set (CMAKE_REQUIRED_INCLUDES ${_INCLUDE_SAVED})
+  unset (_INCLUDE_SAVED)
+
+else ()
+
+  if (OPTION_USE_SYSTEM_LIBPNG)
+    message (STATUS "cannot find system png library - using built-in\n")
+  endif ()
+
+  add_subdirectory (png)
+  set (FLTK_USE_BUILTIN_PNG TRUE)
+  set (FLTK_PNG_LIBRARIES fltk_png)
+  set (HAVE_PNG_H 1)
+  set (HAVE_PNG_GET_VALID 1)
+  set (HAVE_PNG_SET_TRNS_TO_ALPHA 1)
+  include_directories (${CMAKE_CURRENT_SOURCE_DIR}/png)
+endif ()
+
+set (HAVE_LIBPNG 1)
+
 #######################################################################
 if (UNIX)
   option (OPTION_CREATE_LINKS "create backwards compatibility links" OFF)
   list (APPEND FLTK_LDLIBS -lm)
+  option (OPTION_USE_WAYLAND "use Wayland" OFF)
+  if (OPTION_USE_WAYLAND)
+    set (FLTK_USE_WAYLAND 1)
+    option (OPTION_USE_SYSTEM_LIBDECOR "use libdecor from the system" OFF)
+    unset (OPTION_USE_XRENDER CACHE)
+    unset (OPTION_USE_XINERAMA CACHE)
+    unset (OPTION_USE_XFT CACHE)
+    unset (OPTION_USE_XCURSOR CACHE)
+    unset (OPTION_USE_XFIXES CACHE)
+    unset (OPTION_USE_PANGO CACHE)
+    set (OPTION_USE_PANGO TRUE CACHE BOOL "use lib Pango")
+    if (OPTION_USE_SYSTEM_LIBDECOR)
+      pkg_check_modules(SYSTEM_LIBDECOR libdecor-0)
+      if (NOT SYSTEM_LIBDECOR_FOUND)
+        set (OPTION_USE_SYSTEM_LIBDECOR OFF)
+      endif (NOT SYSTEM_LIBDECOR_FOUND)
+    endif (OPTION_USE_SYSTEM_LIBDECOR)
+  endif (OPTION_USE_WAYLAND)
 endif (UNIX)
+
+if (WIN32)
+  option (OPTION_USE_GDIPLUS "use GDI+ when possible for antialiased graphics" ON)
+  if (OPTION_USE_GDIPLUS)
+    set (USE_GDIPLUS TRUE)
+    if (NOT MSVC)
+      list (APPEND FLTK_LDLIBS "-lgdiplus")
+    endif (NOT MSVC)
+  endif (OPTION_USE_GDIPLUS)
+endif (WIN32)
 
 #######################################################################
 if (APPLE)
   option (OPTION_APPLE_X11 "use X11" OFF)
-  option (OPTION_APPLE_SDL "use SDL" OFF)
   if (CMAKE_OSX_SYSROOT)
     list (APPEND FLTK_CFLAGS "-isysroot ${CMAKE_OSX_SYSROOT}")
   endif (CMAKE_OSX_SYSROOT)
@@ -63,17 +234,17 @@ endif (APPLE)
 
 # find X11 libraries and headers
 set (PATH_TO_XLIBS)
-if ((NOT APPLE OR OPTION_APPLE_X11) AND NOT WIN32)
+if ((NOT APPLE OR OPTION_APPLE_X11) AND NOT WIN32 AND NOT OPTION_USE_WAYLAND)
   include (FindX11)
   if (X11_FOUND)
-    set (USE_X11 1)
+    set (FLTK_USE_X11 1)
     list (APPEND FLTK_LDLIBS -lX11)
     if (X11_Xext_FOUND)
       list (APPEND FLTK_LDLIBS -lXext)
     endif (X11_Xext_FOUND)
     get_filename_component (PATH_TO_XLIBS ${X11_X11_LIB} PATH)
   endif (X11_FOUND)
-endif ((NOT APPLE OR OPTION_APPLE_X11) AND NOT WIN32)
+endif ((NOT APPLE OR OPTION_APPLE_X11) AND NOT WIN32 AND NOT OPTION_USE_WAYLAND)
 
 if (OPTION_APPLE_X11)
   if (NOT(${CMAKE_SYSTEM_VERSION} VERSION_LESS 17.0.0)) # a.k.a. macOS version ≥ 10.13
@@ -89,14 +260,6 @@ if (OPTION_APPLE_X11)
     list (APPEND FLTK_CFLAGS "${TEMP_INCLUDE_DIR}")
   endif (X11_INCLUDE_DIR)
 endif (OPTION_APPLE_X11)
-
-if (OPTION_APPLE_SDL)
-  find_package (SDL2 REQUIRED)
-  if (SDL2_FOUND)
-    set (USE_SDL 1)
-    list (APPEND FLTK_LDLIBS SDL2_LIBRARY)
-  endif (SDL2_FOUND)
-endif (OPTION_APPLE_SDL)
 
 #######################################################################
 option (OPTION_USE_POLL "use poll if available" OFF)
@@ -154,7 +317,7 @@ option (OPTION_CAIROEXT
 )
 
 set (FLTK_HAVE_CAIRO 0)
-set (FLTK_USE_CAIRO 0)
+set (FLTK_HAVE_CAIROEXT 0)
 
 if (OPTION_CAIRO OR OPTION_CAIROEXT)
   pkg_search_module (PKG_CAIRO cairo)
@@ -164,15 +327,20 @@ if (OPTION_CAIRO OR OPTION_CAIROEXT)
   if (PKG_CAIRO_FOUND)
     set (FLTK_HAVE_CAIRO 1)
     if (OPTION_CAIROEXT)
-      set (FLTK_USE_CAIRO 1)
+      set (FLTK_HAVE_CAIROEXT 1)
     endif (OPTION_CAIROEXT)
     add_subdirectory (cairo)
 
-    # fl_debug_var (PKG_CAIRO_INCLUDE_DIRS)
-    # fl_debug_var (PKG_CAIRO_CFLAGS)
-    # fl_debug_var (PKG_CAIRO_STATIC_CFLAGS)
-    # fl_debug_var (PKG_CAIRO_LIBRARIES)
-    # fl_debug_var (PKG_CAIRO_STATIC_LIBRARIES)
+    if (0)
+      fl_debug_var (PKG_CAIRO_INCLUDE_DIRS)
+      fl_debug_var (PKG_CAIRO_CFLAGS)
+      fl_debug_var (PKG_CAIRO_LIBRARIES)
+      fl_debug_var (PKG_CAIRO_LIBRARY_DIRS)
+      fl_debug_var (PKG_CAIRO_STATIC_INCLUDE_DIRS)
+      fl_debug_var (PKG_CAIRO_STATIC_CFLAGS)
+      fl_debug_var (PKG_CAIRO_STATIC_LIBRARIES)
+      fl_debug_var (PKG_CAIRO_STATIC_LIBRARY_DIRS)
+    endif()
 
     include_directories (${PKG_CAIRO_INCLUDE_DIRS})
 
@@ -223,8 +391,6 @@ if (OPTION_USE_GL)
     set (OPENGL_LIBRARIES -L${PATH_TO_XLIBS} -lGLU -lGL)
     unset(HAVE_GL_GLU_H CACHE)
     find_file (HAVE_GL_GLU_H GL/glu.h PATHS ${X11_INCLUDE_DIR})
-  elseif (OPTION_APPLE_SDL)
-    set (OPENGL_FOUND FALSE)
   else()
     include (FindOpenGL)
     if (APPLE)
@@ -233,6 +399,9 @@ if (OPTION_USE_GL)
   endif (OPTION_APPLE_X11)
 else ()
   set (OPENGL_FOUND FALSE)
+  set (HAVE_GL FALSE)
+  set (HAVE_GL_GLU_H FALSE)
+  set (HAVE_GLXGETPROCADDRESSARB FALSE)
 endif (OPTION_USE_GL)
 
 if (OPENGL_FOUND)
@@ -248,6 +417,8 @@ if (OPENGL_FOUND)
     set (GLLIBS "-lglu32 -lopengl32")
   elseif (APPLE AND NOT OPTION_APPLE_X11)
     set (GLLIBS "-framework OpenGL")
+  elseif (OPTION_USE_WAYLAND)
+    set (GLLIBS "-lwayland-egl -lEGL -lGLU -lGL")
   else ()
     set (GLLIBS "-lGLU -lGL")
   endif (WIN32)
@@ -338,90 +509,6 @@ if (debug_threads)
 endif (debug_threads)
 unset (debug_threads)
 
-#######################################################################
-option (OPTION_USE_SYSTEM_ZLIB "use system zlib" ON)
-
-if (OPTION_USE_SYSTEM_ZLIB)
-  include (FindZLIB)
-endif (OPTION_USE_SYSTEM_ZLIB)
-
-if (ZLIB_FOUND)
-  set (FLTK_ZLIB_LIBRARIES ${ZLIB_LIBRARIES})
-  include_directories (${ZLIB_INCLUDE_DIRS})
-  set (FLTK_BUILTIN_ZLIB_FOUND FALSE)
-else()
-  if (OPTION_USE_SYSTEM_ZLIB)
-    message (STATUS "cannot find system zlib library - using built-in\n")
-  endif (OPTION_USE_SYSTEM_ZLIB)
-
-  add_subdirectory (zlib)
-  set (FLTK_ZLIB_LIBRARIES fltk_z)
-  set (ZLIB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zlib)
-  include_directories (${CMAKE_CURRENT_SOURCE_DIR}/zlib)
-  set (FLTK_BUILTIN_ZLIB_FOUND TRUE)
-endif (ZLIB_FOUND)
-
-set (HAVE_LIBZ 1)
-
-#######################################################################
-if (APPLE)
-  option (OPTION_USE_SYSTEM_LIBJPEG "use system libjpeg" OFF)
-else ()
-  option (OPTION_USE_SYSTEM_LIBJPEG "use system libjpeg" ON)
-endif (APPLE)
-
-if (OPTION_USE_SYSTEM_LIBJPEG)
-  include (FindJPEG)
-endif (OPTION_USE_SYSTEM_LIBJPEG)
-
-if (JPEG_FOUND)
-  set (FLTK_JPEG_LIBRARIES ${JPEG_LIBRARIES})
-  include_directories (${JPEG_INCLUDE_DIR})
-  set (FLTK_BUILTIN_JPEG_FOUND FALSE)
-else ()
-  if (OPTION_USE_SYSTEM_LIBJPEG)
-    message (STATUS "cannot find system jpeg library - using built-in\n")
-  endif (OPTION_USE_SYSTEM_LIBJPEG)
-
-  add_subdirectory (jpeg)
-  set (FLTK_JPEG_LIBRARIES fltk_jpeg)
-  include_directories (${CMAKE_CURRENT_SOURCE_DIR}/jpeg)
-  set (FLTK_BUILTIN_JPEG_FOUND TRUE)
-endif (JPEG_FOUND)
-
-set (HAVE_LIBJPEG 1)
-
-#######################################################################
-if (APPLE)
-  option (OPTION_USE_SYSTEM_LIBPNG "use system libpng" OFF)
-else ()
-  option (OPTION_USE_SYSTEM_LIBPNG "use system libpng" ON)
-endif (APPLE)
-
-if (OPTION_USE_SYSTEM_LIBPNG)
-  include (FindPNG)
-endif (OPTION_USE_SYSTEM_LIBPNG)
-
-if (PNG_FOUND)
-  set (FLTK_PNG_LIBRARIES ${PNG_LIBRARIES})
-  include_directories (${PNG_INCLUDE_DIR})
-  add_definitions (${PNG_DEFINITIONS})
-  set (FLTK_BUILTIN_PNG_FOUND FALSE)
-else()
-  if (OPTION_USE_SYSTEM_LIBPNG)
-    message (STATUS "cannot find system png library - using built-in\n")
-  endif (OPTION_USE_SYSTEM_LIBPNG)
-
-  add_subdirectory (png)
-  set (FLTK_PNG_LIBRARIES fltk_png)
-  set (HAVE_PNG_H 1)
-  set (HAVE_PNG_GET_VALID 1)
-  set (HAVE_PNG_SET_TRNS_TO_ALPHA 1)
-  include_directories (${CMAKE_CURRENT_SOURCE_DIR}/png)
-  set (FLTK_BUILTIN_PNG_FOUND TRUE)
-endif (PNG_FOUND)
-
-set (HAVE_LIBPNG 1)
 
 #######################################################################
 if (X11_Xinerama_FOUND)
@@ -472,7 +559,7 @@ if (X11_Xft_FOUND)
 endif (X11_Xft_FOUND)
 
 # test option compatibility: Pango requires Xft
-if (OPTION_USE_PANGO)
+if (OPTION_USE_PANGO AND NOT OPTION_USE_WAYLAND)
   if (NOT X11_Xft_FOUND)
     message (STATUS "Pango requires Xft but Xft library or headers could not be found.")
     message (STATUS "Please install Xft development files and try again or disable OPTION_USE_PANGO.")
@@ -484,67 +571,98 @@ if (OPTION_USE_PANGO)
       message (FATAL_ERROR "*** Aborting ***")
     endif (NOT OPTION_USE_XFT)
   endif (NOT X11_Xft_FOUND)
-endif (OPTION_USE_PANGO)
+endif (OPTION_USE_PANGO AND NOT OPTION_USE_WAYLAND)
 
 #######################################################################
-if (X11_Xft_FOUND AND OPTION_USE_PANGO)
+if ((X11_Xft_FOUND OR OPTION_USE_WAYLAND) AND OPTION_USE_PANGO)
+  pkg_check_modules(CAIRO cairo)
   pkg_check_modules(PANGOXFT pangoxft)
   pkg_check_modules(PANGOCAIRO pangocairo)
-  pkg_check_modules(CAIRO cairo)
-  # message (STATUS "PANGOXFT_FOUND=" ${PANGOXFT_FOUND})
+
   if (PANGOXFT_FOUND AND PANGOCAIRO_FOUND AND CAIRO_FOUND)
     include_directories (${PANGOXFT_INCLUDE_DIRS} ${CAIRO_INCLUDE_DIRS})
-    find_library(HAVE_LIB_PANGO pango-1.0 ${CMAKE_LIBRARY_PATH})
-    find_library(HAVE_LIB_PANGOXFT pangoxft-1.0 ${CMAKE_LIBRARY_PATH})
-    find_library(HAVE_LIB_PANGOCAIRO pangocairo-1.0 ${CMAKE_LIBRARY_PATH})
-    find_library(HAVE_LIB_CAIRO cairo ${CMAKE_LIBRARY_PATH})
-    find_library(HAVE_LIB_GOBJECT gobject-2.0 ${CMAKE_LIBRARY_PATH})
+
+    find_library (HAVE_LIB_PANGO pango-1.0 ${CMAKE_LIBRARY_PATH})
+    find_library (HAVE_LIB_PANGOXFT pangoxft-1.0 ${CMAKE_LIBRARY_PATH})
+    find_library (HAVE_LIB_PANGOCAIRO pangocairo-1.0 ${CMAKE_LIBRARY_PATH})
+    find_library (HAVE_LIB_CAIRO cairo ${CMAKE_LIBRARY_PATH})
+    find_library (HAVE_LIB_GOBJECT gobject-2.0 ${CMAKE_LIBRARY_PATH})
+
+    mark_as_advanced (HAVE_LIB_PANGO)
+    mark_as_advanced (HAVE_LIB_PANGOXFT)
+    mark_as_advanced (HAVE_LIB_PANGOCAIRO)
+    mark_as_advanced (HAVE_LIB_CAIRO)
+    mark_as_advanced (HAVE_LIB_GOBJECT)
+
     set (USE_PANGO TRUE)
-    list (APPEND FLTK_LDLIBS -lpango-1.0 -lpangoxft-1.0 -lpangocairo-1.0 -lcairo -lgobject-2.0)
+
+    # add required libraries to fltk-config ...
+    list (APPEND FLTK_LDLIBS ${PANGOXFT_LDFLAGS})
+    list (APPEND FLTK_LDLIBS ${PANGOCAIRO_LDFLAGS})
+    list (APPEND FLTK_LDLIBS ${CAIRO_LDFLAGS})
+
+    # *FIXME* Libraries should not be added explicitly if possible
+    if (OPTION_USE_WAYLAND)
+      list (APPEND FLTK_LDLIBS -lgtk-3 -lgdk-3 -lgio-2.0)
+    endif (OPTION_USE_WAYLAND)
+
     if (APPLE)
       get_filename_component(PANGO_L_PATH ${HAVE_LIB_PANGO} PATH)
       set (LDFLAGS "${LDFLAGS} -L${PANGO_L_PATH}")
     endif (APPLE)
-  else(PANGOXFT_FOUND AND PANGOCAIRO_FOUND AND CAIRO_FOUND)
 
-  # this covers Debian, Ubuntu, FreeBSD, NetBSD, Darwin
-  if (APPLE AND OPTION_APPLE_X11)
-    find_file(FINK_PREFIX NAMES /opt/sw /sw)
-    list (APPEND CMAKE_INCLUDE_PATH  ${FINK_PREFIX}/include)
-    include_directories (${FINK_PREFIX}/include/cairo)
-    list (APPEND CMAKE_LIBRARY_PATH  ${FINK_PREFIX}/lib)
-  endif (APPLE AND OPTION_APPLE_X11)
-  find_file(HAVE_PANGO_H pango-1.0/pango/pango.h ${CMAKE_INCLUDE_PATH})
-  find_file(HAVE_PANGOXFT_H pango-1.0/pango/pangoxft.h ${CMAKE_INCLUDE_PATH})
+  else (PANGOXFT_FOUND AND PANGOCAIRO_FOUND AND CAIRO_FOUND)
 
-  if (HAVE_PANGO_H AND HAVE_PANGOXFT_H)
-    find_library(HAVE_LIB_PANGO pango-1.0 ${CMAKE_LIBRARY_PATH})
-    find_library(HAVE_LIB_PANGOXFT pangoxft-1.0 ${CMAKE_LIBRARY_PATH})
-    if (APPLE)
-      set (HAVE_LIB_GOBJECT TRUE)
-    else()
-      find_library(HAVE_LIB_GOBJECT gobject-2.0 ${CMAKE_LIBRARY_PATH})
-    endif (APPLE)
-  endif (HAVE_PANGO_H AND HAVE_PANGOXFT_H)
-  if (HAVE_LIB_PANGO AND HAVE_LIB_PANGOXFT AND HAVE_LIB_GOBJECT)
-    set (USE_PANGO TRUE)
-    # message (STATUS "USE_PANGO=" ${USE_PANGO})
-    # remove last 3 components of HAVE_PANGO_H and put in PANGO_H_PREFIX
-    get_filename_component(PANGO_H_PREFIX ${HAVE_PANGO_H} PATH)
-    get_filename_component(PANGO_H_PREFIX ${PANGO_H_PREFIX} PATH)
-    get_filename_component(PANGO_H_PREFIX ${PANGO_H_PREFIX} PATH)
+    # this covers Debian, Ubuntu, FreeBSD, NetBSD, Darwin
+    if (APPLE AND OPTION_APPLE_X11)
+      find_file(FINK_PREFIX NAMES /opt/sw /sw)
+      list (APPEND CMAKE_INCLUDE_PATH  ${FINK_PREFIX}/include)
+      include_directories (${FINK_PREFIX}/include/cairo)
+      list (APPEND CMAKE_LIBRARY_PATH  ${FINK_PREFIX}/lib)
+    endif (APPLE AND OPTION_APPLE_X11)
 
-    get_filename_component(PANGOLIB_DIR ${HAVE_LIB_PANGO} PATH)
-    # glib.h is usually in ${PANGO_H_PREFIX}/glib-2.0/ ...
-    find_path(GLIB_H_PATH glib.h ${PANGO_H_PREFIX}/glib-2.0)
-    if (NOT GLIB_H_PATH) # ... but not under NetBSD
-      find_path(GLIB_H_PATH glib.h ${PANGO_H_PREFIX}/glib/glib-2.0)
-    endif (NOT GLIB_H_PATH)
-    include_directories (${PANGO_H_PREFIX}/pango-1.0 ${GLIB_H_PATH} ${PANGOLIB_DIR}/glib-2.0/include)
-    list (APPEND FLTK_LDLIBS -lpango-1.0 -lpangoxft-1.0 -lgobject-2.0)
-  endif (HAVE_LIB_PANGO AND HAVE_LIB_PANGOXFT AND HAVE_LIB_GOBJECT)
-endif (PANGOXFT_FOUND AND PANGOCAIRO_FOUND AND CAIRO_FOUND)
-endif (X11_Xft_FOUND AND OPTION_USE_PANGO)
+    find_file(HAVE_PANGO_H pango-1.0/pango/pango.h ${CMAKE_INCLUDE_PATH})
+    find_file(HAVE_PANGOXFT_H pango-1.0/pango/pangoxft.h ${CMAKE_INCLUDE_PATH})
+
+    if (HAVE_PANGO_H AND HAVE_PANGOXFT_H)
+      find_library(HAVE_LIB_PANGO pango-1.0 ${CMAKE_LIBRARY_PATH})
+      find_library(HAVE_LIB_PANGOXFT pangoxft-1.0 ${CMAKE_LIBRARY_PATH})
+      if (APPLE)
+        set (HAVE_LIB_GOBJECT TRUE)
+      else()
+        find_library(HAVE_LIB_GOBJECT gobject-2.0 ${CMAKE_LIBRARY_PATH})
+      endif (APPLE)
+    endif (HAVE_PANGO_H AND HAVE_PANGOXFT_H)
+
+    if (HAVE_LIB_PANGO AND HAVE_LIB_PANGOXFT AND HAVE_LIB_GOBJECT)
+      set (USE_PANGO TRUE)
+      # remove last 3 components of HAVE_PANGO_H and put in PANGO_H_PREFIX
+      get_filename_component(PANGO_H_PREFIX ${HAVE_PANGO_H} PATH)
+      get_filename_component(PANGO_H_PREFIX ${PANGO_H_PREFIX} PATH)
+      get_filename_component(PANGO_H_PREFIX ${PANGO_H_PREFIX} PATH)
+
+      get_filename_component(PANGOLIB_DIR ${HAVE_LIB_PANGO} PATH)
+      # glib.h is usually in ${PANGO_H_PREFIX}/glib-2.0/ ...
+      find_path(GLIB_H_PATH glib.h
+                PATHS ${PANGO_H_PREFIX}/glib-2.0
+                      ${PANGO_H_PREFIX}/glib/glib-2.0)
+      include_directories (${PANGO_H_PREFIX}/pango-1.0 ${GLIB_H_PATH} ${PANGOLIB_DIR}/glib-2.0/include)
+
+      # *FIXME* Libraries should not be added explicitly if possible
+      list (APPEND FLTK_LDLIBS -lpango-1.0 -lpangoxft-1.0 -lgobject-2.0)
+
+    endif (HAVE_LIB_PANGO AND HAVE_LIB_PANGOXFT AND HAVE_LIB_GOBJECT)
+  endif (PANGOXFT_FOUND AND PANGOCAIRO_FOUND AND CAIRO_FOUND)
+
+endif ((X11_Xft_FOUND OR OPTION_USE_WAYLAND) AND OPTION_USE_PANGO)
+
+if (OPTION_USE_WAYLAND AND NOT OPTION_USE_SYSTEM_LIBDECOR)
+  pkg_check_modules(GTK gtk+-3.0)
+  # set (GTK_FOUND 0) # use this to get cairo titlebars rather than GTK
+  if (GTK_FOUND)
+    include_directories (${GTK_INCLUDE_DIRS})
+  endif (GTK_FOUND)
+endif (OPTION_USE_WAYLAND AND NOT OPTION_USE_SYSTEM_LIBDECOR)
 
 if (OPTION_USE_XFT)
   set (USE_XFT X11_Xft_FOUND)
@@ -576,18 +694,6 @@ else(OPTION_USE_XRENDER)
 endif (OPTION_USE_XRENDER)
 
 #######################################################################
-if (X11_FOUND)
-  option (OPTION_USE_XDBE "use lib Xdbe" ON)
-endif (X11_FOUND)
-
-if (OPTION_USE_XDBE AND HAVE_XDBE_H)
-  set (HAVE_XDBE 1)
-  set (FLTK_XDBE_FOUND TRUE)
-else()
-  set (FLTK_XDBE_FOUND FALSE)
-endif (OPTION_USE_XDBE AND HAVE_XDBE_H)
-
-#######################################################################
 set (FL_NO_PRINT_SUPPORT FALSE)
 if (X11_FOUND AND NOT OPTION_PRINT_SUPPORT)
   set (FL_NO_PRINT_SUPPORT TRUE)
@@ -602,7 +708,12 @@ endif (OPTION_FILESYSTEM_SUPPORT)
 #######################################################################
 
 #######################################################################
-option (OPTION_CREATE_ANDROID_STUDIO_IDE "create files needed to compile FLTK for Android" OFF)
+option (OPTION_USE_KDIALOG "Fl_Native_File_Chooser may run kdialog" ON)
+if (OPTION_USE_KDIALOG)
+  set (USE_KDIALOG 1)
+else ()
+  set (USE_KDIALOG 0)
+endif (OPTION_USE_KDIALOG)
 #######################################################################
 
 #######################################################################

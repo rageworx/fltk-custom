@@ -1,7 +1,7 @@
 #
 # CMakeLists.txt to build the FLTK library using CMake (www.cmake.org)
 #
-# Copyright 1998-2020 by Bill Spitzak and others.
+# Copyright 1998-2022 by Bill Spitzak and others.
 #
 # This library is free software. Distribution and use rights are outlined in
 # the file "COPYING" which should have been included with this file.  If this
@@ -14,7 +14,7 @@
 #     https://www.fltk.org/bugs.php
 #
 
-set(CPPFILES
+set (CPPFILES
   Fl.cxx
   Fl_Adjuster.cxx
   Fl_Bitmap.cxx
@@ -33,7 +33,6 @@ set(CPPFILES
   Fl_Counter.cxx
   Fl_Device.cxx
   Fl_Dial.cxx
-  Fl_Help_Dialog_Dox.cxx
   Fl_Double_Window.cxx
   Fl_File_Browser.cxx
   Fl_File_Chooser.cxx
@@ -56,6 +55,7 @@ set(CPPFILES
   Fl_Menu_Window.cxx
   Fl_Menu_add.cxx
   Fl_Menu_global.cxx
+  Fl_Message.cxx
   Fl_Multi_Label.cxx
   Fl_Native_File_Chooser.cxx
   Fl_Overlay_Window.cxx
@@ -78,6 +78,7 @@ set(CPPFILES
   Fl_Single_Window.cxx
   Fl_Slider.cxx
   Fl_Spinner.cxx
+  Fl_String.cxx
   Fl_Sys_Menu_Bar.cxx
   Fl_System_Driver.cxx
   Fl_Table.cxx
@@ -88,6 +89,7 @@ set(CPPFILES
   Fl_Text_Editor.cxx
   Fl_Tile.cxx
   Fl_Tiled_Image.cxx
+  Fl_Timeout.cxx
   Fl_Tooltip.cxx
   Fl_Tree.cxx
   Fl_Tree_Item_Array.cxx
@@ -133,6 +135,8 @@ set(CPPFILES
   fl_diamond_box.cxx
   fl_draw.cxx
   fl_draw_pixmap.cxx
+  fl_encoding_latin1.cxx
+  fl_encoding_mac_roman.cxx
   fl_engraved_label.cxx
   fl_file_dir.cxx
   fl_font.cxx
@@ -143,7 +147,6 @@ set(CPPFILES
   fl_open_uri.cxx
   fl_oval_box.cxx
   fl_overlay.cxx
-  fl_overlay_visual.cxx
   fl_plastic.cxx
   fl_read_image.cxx
   fl_rect.cxx
@@ -154,13 +157,12 @@ set(CPPFILES
   fl_shadow_box.cxx
   fl_shortcut.cxx
   fl_show_colormap.cxx
+  fl_string_functions.cxx
   fl_symbols.cxx
-  fl_vertex.cxx
-  screen_xywh.cxx
   fl_utf8.cxx
-  fl_string.cxx
-  fl_encoding_latin1.cxx
-  fl_encoding_mac_roman.cxx
+  fl_vertex.cxx
+  print_button.cxx
+  screen_xywh.cxx
 )
 
 # find all header files in source directory <FL/...>
@@ -171,13 +173,13 @@ file (GLOB
 
 # add generated header files in build directory
 list (APPEND HEADER_FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/../FL/abi-version.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../FL/fl_config.h
   ${CMAKE_CURRENT_BINARY_DIR}/../config.h
 )
 
 set (GL_HEADER_FILES)  # FIXME: not (yet?) defined
 
-if ((USE_X11 OR USE_SDL) AND NOT OPTION_PRINT_SUPPORT)
+if (FLTK_USE_X11 AND NOT OPTION_PRINT_SUPPORT)
   set (PSFILES
   )
 else ()
@@ -185,19 +187,20 @@ else ()
     drivers/PostScript/Fl_PostScript.cxx
     drivers/PostScript/Fl_PostScript_image.cxx
   )
-endif ((USE_X11 OR USE_SDL) AND NOT OPTION_PRINT_SUPPORT)
+endif (FLTK_USE_X11 AND NOT OPTION_PRINT_SUPPORT)
 
 set (DRIVER_FILES)
 
-if (USE_X11)
+if (FLTK_USE_X11)
 
   # X11 (including APPLE with X11)
 
   set (DRIVER_FILES
-    drivers/Posix/Fl_Posix_System_Driver.cxx
     drivers/Posix/Fl_Posix_Printer_Driver.cxx
     drivers/X11/Fl_X11_Screen_Driver.cxx
     drivers/X11/Fl_X11_Window_Driver.cxx
+    drivers/Posix/Fl_Posix_System_Driver.cxx
+    drivers/Unix/Fl_Unix_System_Driver.cxx
     drivers/X11/Fl_X11_System_Driver.cxx
     drivers/Xlib/Fl_Xlib_Graphics_Driver.cxx
     drivers/Xlib/Fl_Xlib_Graphics_Driver_arci.cxx
@@ -208,12 +211,18 @@ if (USE_X11)
     drivers/Xlib/Fl_Xlib_Graphics_Driver_vertex.cxx
     drivers/Xlib/Fl_Xlib_Copy_Surface_Driver.cxx
     drivers/Xlib/Fl_Xlib_Image_Surface_Driver.cxx
+    drivers/X11/fl_X11_platform_init.cxx
     Fl_x.cxx
     fl_dnd_x.cxx
     Fl_Native_File_Chooser_FLTK.cxx
     Fl_Native_File_Chooser_GTK.cxx
     Fl_get_key.cxx
   )
+
+  if (OPTION_USE_KDIALOG)
+    set (DRIVER_FILES ${DRIVER_FILES} Fl_Native_File_Chooser_Kdialog.cxx)
+  endif (OPTION_USE_KDIALOG)
+
   if (USE_XFT)
     set (DRIVER_FILES ${DRIVER_FILES}
       drivers/Xlib/Fl_Xlib_Graphics_Driver_font_xft.cxx
@@ -233,35 +242,39 @@ if (USE_X11)
     drivers/X11/Fl_X11_Window_Driver.H
     drivers/X11/Fl_X11_System_Driver.H
     drivers/Xlib/Fl_Font.H
-  )
+    drivers/Xlib/Fl_Xlib_Copy_Surface_Driver.H
+    drivers/Xlib/Fl_Xlib_Image_Surface_Driver.H
+    drivers/Unix/Fl_Unix_System_Driver.H
+ )
 
-elseif (USE_SDL)
-
-  # SDL2
-
+elseif (OPTION_USE_WAYLAND)
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I${CMAKE_CURRENT_BINARY_DIR}")
   set (DRIVER_FILES
-    drivers/Pico/Fl_Pico_System_Driver.cxx
-    drivers/Pico/Fl_Pico_Screen_Driver.cxx
-    drivers/Pico/Fl_Pico_Window_Driver.cxx
-    drivers/Pico/Fl_Pico_Graphics_Driver.cxx
-    drivers/Pico/Fl_Pico_Copy_Surface.cxx
-    drivers/Pico/Fl_Pico_Image_Surface.cxx
-    drivers/PicoSDL/Fl_PicoSDL_System_Driver.cxx
-    drivers/PicoSDL/Fl_PicoSDL_Screen_Driver.cxx
-    drivers/PicoSDL/Fl_PicoSDL_Window_Driver.cxx
-    drivers/PicoSDL/Fl_PicoSDL_Graphics_Driver.cxx
-    drivers/PicoSDL/Fl_PicoSDL_Copy_Surface.cxx
-    drivers/PicoSDL/Fl_PicoSDL_Image_Surface.cxx
+    drivers/Posix/Fl_Posix_System_Driver.cxx
+    drivers/Posix/Fl_Posix_Printer_Driver.cxx
+    drivers/Wayland/Fl_Wayland_Screen_Driver.cxx
+    drivers/Wayland/Fl_Wayland_Window_Driver.cxx
+    drivers/Wayland/Fl_Wayland_System_Driver.cxx
+    drivers/Unix/Fl_Unix_System_Driver.cxx
+    drivers/Wayland/Fl_Wayland_Graphics_Driver.cxx
+    drivers/Wayland/Fl_Wayland_Copy_Surface_Driver.cxx
+    drivers/Wayland/Fl_Wayland_Image_Surface_Driver.cxx
+    drivers/Wayland/fl_wayland_clipboard_dnd.cxx
+    drivers/Wayland/fl_wayland_platform_init.cxx
+    drivers/Cairo/Fl_Cairo_Graphics_Driver.cxx
+    Fl_Native_File_Chooser_FLTK.cxx
+    Fl_Native_File_Chooser_GTK.cxx
+    Fl_Native_File_Chooser_Kdialog.cxx
   )
   set (DRIVER_HEADER_FILES
-    drivers/Pico/Fl_Pico_System_Driver.H
-    drivers/Pico/Fl_Pico_Screen_Driver.H
-    drivers/Pico/Fl_Pico_Window_Driver.H
-    drivers/Pico/Fl_Pico_Graphics_Driver.H
-    drivers/PicoSDL/Fl_PicoSDL_System_Driver.H
-    drivers/PicoSDL/Fl_PicoSDL_Screen_Driver.H
-    drivers/PicoSDL/Fl_PicoSDL_Window_Driver.H
-    drivers/PicoSDL/Fl_PicoSDL_Graphics_Driver.H
+    drivers/Posix/Fl_Posix_System_Driver.H
+    drivers/Wayland/Fl_Wayland_System_Driver.H
+    drivers/Wayland/Fl_Wayland_Screen_Driver.H
+    drivers/Wayland/Fl_Wayland_Window_Driver.H
+    drivers/Wayland/Fl_Wayland_Graphics_Driver.H
+    drivers/Wayland/Fl_Wayland_Copy_Surface_Driver.H
+    drivers/Wayland/Fl_Wayland_Image_Surface_Driver.H
+    drivers/Unix/Fl_Unix_System_Driver.H
   )
 
 elseif (APPLE)
@@ -284,6 +297,7 @@ elseif (APPLE)
     drivers/Posix/Fl_Posix_System_Driver.cxx
     drivers/Darwin/Fl_Darwin_System_Driver.cxx
     Fl_get_key_mac.cxx
+    drivers/Darwin/fl_macOS_platform_init.cxx
   )
   set (DRIVER_HEADER_FILES
     drivers/Posix/Fl_Posix_System_Driver.H
@@ -294,35 +308,8 @@ elseif (APPLE)
     drivers/Quartz/Fl_Quartz_Graphics_Driver.H
     drivers/Quartz/Fl_Quartz_Copy_Surface_Driver.H
     drivers/Quartz/Fl_Font.H
+    drivers/Quartz/Fl_Quartz_Image_Surface_Driver.H
   )
-
-elseif (ANDROID)
-
-  # Android
-
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-
-  set (DRIVER_FILES
-    drivers/Android/Fl_Android_Application.cxx
-    drivers/Android/Fl_Android_System_Driver.cxx
-    drivers/Android/Fl_Android_Screen_Driver.cxx
-    drivers/Android/Fl_Android_Screen_Keyboard.cxx
-    drivers/Android/Fl_Android_Window_Driver.cxx
-    drivers/Android/Fl_Android_Image_Surface_Driver.cxx
-    drivers/Android/Fl_Android_Graphics_Driver.cxx
-    drivers/Android/Fl_Android_Graphics_Clipping.cxx
-    drivers/Android/Fl_Android_Graphics_Font.cxx
-  )
-  set (DRIVER_HEADER_FILES
-    drivers/Android/Fl_Android_Application.H
-    drivers/Android/Fl_Android_System_Driver.H
-    drivers/Android/Fl_Android_Screen_Driver.H
-    drivers/Android/Fl_Android_Window_Driver.H
-    drivers/Android/Fl_Android_Graphics_Driver.H
-    drivers/Android/Fl_Android_Graphics_Clipping.H
-    drivers/Android/Fl_Android_Graphics_Font.H
-  )
-
 
 else ()
 
@@ -347,6 +334,7 @@ else ()
     fl_dnd_win32.cxx
     Fl_Native_File_Chooser_WIN32.cxx
     Fl_get_key_win32.cxx
+    drivers/WinAPI/fl_WinAPI_platform_init.cxx
   )
   set (DRIVER_HEADER_FILES
     drivers/WinAPI/Fl_WinAPI_System_Driver.H
@@ -354,9 +342,11 @@ else ()
     drivers/WinAPI/Fl_WinAPI_Window_Driver.H
     drivers/GDI/Fl_GDI_Graphics_Driver.H
     drivers/GDI/Fl_Font.H
+    drivers/GDI/Fl_GDI_Copy_Surface_Driver.H
+    drivers/GDI/Fl_GDI_Image_Surface_Driver.H
   )
 
-endif (USE_X11)
+endif (FLTK_USE_X11)
 
 source_group("Header Files" FILES ${HEADER_FILES})
 source_group("Driver Source Files" FILES ${DRIVER_FILES})
@@ -402,15 +392,21 @@ set (GL_DRIVER_FILES
   drivers/OpenGL/Fl_OpenGL_Graphics_Driver_rect.cxx
   drivers/OpenGL/Fl_OpenGL_Graphics_Driver_vertex.cxx
 )
-if (USE_X11)
-  set (GL_DRIVER_FILES ${GL_DRIVER_FILES} drivers/X11/Fl_X11_Gl_Window_Driver.cxx)
+if (FLTK_USE_X11)
+  set (GL_DRIVER_FILES ${GL_DRIVER_FILES} drivers/X11/Fl_X11_Gl_Window_Driver.cxx drivers/X11/fl_X11_gl_platform_init.cxx)
+  set (GL_DRIVER_HEADER_FILES drivers/X11/Fl_X11_Gl_Window_Driver.H)
+elseif (OPTION_USE_WAYLAND)
+  set (GL_DRIVER_FILES ${GL_DRIVER_FILES} drivers/Wayland/Fl_Wayland_Gl_Window_Driver.cxx drivers/Wayland/fl_wayland_gl_platform_init.cxx)
+  set (GL_DRIVER_HEADER_FILES drivers/Wayland/Fl_Wayland_Gl_Window_Driver.H)
 elseif (APPLE)
-  set (GL_DRIVER_FILES ${GL_DRIVER_FILES} drivers/Cocoa/Fl_Cocoa_Gl_Window_Driver.cxx)
+  set (GL_DRIVER_FILES ${GL_DRIVER_FILES} drivers/Cocoa/Fl_Cocoa_Gl_Window_Driver.cxx drivers/Cocoa/fl_macOS_gl_platform_init.cxx)
+  set (GL_DRIVER_HEADER_FILES drivers/Cocoa/Fl_Cocoa_Gl_Window_Driver.H)
 elseif (WIN32)
-  set (GL_DRIVER_FILES ${GL_DRIVER_FILES} drivers/WinAPI/Fl_WinAPI_Gl_Window_Driver.cxx)
-endif (USE_X11)
+  set (GL_DRIVER_FILES ${GL_DRIVER_FILES} drivers/WinAPI/Fl_WinAPI_Gl_Window_Driver.cxx drivers/WinAPI/fl_WinAPI_gl_platform_init.cxx)
+  set (GL_DRIVER_HEADER_FILES drivers/WinAPI/Fl_WinAPI_Gl_Window_Driver.H)
+endif (FLTK_USE_X11)
 
-set (GL_DRIVER_HEADER_FILES
+set (GL_DRIVER_HEADER_FILES ${GL_DRIVER_FILES}
   drivers/OpenGL/Fl_OpenGL_Display_Device.H
   drivers/OpenGL/Fl_OpenGL_Graphics_Driver.H
 )
@@ -425,6 +421,7 @@ set (GLCPPFILES
 
 set (IMGCPPFILES
   fl_images_core.cxx
+  fl_write_png.cxx
   Fl_BMP_Image.cxx
   Fl_File_Icon2.cxx
   Fl_GIF_Image.cxx
@@ -446,7 +443,7 @@ set (CFILES
   xutf8/case.c
 )
 
-if (USE_X11)
+if (FLTK_USE_X11)
   list (APPEND CFILES
     xutf8/keysym2Ucs.c
     scandir_posix.c
@@ -458,7 +455,41 @@ if (USE_X11)
       # xutf8/utf8Input.c  # not used
     )
   endif (NOT USE_XFT)
-endif (USE_X11)
+endif (FLTK_USE_X11)
+
+if (OPTION_USE_WAYLAND)
+  pkg_check_modules(DBUS dbus-1)
+  include_directories(${DBUS_INCLUDE_DIRS})
+  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_CURRENT_BINARY_DIR} -fPIC -D_GNU_SOURCE  -DHAS_DBUS")
+  if (OPTION_USE_SYSTEM_LIBDECOR)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_SYSTEM_LIBDECOR")
+    get_filename_component(PATH_TO_SHARED_LIBS ${HAVE_LIB_PANGO} DIRECTORY)
+    set (LIBDECOR_PLUGIN_DIR "\\\"${PATH_TO_SHARED_LIBS}/libdecor/plugins-1\\\" " )
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBDECOR_PLUGIN_DIR=${LIBDECOR_PLUGIN_DIR} ")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_SYSTEM_LIBDECOR")
+  else()
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/src   -DLIBDECOR_PLUGIN_API_VERSION=1 -DLIBDECOR_PLUGIN_DIR=\\\"/usr/local/lib\\\" ")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_SYSTEM_LIBDECOR=0")
+  endif (OPTION_USE_SYSTEM_LIBDECOR)
+
+  if (GTK_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_GTK")
+  endif (GTK_FOUND)
+
+  list (APPEND CFILES
+    xutf8/keysym2Ucs.c
+    scandir_posix.c
+    ../libdecor/src/cursor-settings.c
+    ../libdecor/build/fl_libdecor-plugins.c
+    )
+  if (NOT OPTION_USE_SYSTEM_LIBDECOR)
+    list (APPEND CFILES
+    ../libdecor/build/fl_libdecor.c
+    ../libdecor/src/os-compatibility.c
+    ../libdecor/src/plugins/cairo/libdecor-cairo-blur.c
+    )
+  endif (NOT OPTION_USE_SYSTEM_LIBDECOR)
+endif (OPTION_USE_WAYLAND)
 
 if (WIN32)
   list (APPEND CFILES
@@ -466,7 +497,7 @@ if (WIN32)
   )
 endif (WIN32)
 
-if (APPLE AND (NOT OPTION_APPLE_X11) AND (NOT OPTION_APPLE_SDL))
+if (APPLE AND (NOT OPTION_APPLE_X11))
   set (MMFILES
     Fl_cocoa.mm
     drivers/Cocoa/Fl_Cocoa_Printer_Driver.mm
@@ -476,7 +507,7 @@ if (APPLE AND (NOT OPTION_APPLE_X11) AND (NOT OPTION_APPLE_SDL))
 else()
   set (MMFILES
   )
-endif (APPLE AND (NOT OPTION_APPLE_X11) AND (NOT OPTION_APPLE_SDL))
+endif (APPLE AND (NOT OPTION_APPLE_X11))
 
 
 #######################################################################
@@ -508,21 +539,13 @@ if (USE_THREADS)
   list (APPEND OPTIONAL_LIBS ${CMAKE_THREAD_LIBS_INIT})
 endif (USE_THREADS)
 
-if (USE_X11)
+if (FLTK_USE_X11)
   list (APPEND OPTIONAL_LIBS ${X11_LIBRARIES})
-endif (USE_X11)
-
-if (USE_SDL)
-  list (APPEND OPTIONAL_LIBS ${SDL2_LIBRARY})
-endif (USE_SDL)
+endif (FLTK_USE_X11)
 
 if (WIN32)
   list (APPEND OPTIONAL_LIBS comctl32 ws2_32)
 endif (WIN32)
-
-if (FLTK_HAVE_CAIRO)
-  list (APPEND OPTIONAL_LIBS fltk_cairo ${PKG_CAIRO_LIBRARIES})
-endif (FLTK_HAVE_CAIRO)
 
 if (HAVE_XINERAMA)
   list (APPEND OPTIONAL_LIBS ${X11_Xinerama_LIB})
@@ -553,6 +576,52 @@ if (USE_XFT)
   endif (LIB_fontconfig)
 endif (USE_XFT)
 
+if (OPTION_USE_WAYLAND)
+  add_custom_command(
+    OUTPUT xdg-shell-protocol.c xdg-shell-client-protocol.h
+    COMMAND wayland-scanner private-code /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml xdg-shell-protocol.c
+    COMMAND wayland-scanner client-header /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml xdg-shell-client-protocol.h
+    DEPENDS /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml
+    VERBATIM
+  )
+  list (APPEND STATIC_FILES "xdg-shell-protocol.c")
+  list (APPEND SHARED_FILES "xdg-shell-protocol.c")
+  if (NOT OPTION_USE_SYSTEM_LIBDECOR)
+    add_custom_command(
+      OUTPUT xdg-decoration-protocol.c xdg-decoration-client-protocol.h
+      COMMAND wayland-scanner private-code /usr/share/wayland-protocols/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml xdg-decoration-protocol.c
+      COMMAND wayland-scanner client-header /usr/share/wayland-protocols/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml xdg-decoration-client-protocol.h
+      DEPENDS /usr/share/wayland-protocols/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml
+      VERBATIM
+    )
+    list (APPEND STATIC_FILES "xdg-decoration-protocol.c")
+    list (APPEND SHARED_FILES "xdg-decoration-protocol.c")
+  endif (NOT OPTION_USE_SYSTEM_LIBDECOR)
+  add_custom_command(
+    OUTPUT text-input-protocol.c text-input-client-protocol.h
+    COMMAND wayland-scanner private-code /usr/share/wayland-protocols/unstable/text-input/text-input-unstable-v3.xml text-input-protocol.c
+    COMMAND wayland-scanner client-header /usr/share/wayland-protocols/unstable/text-input/text-input-unstable-v3.xml text-input-client-protocol.h
+    DEPENDS /usr/share/wayland-protocols/unstable/text-input/text-input-unstable-v3.xml
+    VERBATIM
+  )
+  list (APPEND STATIC_FILES "text-input-protocol.c")
+  list (APPEND SHARED_FILES "text-input-protocol.c")
+
+  if (OPTION_USE_GL)
+    list (APPEND OPTIONAL_LIBS "-lwayland-egl -lEGL")
+  endif (OPTION_USE_GL)
+  if (OPTION_USE_SYSTEM_LIBDECOR)
+    list (APPEND OPTIONAL_LIBS "-ldecor-0")
+  endif (OPTION_USE_SYSTEM_LIBDECOR)
+  list (APPEND OPTIONAL_LIBS "-lwayland-cursor -lwayland-client -lxkbcommon -ldl -ldbus-1")
+  if (GTK_FOUND)
+    list (APPEND OPTIONAL_LIBS ${GTK_LDFLAGS} )
+  endif (GTK_FOUND)
+  if (NOT OPTION_BUILD_SHARED_LIBS)
+    list (APPEND OPTIONAL_LIBS "-no-pie")
+  endif (NOT OPTION_BUILD_SHARED_LIBS)
+endif (OPTION_USE_WAYLAND)
+
 #######################################################################
 
 FL_ADD_LIBRARY (fltk STATIC "${STATIC_FILES}")
@@ -568,23 +637,23 @@ target_link_libraries (fltk_forms fltk)
 FL_ADD_LIBRARY (fltk_images STATIC "${IMGCPPFILES}")
 target_link_libraries (fltk_images fltk)
 
-if (OPTION_USE_SYSTEM_LIBJPEG)
-  target_link_libraries (fltk_images ${FLTK_JPEG_LIBRARIES})
-else()
+if (FLTK_USE_BUILTIN_JPEG)
   target_link_libraries (fltk_images fltk_jpeg)
-endif (OPTION_USE_SYSTEM_LIBJPEG)
-
-if (OPTION_USE_SYSTEM_ZLIB)
-  target_link_libraries (fltk_images ${FLTK_ZLIB_LIBRARIES})
 else()
+  target_link_libraries (fltk_images ${FLTK_JPEG_LIBRARIES})
+endif ()
+
+if (FLTK_USE_BUILTIN_ZLIB)
   target_link_libraries (fltk_images fltk_z)
-endif (OPTION_USE_SYSTEM_ZLIB)
-
-if (OPTION_USE_SYSTEM_LIBPNG)
-  target_link_libraries (fltk_images ${FLTK_PNG_LIBRARIES})
 else()
+  target_link_libraries (fltk_images ${FLTK_ZLIB_LIBRARIES})
+endif ()
+
+if (FLTK_USE_BUILTIN_PNG)
   target_link_libraries (fltk_images fltk_png)
-endif (OPTION_USE_SYSTEM_LIBPNG)
+else()
+  target_link_libraries (fltk_images ${FLTK_PNG_LIBRARIES})
+endif ()
 
 #######################################################################
 
@@ -614,23 +683,23 @@ if (OPTION_BUILD_SHARED_LIBS AND NOT MSVC)
   FL_ADD_LIBRARY (fltk_images SHARED "${IMGCPPFILES}")
   target_link_libraries (fltk_images_SHARED fltk_SHARED)
 
-  if (OPTION_USE_SYSTEM_LIBJPEG)
-    target_link_libraries (fltk_images_SHARED ${FLTK_JPEG_LIBRARIES})
-  else()
+  if (FLTK_USE_BUILTIN_JPEG)
     target_link_libraries (fltk_images_SHARED fltk_jpeg_SHARED)
-  endif (OPTION_USE_SYSTEM_LIBJPEG)
-
-  if (OPTION_USE_SYSTEM_LIBPNG)
-    target_link_libraries (fltk_images_SHARED ${FLTK_PNG_LIBRARIES})
   else()
+    target_link_libraries (fltk_images_SHARED ${FLTK_JPEG_LIBRARIES})
+  endif ()
+
+  if (FLTK_USE_BUILTIN_PNG)
     target_link_libraries (fltk_images_SHARED fltk_png_SHARED)
-  endif (OPTION_USE_SYSTEM_LIBPNG)
-
-  if (OPTION_USE_SYSTEM_ZLIB)
-    target_link_libraries (fltk_images_SHARED ${FLTK_ZLIB_LIBRARIES})
   else()
+    target_link_libraries (fltk_images_SHARED ${FLTK_PNG_LIBRARIES})
+  endif ()
+
+  if (FLTK_USE_BUILTIN_ZLIB)
     target_link_libraries (fltk_images_SHARED fltk_z_SHARED)
-  endif (OPTION_USE_SYSTEM_ZLIB)
+  else()
+    target_link_libraries (fltk_images_SHARED ${FLTK_ZLIB_LIBRARIES})
+  endif ()
 
   ###################################################################
 
@@ -660,23 +729,23 @@ if (OPTION_BUILD_SHARED_LIBS AND MSVC)
   FL_ADD_LIBRARY (fltk SHARED "${SOURCES}")
   target_link_libraries (fltk_SHARED ${OPTIONAL_LIBS})
 
-  if (OPTION_USE_SYSTEM_LIBJPEG)
-    target_link_libraries (fltk_SHARED ${FLTK_JPEG_LIBRARIES})
-  else()
+  if (FLTK_USE_BUILTIN_JPEG)
     target_link_libraries (fltk_SHARED fltk_jpeg_SHARED)
-  endif (OPTION_USE_SYSTEM_LIBJPEG)
-
-  if (OPTION_USE_SYSTEM_LIBPNG)
-    target_link_libraries (fltk_SHARED ${FLTK_PNG_LIBRARIES})
   else()
+    target_link_libraries (fltk_SHARED ${FLTK_JPEG_LIBRARIES})
+  endif ()
+
+  if (FLTK_USE_BUILTIN_PNG)
     target_link_libraries (fltk_SHARED fltk_png_SHARED)
-  endif (OPTION_USE_SYSTEM_LIBPNG)
-
-  if (OPTION_USE_SYSTEM_ZLIB)
-    target_link_libraries (fltk_SHARED ${FLTK_ZLIB_LIBRARIES})
   else()
+    target_link_libraries (fltk_SHARED ${FLTK_PNG_LIBRARIES})
+  endif ()
+
+  if (FLTK_USE_BUILTIN_ZLIB)
     target_link_libraries (fltk_SHARED fltk_z_SHARED)
-  endif (OPTION_USE_SYSTEM_ZLIB)
+  else()
+    target_link_libraries (fltk_SHARED ${FLTK_ZLIB_LIBRARIES})
+  endif ()
 
   if (OPENGL_FOUND)
     target_link_libraries (fltk_SHARED ${OPENGL_LIBRARIES})

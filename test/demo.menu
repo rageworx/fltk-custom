@@ -68,7 +68,8 @@
 	@e:Block\nAttack!:blocks
 	@e:Checkers:checkers
 	@e:Sudoku:sudoku
-	@e:Print\nsupport:device
+	@e:Print\nSupport:device
+	@e:Clipboard\nViewer:clipboard
 
 @main:Other\nTests...:@o
 	@o:Color Choosers:color_chooser
@@ -106,3 +107,5 @@
 		@ir:Example\n3c:resize-example3c
 		@ir:Example\n4a:resize-example4a
 		@ir:Example\n4b:resize-example4b
+		@ir:Example\n5a:resize-example5a
+		@ir:Example\n5b:resize-example5b

@@ -8,7 +8,7 @@
 #include <FL/Fl_Tree_Item.H>
 #include <FL/Fl_Tree_Prefs.H>
 #include <FL/Fl_Tree.H>
-#include <FL/fl_string.h>
+#include <FL/fl_string_functions.h>
 
 //////////////////////
 // Fl_Tree_Item.cxx
@@ -434,6 +434,7 @@ Fl_Tree_Item *Fl_Tree_Item::insert_above(const Fl_Tree_Prefs &prefs, const char 
 /// \returns
 ///     - pointer to orphaned item on success
 ///     - NULL on error (could not deparent the item)
+/// \see reparent()
 ///
 Fl_Tree_Item* Fl_Tree_Item::deparent(int pos) {
   Fl_Tree_Item *orphan = _children[pos];
@@ -442,11 +443,12 @@ Fl_Tree_Item* Fl_Tree_Item::deparent(int pos) {
 }
 
 /// Reparent specified item as a child of ourself at position \p 'pos'.
-/// Typically 'newchild' was recently orphaned with deparent().
+/// Typically \p 'newchild' was recently orphaned with deparent().
 ///
 /// \returns
 ///    -  0: on success
 ///    - -1: on error (e.g. if \p 'pos' out of range) with no changes made.
+/// \see deparent()
 ///
 int Fl_Tree_Item::reparent(Fl_Tree_Item *newchild, int pos) {
   int ret;
@@ -455,7 +457,8 @@ int Fl_Tree_Item::reparent(Fl_Tree_Item *newchild, int pos) {
   return 0;
 }
 
-/// Move the item 'from' to sibling position of 'to'.
+/// Move an item within its parent using index numbers.
+/// Item is moved \p 'to' its new position \p 'from' its old position.
 ///
 /// \returns
 ///    -  0: Success
@@ -467,12 +470,14 @@ int Fl_Tree_Item::move(int to, int from) {
   return _children.move(to, from);
 }
 
-/// Move the current item above/below/into the specified 'item',
+/// Move the current item above/below/into the specified \p 'item',
 /// where \p 'op' determines the type of move:
 ///
 ///    - 0: move above \p 'item' (\p 'pos' ignored)
 ///    - 1: move below \p 'item' (\p 'pos' ignored)
 ///    - 2: move into  \p 'item' as a child (at optional position \p 'pos')
+///
+/// ..and \p 'pos' determines an optional index position after the move.
 ///
 /// \returns 0 on success. a negative number on error:
 ///     - -1: one of the items has no parent
@@ -535,7 +540,7 @@ int Fl_Tree_Item::move(Fl_Tree_Item *item, int op, int pos) {
   return 0;
 }
 
-/// Move the current item above the specified 'item'.
+/// Move the current item above the specified \p 'item'.
 /// This is the equivalent of calling move(item,0,0).
 ///
 /// \returns 0 on success.<br>
@@ -548,7 +553,7 @@ int Fl_Tree_Item::move_above(Fl_Tree_Item *item) {
   return move(item, 0, 0);
 }
 
-/// Move the current item below the specified 'item'.
+/// Move the current item below the specified \p 'item'.
 /// This is the equivalent of calling move(item,1,0).
 ///
 /// \returns 0 on success.<br>
@@ -796,6 +801,7 @@ Fl_Tree_Item *Fl_Tree_Item::find_clicked(const Fl_Tree_Prefs &prefs, int yonly) 
 }
 
 static void draw_item_focus(Fl_Boxtype B, Fl_Color fg, Fl_Color bg, int X, int Y, int W, int H) {
+  // Pasted from Fl_Widget::draw_focus(); we don't have access to this method
   if (!Fl::visible_focus()) return;
   switch (B) {
     case FL_DOWN_BOX:
@@ -807,32 +813,12 @@ static void draw_item_focus(Fl_Boxtype B, Fl_Color fg, Fl_Color bg, int X, int Y
     default:
       break;
   }
-  fl_color(fl_contrast(fg, bg));
-
-//#if defined(USE_X11) || defined(__APPLE_QUARTZ__)
-  fl_line_style(FL_DOT);
-  fl_rect(X + Fl::box_dx(B), Y + Fl::box_dy(B),
-          W - Fl::box_dw(B) - 1, H - Fl::box_dh(B) - 1);
-  fl_line_style(FL_SOLID);
-/*#else
-  // Some platforms don't implement dotted line style, so draw
-  // every other pixel around the focus area...
-  //
-  // Also, QuickDraw (MacOS) does not support line styles specifically,
-  // and the hack we use in fl_line_style() will not draw horizontal lines
-  // on odd-numbered rows...
-  int i, xx, yy;
-
   X += Fl::box_dx(B);
   Y += Fl::box_dy(B);
-  W -= Fl::box_dw(B) + 2;
-  H -= Fl::box_dh(B) + 2;
-
-  for (xx = 0, i = 1; xx < W; xx ++, i ++) if (i & 1) fl_point(X + xx, Y);
-  for (yy = 0; yy < H; yy ++, i ++) if (i & 1) fl_point(X + W, Y + yy);
-  for (xx = W; xx > 0; xx --, i ++) if (i & 1) fl_point(X + xx, Y + H);
-  for (yy = H; yy > 0; yy --, i ++) if (i & 1) fl_point(X, Y + yy);
-#endif*/
+  W -= Fl::box_dw(B)+1;
+  H -= Fl::box_dh(B)+1;
+  fl_color(fl_contrast(fg, bg));
+  fl_focus_rect(X, Y, W, H);
 }
 
 /// Return the item's 'visible' height. Takes into account the item's:

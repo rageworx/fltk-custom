@@ -1,7 +1,7 @@
 //
 // Main header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2021 by Bill Spitzak and others.
+// Copyright 1998-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -21,9 +21,11 @@
 #ifndef Fl_H
 #  define Fl_H
 
+#include <FL/fl_config.h> // build configuration
 #include <FL/Fl_Export.H>
-
 #include <FL/platform_types.h> // for FL_SOCKET
+#include <FL/fl_casts.H>       // experimental
+
 #ifdef FLTK_HAVE_CAIRO
 # include <FL/Fl_Cairo.H>
 #endif
@@ -59,20 +61,23 @@ extern FL_EXPORT const char* fl_local_ctrl;  ///< string pointer used in shortcu
 extern FL_EXPORT const char* fl_local_meta;  ///< string pointer used in shortcuts, you can change it to another language
 extern FL_EXPORT const char* fl_local_shift; ///< string pointer used in shortcuts, you can change it to another language
 
-/** \defgroup  callback_functions Callback function typedefs
- \brief Typedefs defined in <FL/Fl.H> for callback or handler functions passed as function parameters.
+/** \defgroup  callback_functions  Callback Function Typedefs
 
-    FLTK uses callback functions as parameters for some function calls, e.g. to
-    set up global event handlers (Fl::add_handler()), to add a timeout handler
-    (Fl::add_timeout()), and many more.
+  \brief Typedefs defined in <FL/Fl.H> for callback or handler functions passed as function parameters.
 
-    The typedefs defined in this group describe the function parameters used to set
-    up or clear the callback functions and should also be referenced to define the
-    callback function to handle such events in the user's code.
+  FLTK uses callback functions as parameters for some function calls, e.g. to
+  set up global event handlers (Fl::add_handler()), to add a timeout handler
+  (Fl::add_timeout()), and many more.
 
-    \see Fl::add_handler(), Fl::add_timeout(), Fl::repeat_timeout(),
-         Fl::remove_timeout() and others
-  @{ */
+  The typedefs defined in this group describe the function parameters used to set
+  up or clear the callback functions and should also be referenced to define the
+  callback function to handle such events in the user's code.
+
+  \see  Fl::add_handler(), Fl::add_timeout(), Fl::repeat_timeout(),
+        Fl::remove_timeout() and others
+
+  @{
+*/
 
 /** Signature of some label drawing functions passed as parameters */
 typedef void (Fl_Label_Draw_F)(const Fl_Label *label, int x, int y, int w, int h, Fl_Align align);
@@ -128,7 +133,7 @@ typedef void (*Fl_Clipboard_Notify_Handler)(int source, void *data);
   state information and global methods for the current application.
 */
 class FL_EXPORT Fl {
-  Fl() {}; // no constructor!
+  Fl() {} // no constructor!
 
 private:
 
@@ -141,8 +146,11 @@ public:
 
   static Fl_Screen_Driver *screen_driver();
   static Fl_System_Driver *system_driver();
-  static void reset_marked_text(); // resets marked text
-  static void insertion_point_location(int x, int y, int height); // sets window coordinates & height of insertion point
+#ifdef __APPLE__ // deprecated in 1.4 - only for compatibility with 1.3
+  static void reset_marked_text();
+  static void insertion_point_location(int x, int y, int height);
+#endif
+
 
   /** Get the box shadow width of all "shadow" boxtypes in pixels.
     \since 1.4.0
@@ -502,6 +510,7 @@ int main() {
   static int  has_check(Fl_Timeout_Handler, void* = 0);
   static void remove_check(Fl_Timeout_Handler, void* = 0);
   // private
+  static void run_idle();
   static void run_checks();
   static void add_fd(int fd, int when, Fl_FD_Handler cb, void* = 0); // platform dependent
   static void add_fd(int fd, Fl_FD_Handler cb, void* = 0); // platform dependent
@@ -1054,6 +1063,7 @@ int main() {
 
   // color map:
   static void   set_color(Fl_Color, uchar, uchar, uchar);
+  static void   set_color(Fl_Color, uchar, uchar, uchar, uchar);
   /**
     Sets an entry in the fl_color index table. You can set it to any
     8-bit RGB color. The color is not allocated until fl_color(i) is used.
@@ -1061,6 +1071,7 @@ int main() {
   static void   set_color(Fl_Color i, unsigned c); // platform dependent
   static unsigned get_color(Fl_Color i);
   static void   get_color(Fl_Color i, uchar &red, uchar &green, uchar &blue);
+  static void   get_color(Fl_Color i, uchar &red, uchar &green, uchar &blue, uchar &alpha);
   /**
     Frees the specified color from the colormap, if applicable.
     If overlay is non-zero then the color is freed from the

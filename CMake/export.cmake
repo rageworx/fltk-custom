@@ -1,8 +1,8 @@
 #
-# Main CMakeLists.txt to build the FLTK project using CMake (www.cmake.org)
-# Written by Michael Surette
+# Export CMake file to build the FLTK project using CMake (www.cmake.org)
+# Originally written by Michael Surette
 #
-# Copyright 1998-2020 by Bill Spitzak and others.
+# Copyright 1998-2022 by Bill Spitzak and others.
 #
 # This library is free software. Distribution and use rights are outlined in
 # the file "COPYING" which should have been included with this file.  If this
@@ -19,29 +19,30 @@
 # final config and export
 #######################################################################
 
-# Set the fluid executable path
+# Set the fluid executable path used to create .cxx/.h from .fl files
+
 if (CMAKE_CROSSCOMPILING)
+  # find a fluid executable on the host system
   find_file(FLUID_PATH
     NAMES fluid fluid.exe
     PATHS ENV PATH
     NO_CMAKE_FIND_ROOT_PATH
   )
-  add_executable(fluid IMPORTED)
   set (FLTK_FLUID_EXECUTABLE ${FLUID_PATH})
-  set (FLUID)       # no export
-  set_target_properties(fluid
-    PROPERTIES IMPORTED_LOCATION ${FLUID_PATH}
-  )
+  set (FLUID_EXPORT "")                     # don't export fluid
 else ()
-  add_subdirectory(fluid)
-  set (FLTK_FLUID_EXECUTABLE fluid)
-  set (FLUID fluid) # export
+  # use the fluid executable we build
+  if (WIN32)
+    set (FLTK_FLUID_EXECUTABLE fluid-cmd)
+    set (FLUID_EXPORT fluid fluid-cmd)      # export fluid and fluid-cmd
+  else ()
+    set (FLTK_FLUID_EXECUTABLE fluid)
+    set (FLUID_EXPORT fluid)                # export fluid
+  endif ()
 endif (CMAKE_CROSSCOMPILING)
 
-add_subdirectory(src)
-
 # generate FLTK-Targets.cmake for build directory use
-export(TARGETS ${FLUID} ${FLTK_LIBRARIES} FILE ${CMAKE_CURRENT_BINARY_DIR}/FLTK-Targets.cmake)
+export (TARGETS ${FLUID_EXPORT} ${FLTK_LIBRARIES} FILE ${CMAKE_CURRENT_BINARY_DIR}/FLTK-Targets.cmake)
 
 # generate FLTK-Functions.cmake for build directory use
 configure_file (
@@ -52,6 +53,9 @@ configure_file (
 
 # generate FLTKConfig.cmake for build directory use
 set (INCLUDE_DIRS "${FLTK_INCLUDE_DIRS}")
+if (FLTK_HAVE_CAIRO)
+  list (APPEND INCLUDE_DIRS ${PKG_CAIRO_INCLUDE_DIRS})
+endif ()
 set (CONFIG_PATH ${CMAKE_CURRENT_BINARY_DIR})
 
 configure_file(
@@ -83,11 +87,21 @@ configure_file(
   @ONLY
 )
 
-if (UNIX)
-  execute_process(COMMAND chmod 755 fltk-config
-    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-  )
-endif (UNIX)
+# Set execute permissions on fltk-config in build dir
+# Note: file(CHMOD) available since CMake 3.19,
+# use fallback before CMake 3.19
+
+if (CMAKE_VERSION VERSION_LESS 3.19)
+  if (UNIX OR MSYS OR MINGW)
+    execute_process(COMMAND chmod 755 fltk-config
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+  endif ()
+else (CMAKE_VERSION VERSION_LESS 3.19)
+  file (CHMOD "${CMAKE_CURRENT_BINARY_DIR}/fltk-config"
+        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                    GROUP_READ GROUP_EXECUTE
+                    WORLD_READ WORLD_EXECUTE)
+endif (CMAKE_VERSION VERSION_LESS 3.19)
 
 # prepare some variables for config.h
 
@@ -124,6 +138,5 @@ if (OPTION_CREATE_LINKS)
   configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/CMake/install-symlinks.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/install-symlinks.cmake"
-    @ONLY
-  )
+    @ONLY)
 endif (OPTION_CREATE_LINKS)

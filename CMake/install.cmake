@@ -1,8 +1,8 @@
 #
-# Main CMakeLists.txt to build the FLTK project using CMake (www.cmake.org)
-# Written by Michael Surette
+# Installation support for building the FLTK project using CMake (www.cmake.org)
+# Originally written by Michael Surette
 #
-# Copyright 1998-2021 by Bill Spitzak and others.
+# Copyright 1998-2022 by Bill Spitzak and others.
 #
 # This library is free software. Distribution and use rights are outlined in
 # the file "COPYING" which should have been included with this file.  If this
@@ -34,7 +34,7 @@ install (DIRECTORY
   DESTINATION ${FLTK_INCLUDEDIR} USE_SOURCE_PERMISSIONS
   FILES_MATCHING
     PATTERN "*.[hH]"
-    PATTERN "abi-version.h" EXCLUDE
+    PATTERN "fl_config.h" EXCLUDE
 )
 
 install (DIRECTORY
@@ -50,6 +50,9 @@ endif (OPTION_CREATE_LINKS)
 
 # generate FLTKConfig.cmake for installed directory use
 set (INCLUDE_DIRS ${CMAKE_INSTALL_PREFIX}/include)
+if (FLTK_HAVE_CAIRO)
+  list (APPEND INCLUDE_DIRS ${PKG_CAIRO_INCLUDE_DIRS})
+endif ()
 
 set (CONFIG_PATH ${CMAKE_INSTALL_PREFIX}/${FLTK_CONFIG_PATH})
 
@@ -102,18 +105,15 @@ configure_file(
   @ONLY
 )
 
-if (UNIX)
-  execute_process (COMMAND chmod 755 fltk-config
-    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin"
-  )
-endif (UNIX)
+# Install fltk-config
+# Note: no need to set execute perms, install (PROGRAMS) does this
 
 install (PROGRAMS
   ${CMAKE_CURRENT_BINARY_DIR}/bin/fltk-config
   DESTINATION ${FLTK_BINDIR}
 )
 
-if (UNIX OR MSYS OR (MINGW AND CMAKE_CROSSCOMPILING))
+if (UNIX OR MSYS OR MINGW)
   macro(INSTALL_MAN FILE LEVEL)
     install(FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/documentation/src/${FILE}.man
@@ -125,8 +125,11 @@ if (UNIX OR MSYS OR (MINGW AND CMAKE_CROSSCOMPILING))
   INSTALL_MAN (fluid 1)
   INSTALL_MAN (fltk-config 1)
   INSTALL_MAN (fltk 3)
-  INSTALL_MAN (blocks 6)
-  INSTALL_MAN (checkers 6)
-  INSTALL_MAN (sudoku 6)
 
-endif (UNIX OR MSYS OR (MINGW AND CMAKE_CROSSCOMPILING))
+  # Don't (!) install man pages of games (GitHub issue #23)
+
+  # INSTALL_MAN (blocks 6)
+  # INSTALL_MAN (checkers 6)
+  # INSTALL_MAN (sudoku 6)
+
+endif (UNIX OR MSYS OR MINGW)

@@ -62,9 +62,9 @@
 
 
 /**
- \class Fl_Text_Selection
- \brief This is an internal class for Fl_Text_Buffer to manage text selections.
- 
+  \class Fl_Text_Selection
+  \brief This is an internal class for Fl_Text_Buffer to manage text selections.
+
   All methods use byte (not UTF-8 character) offsets and start at 0. This
   class works correctly with UTF-8 strings assuming that the parameters
   for all calls are on character boundaries.
@@ -93,7 +93,7 @@
     necessarily 0 (zero) if mSelected == \p false because they are
     not cleared when \p selected(false) is called (as of Jul 2017).
     This may be changed in the future.
- */
+*/
 class FL_EXPORT Fl_Text_Selection {
   friend class Fl_Text_Buffer;
 
@@ -115,7 +115,7 @@ public:
       selected() would have returned 0.
 
     \return byte offset or 0 if not selected.
-   */
+  */
   int start() const { return mSelected ? mStart : 0; }
 
   /**
@@ -128,20 +128,20 @@ public:
       selected() would have returned 0.
 
     \return byte offset or 0 if not selected.
-   */
+  */
   int end() const { return mSelected ? mEnd : 0; }
 
   /**
    \brief Returns true if any text is selected.
    \return  \p true if any text has been selected, or \p false
-   if no text is selected.
-   */
+            if no text is selected.
+  */
   bool selected() const { return mSelected; }
 
   /**
     \brief Modifies the 'selected' flag.
-   \param b new flag
-   */
+    \param b new flag
+  */
   void selected(bool b) { mSelected = b; }
 
   /**
@@ -156,7 +156,7 @@ public:
     \return size in bytes or 0 if not selected.
 
     \since FLTK 1.4.0
-   */
+  */
   int length() const { return mSelected ? mEnd - mStart : 0; }
 
   // Returns true if position \p pos is in this Fl_Text_Selection.

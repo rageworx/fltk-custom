@@ -1,8 +1,8 @@
 //
-// FLTK native OS file chooser widget
+// FLTK native OS file chooser widget for macOS
 //
-// Copyright 1998-2018 by Bill Spitzak and others.
 // Copyright 2004 Greg Ercolano.
+// Copyright 1998-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -20,14 +20,12 @@
 //        Possibly 'preset_file' could be used to select the filename.
 //
 
-#ifdef __APPLE__
-
 #include <FL/Fl.H>
 #include <FL/platform.H> // for fl_mac_os_version
 #include <FL/Fl_Native_File_Chooser.H>
 #include <FL/Fl_File_Chooser.H>
 #include <FL/filename.H>
-#include <FL/fl_string.h>
+#include <FL/fl_string_functions.h>
 #define MAXFILTERS      80
 #import <Cocoa/Cocoa.h>
 
@@ -602,7 +600,7 @@ int Fl_Quartz_Native_File_Chooser_Driver::runmodal()
     fname = [preset lastPathComponent];
   }
   if (_directory && !dir) dir = [[NSString alloc] initWithUTF8String:_directory];
-#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6 && defined(__BLOCKS__)
   if (fl_mac_os_version >= 100600) {
     bool usepath = false;
     NSString *path = nil;
@@ -627,8 +625,8 @@ int Fl_Quartz_Native_File_Chooser_Driver::runmodal()
       __block NSInteger complete = -1;
       [_panel beginSheetModalForWindow:[NSApp mainWindow] completionHandler:^(NSInteger returnCode) {
         complete = returnCode; // this block runs after OK or Cancel was triggered in file dialog
-      }]; // this message returns immediately and begins the file dialog as a sheet
-      while ([_panel isVisible]) Fl::wait(100); // loop until end of file dialog
+      }]; // 10.6 this message returns immediately and begins the file dialog as a sheet
+      while (complete == -1) Fl::wait(100); // loop until end of file dialog
       retval = complete;
     } else {
       retval = [_panel runModal];
@@ -759,5 +757,3 @@ int Fl_Quartz_Native_File_Chooser_Driver::post() {
   [localPool release];
   return (retval == 1 ? 0 : 1);
 }
-
-#endif // __APPLE__

@@ -1,7 +1,7 @@
 //
 // Classes Fl_PostScript_File_Device and Fl_PostScript_Graphics_Driver for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2010-2020 by Bill Spitzak and others.
+// Copyright 2010-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -24,7 +24,7 @@
 #include <FL/Fl_PostScript.H>
 #include <FL/Fl_Native_File_Chooser.H>
 #include "../../Fl_System_Driver.H"
-#include <FL/fl_string.h>
+#include <FL/fl_string_functions.h>
 #include <FL/platform.H>
 #include <stdarg.h>
 #include <time.h>
@@ -60,7 +60,6 @@ int Fl_PostScript_File_Device::begin_job (int pagecount, enum Fl_Paged_Device::P
   if(ps->output == NULL) return 2;
   ps->ps_filename_ = fl_strdup(fnfc.filename());
   ps->start_postscript(pagecount, format, layout);
-  Fl_Surface_Device::push_current(this);
   return 0;
 }
 
@@ -79,7 +78,6 @@ int Fl_PostScript_File_Device::begin_job (FILE *ps_output, int pagecount,
   ps->ps_filename_ = NULL;
   ps->start_postscript(pagecount, format, layout);
   ps->close_command(dont_close); // so that end_job() doesn't close the file
-  Fl_Surface_Device::push_current(this);
   return 0;
 }
 
@@ -124,9 +122,9 @@ static const double dashes_cap[5][7]={
 Fl_PostScript_Graphics_Driver::Fl_PostScript_Graphics_Driver(void)
 {
   close_cmd_ = 0;
+#if ! USE_PANGO
   //lang_level_ = 3;
   lang_level_ = 2;
-#if ! USE_PANGO
   mask = 0;
 #endif
   ps_filename_ = NULL;
@@ -263,7 +261,7 @@ int Fl_PostScript_Graphics_Driver::clocale_printf(const char *format, ...)
 {
   va_list args;
   va_start(args, format);
-  int retval = Fl::system_driver()->clocale_printf(output, format, args);
+  int retval = Fl::system_driver()->clocale_vprintf(output, format, args);
   va_end(args);
   return retval;
 }
@@ -1501,8 +1499,24 @@ int Fl_PostScript_Graphics_Driver::start_eps(int width, int height) {
   return 0;
 }
 
-PangoFontDescription* Fl_PostScript_Graphics_Driver::pango_font_description(Fl_Font fnum) {
-  return Fl_Graphics_Driver::default_driver().pango_font_description(fnum);
+
+void Fl_PostScript_Graphics_Driver::transformed_draw(const char* str, int n, double x, double y) {
+  if (!n) return;
+  PangoFontDescription *pfd = Fl_Graphics_Driver::default_driver().pango_font_description(font());
+  pango_layout_set_font_description(pango_layout_, pfd);
+  int pwidth, pheight;
+  cairo_save(cairo_);
+  pango_layout_set_text(pango_layout_, str, n);
+  pango_layout_get_size(pango_layout_, &pwidth, &pheight);
+  if (pwidth > 0) {
+    double s = width(str, n);
+    cairo_translate(cairo_, x, y - height() + descent());
+    s = (s/pwidth) * PANGO_SCALE;
+    cairo_scale(cairo_, s, s);
+    pango_cairo_show_layout(cairo_, pango_layout_);
+  }
+  cairo_restore(cairo_);
+  check_status();
 }
 
 #endif // USE_PANGO
@@ -1592,6 +1606,7 @@ void Fl_PostScript_File_Device::untranslate(void)
 int Fl_PostScript_File_Device::begin_page (void)
 {
   Fl_PostScript_Graphics_Driver *ps = driver();
+  Fl_Surface_Device::push_current(this);
 #if USE_PANGO
   cairo_ps_surface_dsc_begin_page_setup(cairo_get_target(ps->cr()));
   char feature[200];
@@ -1631,6 +1646,7 @@ int Fl_PostScript_File_Device::end_page (void)
   cairo_show_page(ps->cr());
   ps->check_status();
 #endif
+  Fl_Surface_Device::pop_current();
   return 0;
 }
 
@@ -1670,7 +1686,6 @@ void Fl_PostScript_File_Device::end_job (void)
     ps->clip_= ps->clip_->prev;
     delete c;
   }
-  Fl_Surface_Device::pop_current();
   int err2 = (ps->close_cmd_ ? (ps->close_cmd_)(ps->output) : fclose(ps->output) );
   if (!error) error = err2;
   if (error && ps->close_cmd_ == NULL) {

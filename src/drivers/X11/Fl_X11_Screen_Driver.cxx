@@ -1,7 +1,7 @@
 //
 // Definition of X11 Screen interface
 //
-// Copyright 1998-2020 by Bill Spitzak and others.
+// Copyright 1998-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -31,12 +31,10 @@
 #include <FL/filename.H>
 #include <sys/time.h>
 
+#include "../../Fl_Timeout.h"
+
 #if HAVE_XINERAMA
 #  include <X11/extensions/Xinerama.h>
-#endif
-
-#if USE_XDBE
-#include <X11/extensions/Xdbe.h>
 #endif
 
 #  include <X11/Xutil.h>
@@ -58,70 +56,6 @@ extern const char *fl_fg;
 extern const char *fl_bg;
 extern const char *fl_bg2;
 // end of extern additions workaround
-
-//
-// X11 timers
-//
-
-
-////////////////////////////////////////////////////////////////////////
-// Timeouts are stored in a sorted list (*first_timeout), so only the
-// first one needs to be checked to see if any should be called.
-// Allocated, but unused (free) Timeout structs are stored in another
-// linked list (*free_timeout).
-
-struct Timeout {
-  double time;
-  void (*cb)(void*);
-  void* arg;
-  Timeout* next;
-};
-static Timeout* first_timeout, *free_timeout;
-
-// I avoid the overhead of getting the current time when we have no
-// timeouts by setting this flag instead of getting the time.
-// In this case calling elapse_timeouts() does nothing, but records
-// the current time, and the next call will actually elapse time.
-static char reset_clock = 1;
-
-static void elapse_timeouts() {
-  static struct timeval prevclock;
-  struct timeval newclock;
-  gettimeofday(&newclock, NULL);
-  double elapsed = newclock.tv_sec - prevclock.tv_sec +
-    (newclock.tv_usec - prevclock.tv_usec)/1000000.0;
-  prevclock.tv_sec = newclock.tv_sec;
-  prevclock.tv_usec = newclock.tv_usec;
-  if (reset_clock) {
-    reset_clock = 0;
-  } else if (elapsed > 0) {
-    for (Timeout* t = first_timeout; t; t = t->next) t->time -= elapsed;
-  }
-}
-
-
-// Continuously-adjusted error value, this is a number <= 0 for how late
-// we were at calling the last timeout. This appears to make repeat_timeout
-// very accurate even when processing takes a significant portion of the
-// time interval:
-static double missed_timeout_by;
-
-/**
- Creates a driver that manages all screen and display related calls.
-
- This function must be implemented once for every platform.
- */
-Fl_Screen_Driver *Fl_Screen_Driver::newScreenDriver()
-{
-  Fl_X11_Screen_Driver *d = new Fl_X11_Screen_Driver();
-#if USE_XFT
-  for (int i = 0;  i < MAX_SCREENS; i++) d->screens[i].scale = 1;
-  d->current_xft_dpi = 0.; // means the value of the Xft.dpi resource is still unknown
-#else
-  secret_input_character = '*';
-#endif
-  return d;
-}
 
 
 void Fl_X11_Screen_Driver::display(const char *d)
@@ -146,32 +80,13 @@ static int test_visual(XVisualInfo& v, int flags) {
   // simpler if we can't use colormapped visuals at all:
   if (v.c_class != StaticColor && v.c_class != TrueColor) return 0;
 #endif
-#if USE_XDBE
-  if (flags & FL_DOUBLE) {
-    static XdbeScreenVisualInfo *xdbejunk;
-    if (!xdbejunk) {
-      int event_base, error_base;
-      if (!XdbeQueryExtension(fl_display, &event_base, &error_base)) return 0;
-      Drawable root = RootWindow(fl_display,fl_screen);
-      int numscreens = 1;
-      xdbejunk = XdbeGetVisualInfo(fl_display,&root,&numscreens);
-      if (!xdbejunk) return 0;
-    }
-    for (int j = 0; ; j++) {
-      if (j >= xdbejunk->count) return 0;
-      if (xdbejunk->visinfo[j].visual == v.visualid) break;
-    }
-  }
-#endif
   return 1;
 }
 
 
 int Fl_X11_Screen_Driver::visual(int flags)
 {
-#if USE_XDBE == 0
   if (flags & FL_DOUBLE) return 0;
-#endif
   open_display();
   // always use default if possible:
   if (test_visual(*fl_visual, flags)) return 1;
@@ -432,72 +347,6 @@ void Fl_X11_Screen_Driver::flush()
 }
 
 
-double Fl_X11_Screen_Driver::wait(double time_to_wait)
-{
-  static char in_idle;
-
-  if (first_timeout) {
-    elapse_timeouts();
-    Timeout *t;
-    while ((t = first_timeout)) {
-      if (t->time > 0) break;
-      // The first timeout in the array has expired.
-      missed_timeout_by = t->time;
-      // We must remove timeout from array before doing the callback:
-      void (*cb)(void*) = t->cb;
-      void *argp = t->arg;
-      first_timeout = t->next;
-      t->next = free_timeout;
-      free_timeout = t;
-      // Now it is safe for the callback to do add_timeout:
-      cb(argp);
-    }
-  } else {
-    reset_clock = 1; // we are not going to check the clock
-  }
-  Fl::run_checks();
-  if (Fl::idle) {
-    if (!in_idle) {
-      in_idle = 1;
-      Fl::idle();
-      in_idle = 0;
-    }
-    // the idle function may turn off idle, we can then wait:
-    if (Fl::idle) time_to_wait = 0.0;
-  }
-  if (first_timeout && first_timeout->time < time_to_wait)
-    time_to_wait = first_timeout->time;
-  if (time_to_wait <= 0.0) {
-    // do flush second so that the results of events are visible:
-    int ret = this->poll_or_select_with_delay(0.0);
-    Fl::flush();
-    return ret;
-  } else {
-    // do flush first so that user sees the display:
-    Fl::flush();
-    if (Fl::idle && !in_idle) // 'idle' may have been set within flush()
-      time_to_wait = 0.0;
-    else if (first_timeout && first_timeout->time < time_to_wait) {
-      // another timeout may have been queued within flush(), see STR #3188
-      time_to_wait = first_timeout->time >= 0.0 ? first_timeout->time : 0.0;
-    }
-    return this->poll_or_select_with_delay(time_to_wait);
-  }
-}
-
-
-int Fl_X11_Screen_Driver::ready()
-{
-  if (first_timeout) {
-    elapse_timeouts();
-    if (first_timeout->time <= 0) return 1;
-  } else {
-    reset_clock = 1;
-  }
-  return this->poll_or_select();
-}
-
-
 extern void fl_fix_focus(); // in Fl.cxx
 
 
@@ -621,67 +470,6 @@ const char *Fl_X11_Screen_Driver::get_system_scheme()
   return s;
 }
 
-// ######################   *FIXME*   ########################
-// ######################   *FIXME*   ########################
-// ######################   *FIXME*   ########################
-
-
-//
-// X11 timers
-//
-
-void Fl_X11_Screen_Driver::add_timeout(double time, Fl_Timeout_Handler cb, void *argp) {
-  elapse_timeouts();
-  missed_timeout_by = 0;
-  repeat_timeout(time, cb, argp);
-}
-
-void Fl_X11_Screen_Driver::repeat_timeout(double time, Fl_Timeout_Handler cb, void *argp) {
-  time += missed_timeout_by; if (time < -.05) time = 0;
-  Timeout* t = free_timeout;
-  if (t) {
-      free_timeout = t->next;
-  } else {
-      t = new Timeout;
-  }
-  t->time = time;
-  t->cb = cb;
-  t->arg = argp;
-  // insert-sort the new timeout:
-  Timeout** p = &first_timeout;
-  while (*p && (*p)->time <= time) p = &((*p)->next);
-  t->next = *p;
-  *p = t;
-}
-
-/**
-  Returns true if the timeout exists and has not been called yet.
-*/
-int Fl_X11_Screen_Driver::has_timeout(Fl_Timeout_Handler cb, void *argp) {
-  for (Timeout* t = first_timeout; t; t = t->next)
-    if (t->cb == cb && t->arg == argp) return 1;
-  return 0;
-}
-
-/**
-  Removes a timeout callback. It is harmless to remove a timeout
-  callback that no longer exists.
-
-  \note This version removes all matching timeouts, not just the first one.
-        This may change in the future.
-*/
-void Fl_X11_Screen_Driver::remove_timeout(Fl_Timeout_Handler cb, void *argp) {
-  for (Timeout** p = &first_timeout; *p;) {
-    Timeout* t = *p;
-    if (t->cb == cb && (t->arg == argp || !argp)) {
-      *p = t->next;
-      t->next = free_timeout;
-      free_timeout = t;
-    } else {
-      p = &(t->next);
-    }
-  }
-}
 
 int Fl_X11_Screen_Driver::compose(int& del) {
   int condition;
@@ -701,7 +489,7 @@ void Fl_X11_Screen_Driver::compose_reset()
   if (fl_xim_ic) XmbResetIC(fl_xim_ic);
 }
 
-int Fl_X11_Screen_Driver::text_display_can_leak() {
+int Fl_X11_Screen_Driver::text_display_can_leak() const {
 #if USE_XFT
   return 1;
 #else
@@ -774,8 +562,10 @@ Fl_RGB_Image *Fl_X11_Screen_Driver::read_win_rectangle(int X, int Y, int w, int 
   Window xid = (win && !allow_outside ? fl_xid(win) : fl_window);
 
   float s = allow_outside ? Fl::screen_driver()->scale(win->screen_num()) : Fl_Surface_Device::surface()->driver()->scale();
-  int Xs = Fl_Scalable_Graphics_Driver::floor(X, s), Ys = Fl_Scalable_Graphics_Driver::floor(Y, s),
-  ws = Fl_Scalable_Graphics_Driver::floor(X+w, s) - Xs, hs = Fl_Scalable_Graphics_Driver::floor(Y+h, s) - Ys;
+  int Xs = Fl_Scalable_Graphics_Driver::floor(X, s);
+  int Ys = Fl_Scalable_Graphics_Driver::floor(Y, s);
+  int ws = Fl_Scalable_Graphics_Driver::floor(X+w, s) - Xs;
+  int hs = Fl_Scalable_Graphics_Driver::floor(Y+h, s) - Ys;
 
 #  ifdef __sgi
   if (XReadDisplayQueryExtension(fl_display, &i, &i)) {
@@ -800,12 +590,14 @@ Fl_RGB_Image *Fl_X11_Screen_Driver::read_win_rectangle(int X, int Y, int w, int 
       sw = screens[ns].width;
       sh = screens[ns].height;
     }
+#if ! HAVE_XRENDER
     if (win && !allow_outside && int(s) != s) {
       ws = (w+1) * s; // approximates what Fl_Graphics_Driver::cache_size() does
       hs = (h+1) * s;
-      if (Xs + ws >= int(win->w()*s)) ws = win->w()*s - Xs -1;
-      if (Ys + hs >= int(win->h()*s)) hs = win->h()*s - Ys -1;
      }
+#endif
+    if (win && Xs + ws >= int(win->w()*s)) ws = win->w()*s - Xs -1;
+    if (win && Ys + hs >= int(win->h()*s)) hs = win->h()*s - Ys -1;
     if (ws < 1) ws = 1;
     if (hs < 1) hs = 1;
     if (!win || (dx >= sx && dy >= sy && dx + ws <= sx+sw && dy + hs <= sy+sh) ) {

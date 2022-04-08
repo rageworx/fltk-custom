@@ -57,6 +57,15 @@ const int line_num_width = 75;
 Fl_Text_Buffer     *stylebuf = 0;
 Fl_Text_Display::Style_Table_Entry
                    styletable[] = {     // Style table
+#ifdef TESTING_ATTRIBUTES
+                     { FL_BLACK,      FL_COURIER,           TS }, // A - Plain
+                     { FL_DARK_GREEN, FL_HELVETICA_ITALIC,  TS, Fl_Text_Display::ATTR_BGCOLOR, FL_LIGHT2  }, // B - Line comments
+                     { FL_DARK_GREEN, FL_HELVETICA_ITALIC,  TS, Fl_Text_Display::ATTR_BGCOLOR_EXT, FL_LIGHT2 }, // C - Block comments
+                     { FL_BLUE,       FL_COURIER,           TS, Fl_Text_Display::ATTR_UNDERLINE }, // D - Strings
+                     { FL_DARK_RED,   FL_COURIER,           TS, Fl_Text_Display::ATTR_GRAMMAR }, // E - Directives
+                     { FL_DARK_RED,   FL_COURIER_BOLD,      TS, Fl_Text_Display::ATTR_STRIKE_THROUGH }, // F - Types
+                     { FL_BLUE,       FL_COURIER_BOLD,      TS, Fl_Text_Display::ATTR_SPELLING }, // G - Keywords
+#else
                      { FL_BLACK,      FL_COURIER,           TS }, // A - Plain
                      { FL_DARK_GREEN, FL_HELVETICA_ITALIC,  TS }, // B - Line comments
                      { FL_DARK_GREEN, FL_HELVETICA_ITALIC,  TS }, // C - Block comments
@@ -64,6 +73,7 @@ Fl_Text_Display::Style_Table_Entry
                      { FL_DARK_RED,   FL_COURIER,           TS }, // E - Directives
                      { FL_DARK_RED,   FL_COURIER_BOLD,      TS }, // F - Types
                      { FL_BLUE,       FL_COURIER_BOLD,      TS }, // G - Keywords
+#endif
                    };
 const char         *code_keywords[] = { // List of known C/C++ keywords...
                      "and",
@@ -188,7 +198,6 @@ style_parse(const char *text,
       } else if (strncmp(text, "//", 2) == 0) {
         current = 'B';
         for (; length > 0 && *text != '\n'; length --, text ++) *style++ = 'B';
-
         if (length == 0) break;
       } else if (strncmp(text, "/*", 2) == 0) {
         current = 'C';
@@ -658,8 +667,8 @@ void find2_cb(Fl_Widget* w, void* v) {
   int found = textbuf->search_forward(pos, e->search, &pos);
   if (found) {
     // Found a match; select and update the position...
-    textbuf->select(pos, pos+strlen(e->search));
-    e->editor->insert_position(pos+strlen(e->search));
+    textbuf->select(pos, pos + (int)strlen(e->search));
+    e->editor->insert_position(pos + (int)strlen(e->search));
     e->editor->show_insert_position();
   }
   else fl_alert("No occurrences of \'%s\' found!", e->search);
@@ -773,11 +782,11 @@ void replace2_cb(Fl_Widget*, void* v) {
 
   if (found) {
     // Found a match; update the position and replace text...
-    textbuf->select(pos, pos+strlen(find));
+    textbuf->select(pos, pos + (int)strlen(find));
     textbuf->remove_selection();
     textbuf->insert(pos, replace);
-    textbuf->select(pos, pos+strlen(replace));
-    e->editor->insert_position(pos+strlen(replace));
+    textbuf->select(pos, pos + (int)strlen(replace));
+    e->editor->insert_position(pos + (int)strlen(replace));
     e->editor->show_insert_position();
   }
   else fl_alert("No occurrences of \'%s\' found!", find);
@@ -807,10 +816,10 @@ void replall_cb(Fl_Widget*, void* v) {
 
     if (found) {
       // Found a match; update the position and replace text...
-      textbuf->select(pos, pos+strlen(find));
+      textbuf->select(pos, pos + (int)strlen(find));
       textbuf->remove_selection();
       textbuf->insert(pos, replace);
-      e->editor->insert_position(pos+strlen(replace));
+      e->editor->insert_position(pos + (int)strlen(replace));
       e->editor->show_insert_position();
       times++;
     }

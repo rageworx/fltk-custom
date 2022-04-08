@@ -26,7 +26,7 @@
 #include <string.h>                 /* sprintf().. */
 
 class ExternalCodeEditor {
-  PROCESS_INFORMATION pinfo_;       // CreateProcess() handle to running process 
+  PROCESS_INFORMATION pinfo_;       // CreateProcess() handle to running process
   FILETIME            file_mtime_;  // last modify time of the file (used to determine if file changed)
   LARGE_INTEGER       file_size_;   // last file size (used to determine if changed)
   const char *        filename_;    // tmpfilename editor uses

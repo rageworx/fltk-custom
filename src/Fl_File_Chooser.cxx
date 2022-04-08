@@ -28,9 +28,9 @@
 
 void Fl_File_Chooser::cb_window_i(Fl_Double_Window*, void*) {
   fileName->value("");
-fileList->deselect();
-Fl::remove_timeout((Fl_Timeout_Handler)previewCB, this);
-window->hide();
+  fileList->deselect();
+  Fl::remove_timeout((Fl_Timeout_Handler)previewCB, this);
+  window->hide();
 }
 void Fl_File_Chooser::cb_window(Fl_Double_Window* o, void* v) {
   ((Fl_File_Chooser*)(o->user_data()))->cb_window_i(o,v);
@@ -104,9 +104,9 @@ void Fl_File_Chooser::cb_fileName(Fl_File_Input* o, void* v) {
 void Fl_File_Chooser::cb_okButton_i(Fl_Return_Button*, void*) {
   window->hide();
 
-// Do any callback that is registered...
-if (callback_)
-  (*callback_)(this, data_);
+  // Do any callback that is registered...
+  if (callback_)
+    (*callback_)(this, data_);
 }
 void Fl_File_Chooser::cb_okButton(Fl_Return_Button* o, void* v) {
   ((Fl_File_Chooser*)(o->parent()->parent()->parent()->user_data()))->cb_okButton_i(o,v);
@@ -114,9 +114,9 @@ void Fl_File_Chooser::cb_okButton(Fl_Return_Button* o, void* v) {
 
 void Fl_File_Chooser::cb_cancelButton_i(Fl_Button*, void*) {
   fileName->value("");
-fileList->deselect();
-Fl::remove_timeout((Fl_Timeout_Handler)previewCB, this);
-window->hide();
+  fileList->deselect();
+  Fl::remove_timeout((Fl_Timeout_Handler)previewCB, this);
+  window->hide();
 }
 void Fl_File_Chooser::cb_cancelButton(Fl_Button* o, void* v) {
   ((Fl_File_Chooser*)(o->parent()->parent()->parent()->user_data()))->cb_cancelButton_i(o,v);
@@ -452,6 +452,34 @@ void Fl_File_Chooser::user_data(void *d) {
 
 int Fl_File_Chooser::visible() {
   return window->visible();
+}
+
+void Fl_File_Chooser::position(int x, int y) {
+  window->position(x, y);
+}
+
+int Fl_File_Chooser::x() const {
+  return window->x();
+}
+
+int Fl_File_Chooser::y() const {
+  return window->y();
+}
+
+int Fl_File_Chooser::w() const {
+  return window->w();
+}
+
+int Fl_File_Chooser::h() const {
+  return window->h();
+}
+
+void Fl_File_Chooser::size(int w, int h) {
+  window->size(w, h);
+}
+
+void Fl_File_Chooser::resize(int x, int y, int w, int h) {
+  window->resize(x, y, w, h);
 }
 
 Fl_Widget* Fl_File_Chooser::add_extra(Fl_Widget* gr) {

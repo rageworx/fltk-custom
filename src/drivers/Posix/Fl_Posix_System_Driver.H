@@ -2,7 +2,7 @@
 // Definition of POSIX system driver
 // for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2010-2021 by Bill Spitzak and others.
+// Copyright 2010-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -47,7 +47,6 @@ class Fl_Posix_System_Driver : public Fl_System_Driver
 protected:
   int run_program(const char *program, char **argv, char *msg, int msglen);
 public:
-  Fl_Posix_System_Driver() {}
   virtual int mkdir(const char* f, int mode) {return ::mkdir(f, mode);}
   virtual int open(const char* f, int oflags, int pmode) {
     return pmode == -1 ?  ::open(f, oflags) : ::open(f, oflags, pmode);
@@ -58,7 +57,7 @@ public:
   virtual int execvp(const char *file, char *const *argv) {return ::execvp(file, argv);}
   virtual int chmod(const char* f, int mode) {return ::chmod(f, mode);}
   virtual int access(const char* f, int mode) { return ::access(f, mode);}
-  virtual int stat(const char* f, struct stat *b) { return ::stat(f, b);}
+  virtual int flstat(const char* f, struct stat *b) { return ::stat(f, b);}
   virtual char *getcwd(char* b, int l) {return ::getcwd(b, l);}
   virtual int chdir(const char* path) {return ::chdir(path);}
   virtual int unlink(const char* f) {return ::unlink(f);}
@@ -88,8 +87,6 @@ public:
   virtual void lock_ring();
   virtual void unlock_ring();
 #endif
-  virtual void make_transient(void *ptr_gtk, void *gtk_window, Fl_Window *win) {}
-  virtual void emulate_modal_dialog() {}
 };
 
 #endif // FL_POSIX_SYSTEM_DRIVER_H

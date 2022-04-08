@@ -1,7 +1,7 @@
 //
 // Support for graphics output to PostScript file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2010-2020 by Bill Spitzak and others.
+// Copyright 2010-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -48,11 +48,13 @@ public:
   enum Fl_Paged_Device::Page_Format page_format_;
   char *ps_filename_;
   int nPages;
-  
+  double pw_, ph_;
+  uchar bg_r, bg_g, bg_b;
+
   Fl_PostScript_Graphics_Driver();
   ~Fl_PostScript_Graphics_Driver();
-  void close_command(Fl_PostScript_Close_Command cmd){close_cmd_=cmd;};
-  FILE * file() {return output;};
+  void close_command(Fl_PostScript_Close_Command cmd){close_cmd_=cmd;}
+  FILE * file() {return output;}
   void page(double pw, double ph, int media = 0);
   void page(int format);
   int start_postscript (int pagecount, enum Fl_Paged_Device::Page_Format format, enum Fl_Paged_Device::Page_Layout layout);
@@ -68,17 +70,27 @@ public:
   int height();
   int descent();
   void text_extents(const char *c, int n, int &dx, int &dy, int &w, int &h);
+  // draw text at width measured on display
+  void transformed_draw(const char* s, int n, double x, double y);
+  void draw(const char* s, int nBytes, int x, int y) {transformed_draw(s,nBytes,x,y); }
+  void draw(const char* s, int nBytes, float x, float y) {transformed_draw(s,nBytes,x,y); }
+  void draw(int angle, const char *str, int n, int x, int y) {Fl_Cairo_Graphics_Driver::draw(angle, str, n, x, y);}
+
   void color(Fl_Color c);
   void color(uchar r, uchar g, uchar b) {Fl_Cairo_Graphics_Driver::color(r,g,b);}
   Fl_Color color();
   void point(int x, int y);
   int not_clipped(int x, int y, int w, int h);
   int clip_box(int x, int y, int w, int h, int &X, int &Y, int &W, int &H);
-  virtual PangoFontDescription* pango_font_description(Fl_Font fnum);
   virtual int has_feature(driver_feature feature_mask) { return feature_mask & PRINTER; }
+  // draw image classes without caching them
+  void draw_rgb_bitmap_(Fl_Image *img,int XP, int YP, int WP, int HP, int cx, int cy);
+  void draw_pixmap(Fl_Pixmap * pxm,int XP, int YP, int WP, int HP, int cx, int cy);
+  void draw_bitmap(Fl_Bitmap * bitmap,int XP, int YP, int WP, int HP, int cx, int cy);
+  void draw_rgb(Fl_RGB_Image * rgb,int XP, int YP, int WP, int HP, int cx, int cy);
 };
 
-#else // USE_PANGO
+#else // ! USE_PANGO
 
 class FL_EXPORT Fl_PostScript_Graphics_Driver : public Fl_Graphics_Driver {
 private:
@@ -112,7 +124,7 @@ public:
   int my; // mask lines
   int page_policy_;
   void page_policy(int p);
-  int page_policy(){return page_policy_;};
+  int page_policy() { return page_policy_; }
   int alpha_mask(const uchar * data, int w, int h, int D, int LD=0);
   /** Shields output PostScript data from modifications of the current locale.
    It typically avoids PostScript errors caused if the current locale uses comma instead of dot
@@ -154,11 +166,11 @@ public:
   enum Fl_Paged_Device::Page_Format page_format_;
   char *ps_filename_;
 
-  void close_command(Fl_PostScript_Close_Command cmd){close_cmd_=cmd;};
-  FILE * file() {return output;};
+  void close_command(Fl_PostScript_Close_Command cmd){close_cmd_=cmd;}
+  FILE * file() {return output;}
   //void orientation (int o);
   //Fl_PostScript_Graphics_Driver(FILE *o, int lang_level, int pages = 0); // ps (also multi-page) constructor
-  //void interpolate(int i){interpolate_=i;};
+  //void interpolate(int i){interpolate_=i;}
   //int interpolate(){return interpolate_;}
 
   void page(double pw, double ph, int media = 0);
@@ -211,9 +223,9 @@ public:
   void end_line();
   void end_loop();
   void end_polygon();
-  void begin_complex_polygon(){begin_polygon();};
-  void gap(){gap_=1;};
-  void end_complex_polygon(){end_polygon();};
+  void begin_complex_polygon(){begin_polygon();}
+  void gap(){gap_=1;}
+  void end_complex_polygon(){end_polygon();}
   void transformed_vertex(double x, double y);
 
   void draw_image(const uchar* d, int x,int y,int w,int h, int delta=3, int ldelta=0);
@@ -221,8 +233,8 @@ public:
   void draw_image(Fl_Draw_Image_Cb call, void* data, int x,int y, int w, int h, int delta=3);
   void draw_image_mono(Fl_Draw_Image_Cb call, void* data, int x,int y, int w, int h, int delta=1);
 
-  void draw(const char* s, int nBytes, int x, int y) {transformed_draw(s,nBytes,x,y); };
-  void draw(const char* s, int nBytes, float x, float y) {transformed_draw(s,nBytes,x,y); };
+  void draw(const char* s, int nBytes, int x, int y) {transformed_draw(s,nBytes,x,y); }
+  void draw(const char* s, int nBytes, float x, float y) {transformed_draw(s,nBytes,x,y); }
   void draw(int angle, const char *str, int n, int x, int y);
   void rtl_draw(const char* s, int n, int x, int y);
   void font(int face, int size);
@@ -236,8 +248,6 @@ public:
   void draw_bitmap(Fl_Bitmap * bitmap,int XP, int YP, int WP, int HP, int cx, int cy);
   void draw_rgb(Fl_RGB_Image * rgb,int XP, int YP, int WP, int HP, int cx, int cy);
   ~Fl_PostScript_Graphics_Driver();
-  // ---
-  Fl_Bitmask create_bitmask(int w, int h, const uchar *array) { return 0L; }
   virtual int has_feature(driver_feature feature_mask) { return feature_mask & PRINTER; }
 
   void ps_origin(int x, int y);

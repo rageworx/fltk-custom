@@ -208,16 +208,22 @@ void Fl_Xlib_Graphics_Driver::XDestroyRegion(Fl_Region r) {
 
 // --- line and polygon drawing
 
-void Fl_Xlib_Graphics_Driver::focus_rect(int x, int y, int w, int h)
-{
+void Fl_Xlib_Graphics_Driver::focus_rect(int x, int y, int w, int h) {
   w = this->floor(x + w) - this->floor(x);
   h = this->floor(y + h) - this->floor(y);
   x = this->floor(x) + floor(offset_x_);
   y = this->floor(y) + floor(offset_y_);
   if (!clip_rect(x, y, w, h)) {
-    line_style(FL_DOT);
+    int lw_save = line_width_;       // preserve current line_width
+    if (line_width_ == 0)
+      line_style(FL_DOT, 1);
+    else
+      line_style(FL_DOT);
     XDrawRectangle(fl_display, fl_window, gc_, x, y, w, h);
-    line_style(FL_SOLID);
+    if (lw_save == 0)
+      line_style(FL_SOLID, 0);       // restore line type and width
+    else
+      line_style(FL_SOLID);
   }
 }
 
@@ -326,9 +332,18 @@ void Fl_Xlib_Graphics_Driver::push_clip(int x, int y, int w, int h) {
 
 int Fl_Xlib_Graphics_Driver::clip_box(int x, int y, int w, int h, int& X, int& Y, int& W, int& H) {
   X = x; Y = y; W = w; H = h;
+  // pre-clip rectangle to 16-bit coordinates (STR #3134)
+  if (clip_rect(X, Y, W, H)) { // entirely clipped (outside)
+    W = H = 0;
+    return 2;
+  }
   Fl_Region r = rstack[rstackptr];
-  if (!r) return 0;
-  switch (XRectInRegion(r, x, y, w, h)) {
+  if (!r) { // no clipping region
+    if (X != x || Y != y || W != w || H != h) // pre-clipped
+      return 1; // partially outside, region differs
+    return 0;
+  }
+  switch (XRectInRegion(r, X, Y, W, H)) {
     case 0: // completely outside
       W = H = 0;
       return 2;
@@ -337,7 +352,7 @@ int Fl_Xlib_Graphics_Driver::clip_box(int x, int y, int w, int h, int& X, int& Y
     default: // partial:
       break;
   }
-  Fl_Region rr = XRectangleRegion(x,y,w,h);
+  Fl_Region rr = XRectangleRegion(X, Y, W, H);
   Fl_Region temp = XCreateRegion();
   XIntersectRegion(r, rr, temp);
   XRectangle rect;

@@ -1,7 +1,7 @@
 //
 // Group header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2020 by Bill Spitzak and others.
+// Copyright 1998-2021 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -117,6 +117,9 @@ public:
   void remove(Fl_Widget* o) {remove(*o);}
   void clear();
 
+  /* delete child n (by index) */
+  virtual int delete_child(int n);
+
   /**
     Sets the group's resizable widget.
     See void Fl_Group::resizable(Fl_Widget *o)
@@ -159,6 +162,13 @@ public:
 
     See the \ref resize chapter for more examples and detailed explanation.
 
+    \note The resizable() widget of a window can also affect the window's
+      resizing behavior if Fl_Window::size_range() is not called. Please
+      see Fl_Window::default_size_range() for more information on how the
+      default size range is calculated.
+
+    \see Fl_Window::size_range()
+    \see Fl_Window::default_size_range()
   */
   void resizable(Fl_Widget* o) {resizable_ = o;}
   /**

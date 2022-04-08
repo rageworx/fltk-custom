@@ -14,6 +14,8 @@
 //     https://www.fltk.org/bugs.php
 //
 
+#include <config.h>
+
 #ifndef WIN32_LEAN_AND_MEAN
 # define WIN32_LEAN_AND_MEAN
 #endif
@@ -41,7 +43,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <FL/fl_string.h>
+#include <FL/fl_string_functions.h>
 
 // This function fills in the FLTK font table with all the fonts that
 // are found on the X server.  It tries to place the fonts into families

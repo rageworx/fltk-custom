@@ -2,7 +2,7 @@
 // Declaration of classes Fl_Graphics_Driver, Fl_Scalable_Graphics_Driver,
 // and Fl_Font_Descriptor for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2010-2021 by Bill Spitzak and others.
+// Copyright 2010-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -91,8 +91,6 @@ class FL_EXPORT Fl_Graphics_Driver {
   friend int fl_convert_pixmap(const char*const* cdata, uchar* out, Fl_Color bg);
   friend FL_EXPORT void gl_start();
   friend FL_EXPORT void gl_finish();
-  friend FL_EXPORT Fl_Bitmask fl_create_bitmask(int w, int h, const uchar *array);
-  friend FL_EXPORT void fl_delete_bitmask(Fl_Bitmask);
   /* ============== Implementation note about image drawing =========================
    A graphics driver can implement up to 6 virtual member functions to draw images:
    virtual void draw_pixmap(Fl_Pixmap *pxm,int XP, int YP, int WP, int HP, int cx, int cy)
@@ -132,7 +130,7 @@ and
 
    Graphics drivers also implement cache(Fl_Pixmap*), cache(Fl_Bitmap*) and cache(Fl_RGB_Image*)
    to compute the cached form of all image types, and uncache(Fl_RGB_Image *,...),
-   uncache_pixmap(fl_uintptr_t) and delete_bitmask(Fl_Bitmask) to destroy cached image forms.
+   uncache_pixmap(fl_uintptr_t) and delete_bitmask(fl_uintptr_t) to destroy cached image forms.
    Graphics drivers that use the mask_ variable of class Fl_Pixmap to cache an Fl_Pixmap
    object also reimplement the uchar **Fl_Graphics_Driver::mask_bitmap() member function.
    */
@@ -175,7 +173,7 @@ protected:
   Fl_Font_Descriptor *font_descriptor_; ///< For internal use by FLTK
   int p_size;
   typedef struct { float x; float y; } XPOINT;
-  XPOINT *p;
+  XPOINT *xpoint;
 #ifndef FL_DOXYGEN
   enum {LINE, LOOP, POLYGON, POINT_};
   inline int vertex_no() { return n; }
@@ -197,8 +195,6 @@ protected:
   virtual void draw_bitmap(Fl_Bitmap *bm, int XP, int YP, int WP, int HP, int cx, int cy);
   virtual void copy_offscreen(int x, int y, int w, int h, Fl_Offscreen pixmap, int srcx, int srcy);
 
-  virtual Fl_Bitmask create_bitmask(int w, int h, const uchar *array);
-  virtual void delete_bitmask(Fl_Bitmask bm);
   /** For internal library use only */
   static void change_image_size(Fl_Image *img, int W, int H) {
     img->w(W);
@@ -243,7 +239,7 @@ protected:
   void cache_size_finalize(Fl_Image *img, int &width, int &height);
   static unsigned need_pixmap_bg_color;
 public:
-  virtual ~Fl_Graphics_Driver() {} ///< Destructor
+  virtual ~Fl_Graphics_Driver();
   static Fl_Graphics_Driver &default_driver();
   /** Current scale factor between FLTK and drawing units: drawing = FLTK * scale() */
   float scale() { return scale_; }
@@ -257,6 +253,8 @@ public:
   virtual void rect(int x, int y, int w, int h);
   virtual void focus_rect(int x, int y, int w, int h);
   virtual void rectf(int x, int y, int w, int h);
+  // the default implementation is most likely enough
+  virtual void colored_rectf(int x, int y, int w, int h, uchar r, uchar g, uchar b);
   virtual void line(int x, int y, int x1, int y1);
   /** see fl_line(int, int, int, int, int, int) */
   virtual void line(int x, int y, int x1, int y1, int x2, int y2);
@@ -354,8 +352,10 @@ public:
   virtual float scale_font_for_PostScript(Fl_Font_Descriptor *desc, int s);
   // default implementation may be enough
   virtual float scale_bitmap_for_PostScript();
+  // next 3 are related to X Input Method
   virtual void set_spot(int font, int size, int X, int Y, int W, int H, Fl_Window *win);
   virtual void reset_spot();
+  virtual void set_status(int X, int Y, int W, int H);
   // each platform implements these 3 functions its own way
   virtual void add_rectangle_to_region(Fl_Region r, int x, int y, int w, int h);
   virtual Fl_Region XRectangleRegion(int x, int y, int w, int h);
@@ -371,7 +371,10 @@ public:
   virtual void overlay_rect(int x, int y, int w , int h);
   virtual float override_scale();
   virtual void restore_scale(float);
-  virtual PangoFontDescription* pango_font_description(Fl_Font fnum) { return NULL; }
+  virtual PangoFontDescription* pango_font_description(Fl_Font) { return NULL; }
+  virtual void antialias(int state);
+  virtual int antialias();
+  virtual void delete_bitmask(fl_uintptr_t bm);
 };
 
 #ifndef FL_DOXYGEN

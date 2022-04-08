@@ -1,12 +1,25 @@
 //
-//      External code editor management class for Windows
+// External code editor management class for Windows
 //
+// Copyright 1998-2021 by Bill Spitzak and others.
+//
+// This library is free software. Distribution and use rights are outlined in
+// the file "COPYING" which should have been included with this file.  If this
+// file is missing or damaged, see the license at:
+//
+//     https://www.fltk.org/COPYING.php
+//
+// Please see the following page on how to report bugs and issues:
+//
+//     https://www.fltk.org/bugs.php
+//
+
 //      Note: This entire file Windows only.
 
 #include <FL/Fl.H>      // Fl_Timeout_Handler..
 #include <FL/fl_ask.H>  // fl_alert()
 #include <FL/fl_utf8.h> // fl_utf8fromwc()
-#include <FL/fl_string.h> // fl_strdup()
+#include <FL/fl_string_functions.h> // fl_strdup()
 
 #include "ExternalCodeEditor_WIN32.h"
 
@@ -38,8 +51,6 @@ static const char *get_ms_errmsg() {
     _snprintf(emsg, sizeof(emsg), "Error #%ld", (unsigned long)lastErr);
   } else {
     // Convert message to UTF-8
-    //int mlen = fl_utf8fromwc(emsg, sizeof(emsg), mbuf, msize);
-    // why don't check return size ?
     fl_utf8fromwc(emsg, sizeof(emsg), mbuf, msize);
     // Remove '\r's -- they screw up fl_alert()
     char *src = emsg, *dst = emsg;
@@ -245,8 +256,8 @@ int ExternalCodeEditor::handle_changes(const char **code, int force) {
   // Changes? Load file. Be sure to fallthru to CloseHandle()
   int ret = 0;
   if ( changed || force ) {
-    size_t buflen = size_t(fsize.QuadPart);
-    char *buf = (char*)malloc(buflen + 1);
+    DWORD buflen = (DWORD)fsize.QuadPart;
+    char *buf = (char*)malloc((size_t)buflen + 1);
     DWORD count;
     if ( ReadFile(fh, buf, buflen, &count, 0) == 0 ) {
       fl_alert("ERROR: ReadFile() failed for %s: %s",
@@ -380,7 +391,7 @@ static int save_file(const char *filename,
     return(-1);
   }
   // Write the file, being careful to CloseHandle() even on errs
-  DWORD clen = strlen(code);
+  DWORD clen = (DWORD)strlen(code);
   DWORD count = 0;
   int ret = 0;
   if ( WriteFile(fh, code, clen, &count, NULL) == 0 ) {
@@ -481,7 +492,7 @@ void ExternalCodeEditor::reap_cleanup() {
 int ExternalCodeEditor::reap_editor(DWORD *pid_reaped) {
   if ( pid_reaped ) *pid_reaped = 0;
   if ( !is_editing() ) return -2;
-  int err;
+  DWORD err;
   DWORD msecs_wait = 50;   // .05 sec
   switch ( err = WaitForSingleObject(pinfo_.hProcess, msecs_wait) ) {
     case WAIT_TIMEOUT: {   // process didn't reap, still running

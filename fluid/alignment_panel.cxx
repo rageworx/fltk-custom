@@ -25,6 +25,7 @@ Fl_Double_Window *project_window=(Fl_Double_Window *)0;
 
 static void cb_Close(Fl_Button*, void*) {
   project_window->hide();
+  set_modflag(-1, -1);
 }
 
 Fl_Input *header_file_input=(Fl_Input *)0;
@@ -34,6 +35,10 @@ Fl_Input *code_file_input=(Fl_Input *)0;
 Fl_Check_Button *include_H_from_C_button=(Fl_Check_Button *)0;
 
 Fl_Check_Button *use_FL_COMMAND_button=(Fl_Check_Button *)0;
+
+Fl_Check_Button *utf8_in_src_button=(Fl_Check_Button *)0;
+
+Fl_Check_Button *avoid_early_includes_button=(Fl_Check_Button *)0;
 
 Fl_Choice *i18n_type_chooser=(Fl_Choice *)0;
 
@@ -46,22 +51,26 @@ Fl_Menu_Item menu_i18n_type_chooser[] = {
 
 Fl_Input *i18n_include_input=(Fl_Input *)0;
 
+Fl_Input *i18n_conditional_input=(Fl_Input *)0;
+
 Fl_Input *i18n_file_input=(Fl_Input *)0;
 
 Fl_Int_Input *i18n_set_input=(Fl_Int_Input *)0;
 
 Fl_Input *i18n_function_input=(Fl_Input *)0;
 
+Fl_Input *i18n_static_function_input=(Fl_Input *)0;
+
 Fl_Double_Window* make_project_window() {
-  { project_window = new Fl_Double_Window(399, 252, "Project Settings");
-    { Fl_Button* o = new Fl_Button(328, 216, 60, 25, "Close");
+  { project_window = new Fl_Double_Window(399, 298, "Project Settings");
+    { Fl_Button* o = new Fl_Button(328, 267, 60, 25, "Close");
       o->tooltip("Close this dialog.");
       o->callback((Fl_Callback*)cb_Close);
     } // Fl_Button* o
-    { Fl_Tabs* o = new Fl_Tabs(10, 10, 378, 195);
+    { Fl_Tabs* o = new Fl_Tabs(10, 10, 379, 246);
       o->selection_color((Fl_Color)12);
-      { Fl_Group* o = new Fl_Group(10, 36, 378, 169, "Output");
-        o->hide();
+      o->labelcolor(FL_BACKGROUND2_COLOR);
+      { Fl_Group* o = new Fl_Group(10, 36, 379, 220, "Output");
         { Fl_Box* o = new Fl_Box(20, 49, 340, 49, "Use \"name.ext\" to set a file name or just \".ext\" to set extension.");
           o->align(Fl_Align(132|FL_ALIGN_INSIDE));
         } // Fl_Box* o
@@ -87,14 +96,27 @@ Fl_Double_Window* make_project_window() {
           include_H_from_C_button->callback((Fl_Callback*)include_H_from_C_button_cb);
         } // Fl_Check_Button* include_H_from_C_button
         { use_FL_COMMAND_button = new Fl_Check_Button(117, 176, 272, 20, "Menu shortcuts use FL_COMMAND");
-          use_FL_COMMAND_button->tooltip("Replace FL_CTRL with FL_COMMAND when generating menu shortcut code.");
+          use_FL_COMMAND_button->tooltip("Replace FL_CTRL and FL_META with FL_COMMAND when generating menu shortcuts");
           use_FL_COMMAND_button->down_box(FL_DOWN_BOX);
           use_FL_COMMAND_button->callback((Fl_Callback*)use_FL_COMMAND_button_cb);
         } // Fl_Check_Button* use_FL_COMMAND_button
+        { utf8_in_src_button = new Fl_Check_Button(117, 199, 272, 20, "allow Unicode UTF-8 in source code");
+          utf8_in_src_button->tooltip("For older compilers, characters outside of the printable ASCII range are esca\
+ped using octal notation `\\0123`. If this option is checked, Fluid will write\
+ UTF-8 characters unchanged.");
+          utf8_in_src_button->down_box(FL_DOWN_BOX);
+          utf8_in_src_button->callback((Fl_Callback*)utf8_in_src_cb);
+        } // Fl_Check_Button* utf8_in_src_button
+        { avoid_early_includes_button = new Fl_Check_Button(117, 222, 272, 20, "avoid early include of Fl.H");
+          avoid_early_includes_button->tooltip("Do not emit #include <FL//Fl.H> until it is needed by another include file.");
+          avoid_early_includes_button->down_box(FL_DOWN_BOX);
+          avoid_early_includes_button->callback((Fl_Callback*)avoid_early_includes_cb);
+        } // Fl_Check_Button* avoid_early_includes_button
         o->end();
       } // Fl_Group* o
-      { Fl_Group* o = new Fl_Group(10, 36, 378, 169, "Internationalization");
-        { i18n_type_chooser = new Fl_Choice(100, 48, 136, 25, "Use:");
+      { Fl_Group* o = new Fl_Group(10, 36, 378, 220, "Internationalization");
+        o->hide();
+        { i18n_type_chooser = new Fl_Choice(128, 48, 136, 25, "Use:");
           i18n_type_chooser->tooltip("Type of internationalization to use.");
           i18n_type_chooser->box(FL_THIN_UP_BOX);
           i18n_type_chooser->down_box(FL_BORDER_BOX);
@@ -102,21 +124,29 @@ Fl_Double_Window* make_project_window() {
           i18n_type_chooser->callback((Fl_Callback*)i18n_type_cb);
           i18n_type_chooser->menu(menu_i18n_type_chooser);
         } // Fl_Choice* i18n_type_chooser
-        { i18n_include_input = new Fl_Input(100, 78, 272, 20, "#include:");
+        { i18n_include_input = new Fl_Input(128, 78, 243, 20, "#include:");
           i18n_include_input->tooltip("The include file for internationalization.");
           i18n_include_input->box(FL_THIN_DOWN_BOX);
           i18n_include_input->labelfont(1);
           i18n_include_input->textfont(4);
           i18n_include_input->callback((Fl_Callback*)i18n_text_cb);
         } // Fl_Input* i18n_include_input
-        { i18n_file_input = new Fl_Input(100, 104, 272, 20, "File:");
+        { i18n_conditional_input = new Fl_Input(128, 103, 243, 20, "Conditional:");
+          i18n_conditional_input->tooltip("only include the header file if this preprocessor macro is defined, for examp\
+le FLTK_GETTEXT_FOUND");
+          i18n_conditional_input->box(FL_THIN_DOWN_BOX);
+          i18n_conditional_input->labelfont(1);
+          i18n_conditional_input->textfont(4);
+          i18n_conditional_input->callback((Fl_Callback*)i18n_text_cb);
+        } // Fl_Input* i18n_conditional_input
+        { i18n_file_input = new Fl_Input(128, 128, 243, 20, "File:");
           i18n_file_input->tooltip("The name of the message catalog.");
           i18n_file_input->box(FL_THIN_DOWN_BOX);
           i18n_file_input->labelfont(1);
           i18n_file_input->textfont(4);
           i18n_file_input->callback((Fl_Callback*)i18n_text_cb);
         } // Fl_Input* i18n_file_input
-        { i18n_set_input = new Fl_Int_Input(100, 128, 272, 20, "Set:");
+        { i18n_set_input = new Fl_Int_Input(128, 153, 243, 20, "Set:");
           i18n_set_input->tooltip("The message set number.");
           i18n_set_input->type(2);
           i18n_set_input->box(FL_THIN_DOWN_BOX);
@@ -124,13 +154,22 @@ Fl_Double_Window* make_project_window() {
           i18n_set_input->textfont(4);
           i18n_set_input->callback((Fl_Callback*)i18n_int_cb);
         } // Fl_Int_Input* i18n_set_input
-        { i18n_function_input = new Fl_Input(100, 103, 272, 20, "Function:");
-          i18n_function_input->tooltip("The function to call to internationalize the labels and tooltips.");
+        { i18n_function_input = new Fl_Input(128, 128, 243, 20, "Function:");
+          i18n_function_input->tooltip("The function to call to translate labels and tooltips, usually \"gettext\" or\
+ \"_\"");
           i18n_function_input->box(FL_THIN_DOWN_BOX);
           i18n_function_input->labelfont(1);
           i18n_function_input->textfont(4);
           i18n_function_input->callback((Fl_Callback*)i18n_text_cb);
         } // Fl_Input* i18n_function_input
+        { i18n_static_function_input = new Fl_Input(128, 153, 243, 20, "Static Function:");
+          i18n_static_function_input->tooltip("function to call to translate static text, The function to call to internatio\
+nalize labels and tooltips, usually \"gettext_noop\" or \"N_\"");
+          i18n_static_function_input->box(FL_THIN_DOWN_BOX);
+          i18n_static_function_input->labelfont(1);
+          i18n_static_function_input->textfont(4);
+          i18n_static_function_input->callback((Fl_Callback*)i18n_text_cb);
+        } // Fl_Input* i18n_static_function_input
         o->end();
       } // Fl_Group* o
       o->end();
@@ -159,7 +198,7 @@ Fl_Check_Button *tooltips_button=(Fl_Check_Button *)0;
 
 static void cb_tooltips_button(Fl_Check_Button*, void*) {
   Fl_Tooltip::enable(tooltips_button->value());
-fluid_prefs.set("show_tooltips", tooltips_button->value());
+  fluid_prefs.set("show_tooltips", tooltips_button->value());
 }
 
 Fl_Check_Button *completion_button=(Fl_Check_Button *)0;
@@ -184,32 +223,32 @@ Fl_Check_Button *show_comments_button=(Fl_Check_Button *)0;
 
 static void cb_show_comments_button(Fl_Check_Button*, void*) {
   show_comments = show_comments_button->value();
-fluid_prefs.set("show_comments", show_comments);
-redraw_browser();
+  fluid_prefs.set("show_comments", show_comments);
+  redraw_browser();
 }
 
 Fl_Spinner *recent_spinner=(Fl_Spinner *)0;
 
 static void cb_recent_spinner(Fl_Spinner*, void*) {
   fluid_prefs.set("recent_files", recent_spinner->value());
-load_history();
+  load_history();
 }
 
 Fl_Check_Button *use_external_editor_button=(Fl_Check_Button *)0;
 
 static void cb_use_external_editor_button(Fl_Check_Button*, void*) {
   G_use_external_editor = use_external_editor_button->value();
-fluid_prefs.set("use_external_editor", G_use_external_editor);
-redraw_browser();
+  fluid_prefs.set("use_external_editor", G_use_external_editor);
+  redraw_browser();
 }
 
 Fl_Input *editor_command_input=(Fl_Input *)0;
 
 static void cb_editor_command_input(Fl_Input*, void*) {
   strncpy(G_external_editor_command, editor_command_input->value(), sizeof(G_external_editor_command)-1);
-G_external_editor_command[sizeof(G_external_editor_command)-1] = 0;
-fluid_prefs.set("external_editor_command", G_external_editor_command);
-redraw_browser();
+  G_external_editor_command[sizeof(G_external_editor_command)-1] = 0;
+  fluid_prefs.set("external_editor_command", G_external_editor_command);
+  redraw_browser();
 }
 
 static void cb_Close1(Fl_Button*, void*) {
@@ -326,29 +365,37 @@ Fl_Double_Window *shell_window=(Fl_Double_Window *)0;
 
 Fl_Input *shell_command_input=(Fl_Input *)0;
 
-static void cb_shell_command_input(Fl_Input*, void*) {
-  fluid_prefs.set("shell_command", shell_command_input->value());
-}
+Fl_Check_Button *shell_savefl_button=(Fl_Check_Button *)0;
 
 Fl_Check_Button *shell_writecode_button=(Fl_Check_Button *)0;
 
-static void cb_shell_writecode_button(Fl_Check_Button*, void*) {
-  fluid_prefs.set("shell_writecode", shell_writecode_button->value());
-}
-
 Fl_Check_Button *shell_writemsgs_button=(Fl_Check_Button *)0;
 
-static void cb_shell_writemsgs_button(Fl_Check_Button*, void*) {
-  fluid_prefs.set("shell_writemsgs", shell_writemsgs_button->value());
+Fl_Check_Button *shell_use_fl_button=(Fl_Check_Button *)0;
+
+static void cb_shell_use_fl_button(Fl_Check_Button*, void*) {
+  g_shell_use_fl_settings = shell_use_fl_button->value();
+  fluid_prefs.set("shell_use_fl", g_shell_use_fl_settings);
+  if (g_shell_use_fl_settings) {
+    shell_settings_read();
+  } else {
+    shell_prefs_get();
+  }
+  update_shell_window();
 }
 
-Fl_Check_Button *shell_savefl_button=(Fl_Check_Button *)0;
+static void cb_save(Fl_Button*, void*) {
+  apply_shell_window();
+  shell_prefs_set();
+}
 
-static void cb_shell_savefl_button(Fl_Check_Button*, void*) {
-  fluid_prefs.set("shell_savefl", shell_savefl_button->value());
+static void cb_Run(Fl_Return_Button*, void*) {
+  apply_shell_window();
+  do_shell_command(NULL, NULL);
 }
 
 static void cb_Cancel(Fl_Button*, void*) {
+  shell_command_input->value(g_shell_command);
   shell_window->hide();
 }
 
@@ -360,50 +407,80 @@ Fl_Return_Button *shell_run_button=(Fl_Return_Button *)0;
 
 static void cb_shell_run_button(Fl_Return_Button*, void*) {
   Fl_Preferences pos(fluid_prefs, "shell_run_Window_pos");
-pos.set("x", shell_run_window->x());
-pos.set("y", shell_run_window->y());
-pos.set("w", shell_run_window->w());
-pos.set("h", shell_run_window->h());
-shell_run_window->hide();
+  pos.set("x", shell_run_window->x());
+  pos.set("y", shell_run_window->y());
+  pos.set("w", shell_run_window->w());
+  pos.set("h", shell_run_window->h());
+  shell_run_window->hide();
 }
 
 Fl_Double_Window* make_shell_window() {
-  { shell_window = new Fl_Double_Window(365, 125, "Shell Command");
-    { shell_command_input = new Fl_Input(10, 27, 347, 25, "Command:");
-      shell_command_input->labelfont(1);
-      shell_command_input->callback((Fl_Callback*)cb_shell_command_input);
-      shell_command_input->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-      char buf[1024];
-      fluid_prefs.get("shell_command", buf, "", sizeof(buf));
-      shell_command_input->value(buf);
-    } // Fl_Input* shell_command_input
-    { shell_writecode_button = new Fl_Check_Button(128, 61, 93, 19, "Write Code");
-      shell_writecode_button->down_box(FL_DOWN_BOX);
-      shell_writecode_button->callback((Fl_Callback*)cb_shell_writecode_button);
-      int b;
-      fluid_prefs.get("shell_writecode", b, 1);
-      shell_writecode_button->value(b);
-    } // Fl_Check_Button* shell_writecode_button
-    { shell_writemsgs_button = new Fl_Check_Button(231, 61, 126, 19, "Write Messages");
-      shell_writemsgs_button->down_box(FL_DOWN_BOX);
-      shell_writemsgs_button->callback((Fl_Callback*)cb_shell_writemsgs_button);
-      int b;
-      fluid_prefs.get("shell_writemsgs", b, 0);
-      shell_writemsgs_button->value(b);
-    } // Fl_Check_Button* shell_writemsgs_button
-    { shell_savefl_button = new Fl_Check_Button(10, 62, 108, 19, "Save .FL File");
-      shell_savefl_button->down_box(FL_DOWN_BOX);
-      shell_savefl_button->callback((Fl_Callback*)cb_shell_savefl_button);
-      int b;
-      fluid_prefs.get("shell_savefl", b, 1);
-      shell_savefl_button->value(b);
-    } // Fl_Check_Button* shell_savefl_button
-    { Fl_Return_Button* o = new Fl_Return_Button(132, 90, 143, 25, "Run Command");
-      o->callback((Fl_Callback*)do_shell_command);
-    } // Fl_Return_Button* o
-    { Fl_Button* o = new Fl_Button(285, 90, 72, 25, "Cancel");
-      o->callback((Fl_Callback*)cb_Cancel);
-    } // Fl_Button* o
+  { shell_window = new Fl_Double_Window(365, 200, "Shell Command");
+    { Fl_Group* o = new Fl_Group(0, 0, 365, 165);
+      { shell_command_input = new Fl_Input(82, 14, 277, 20, "Command:");
+        shell_command_input->tooltip("external shell command");
+        shell_command_input->labelfont(1);
+        shell_command_input->labelsize(12);
+        shell_command_input->textfont(4);
+        shell_command_input->textsize(12);
+        Fl_Group::current()->resizable(shell_command_input);
+      } // Fl_Input* shell_command_input
+      { shell_savefl_button = new Fl_Check_Button(82, 39, 136, 19, "save .fl design file");
+        shell_savefl_button->tooltip("save the design to the .fl file before running the command");
+        shell_savefl_button->down_box(FL_DOWN_BOX);
+        shell_savefl_button->labelsize(12);
+      } // Fl_Check_Button* shell_savefl_button
+      { shell_writecode_button = new Fl_Check_Button(82, 59, 120, 19, "save source code");
+        shell_writecode_button->tooltip("generate the source code and header file before running the command");
+        shell_writecode_button->down_box(FL_DOWN_BOX);
+        shell_writecode_button->labelsize(12);
+      } // Fl_Check_Button* shell_writecode_button
+      { shell_writemsgs_button = new Fl_Check_Button(82, 79, 126, 19, "save i18n strings");
+        shell_writemsgs_button->tooltip("save the internationalisation string before running the command");
+        shell_writemsgs_button->down_box(FL_DOWN_BOX);
+        shell_writemsgs_button->labelsize(12);
+      } // Fl_Check_Button* shell_writemsgs_button
+      { shell_use_fl_button = new Fl_Check_Button(82, 110, 180, 19, "use settings in .fl design files");
+        shell_use_fl_button->tooltip("check to read and write shell command from and to .fl files");
+        shell_use_fl_button->down_box(FL_DOWN_BOX);
+        shell_use_fl_button->labelsize(12);
+        shell_use_fl_button->callback((Fl_Callback*)cb_shell_use_fl_button);
+      } // Fl_Check_Button* shell_use_fl_button
+      { Fl_Box* o = new Fl_Box(82, 103, 275, 1);
+        o->box(FL_BORDER_FRAME);
+        o->color(FL_FOREGROUND_COLOR);
+      } // Fl_Box* o
+      { Fl_Group* o = new Fl_Group(82, 134, 273, 20);
+        { Fl_Button* o = new Fl_Button(82, 134, 104, 20, "save as default");
+          o->tooltip("update the Fluid app settings for external shell commands to the current sett\
+ings");
+          o->labelsize(12);
+          o->callback((Fl_Callback*)cb_save);
+        } // Fl_Button* o
+        { Fl_Box* o = new Fl_Box(186, 136, 169, 15);
+          Fl_Group::current()->resizable(o);
+        } // Fl_Box* o
+        o->end();
+      } // Fl_Group* o
+      o->end();
+    } // Fl_Group* o
+    { Fl_Group* o = new Fl_Group(0, 160, 365, 40);
+      { Fl_Box* o = new Fl_Box(10, 167, 135, 25);
+        Fl_Group::current()->resizable(o);
+      } // Fl_Box* o
+      { Fl_Return_Button* o = new Fl_Return_Button(145, 167, 100, 25, "Run");
+        o->tooltip("save selected files and run the command");
+        o->labelsize(12);
+        o->callback((Fl_Callback*)cb_Run);
+      } // Fl_Return_Button* o
+      { Fl_Button* o = new Fl_Button(255, 167, 100, 25, "Cancel");
+        o->labelsize(12);
+        o->callback((Fl_Callback*)cb_Cancel);
+      } // Fl_Button* o
+      o->end();
+    } // Fl_Group* o
+    shell_window->set_modal();
+    shell_window->size_range(365, 200, 365, 200);
     shell_window->end();
   } // Fl_Double_Window* shell_window
   { shell_run_window = new Fl_Double_Window(555, 430, "Shell Command Output");
@@ -477,7 +554,7 @@ Fl_Double_Window* make_layout_window() {
       o->labelfont(1);
       o->align(Fl_Align(FL_ALIGN_RIGHT|FL_ALIGN_INSIDE));
     } // Fl_Box* o
-    { Fl_Group* o = new Fl_Group(105, 115, 170, 75);
+    { Fl_Group* o = new Fl_Group(105, 115, 192, 75);
       { def_widget_size[0] = new Fl_Round_Button(115, 115, 70, 25);
         def_widget_size[0]->type(102);
         def_widget_size[0]->down_box(FL_ROUND_DOWN_BOX);
@@ -563,7 +640,7 @@ static void refreshUI() {
 static void readPrefs() {
   // read all preferences and refresh the GUI
   {
-    Fl_Preferences prefs(Fl_Preferences::SYSTEM, "fltk.org", "fltk");
+    Fl_Preferences prefs(Fl_Preferences::SYSTEM_L, "fltk.org", "fltk");
     Fl_Preferences opt_prefs(prefs, "options");
     opt_prefs.get("ArrowFocus", opt[Fl::OPTION_ARROW_FOCUS][1], 2);
     opt_prefs.get("VisibleFocus", opt[Fl::OPTION_VISIBLE_FOCUS][1], 2);
@@ -574,7 +651,7 @@ static void readPrefs() {
     opt_prefs.get("ShowZoomFactor", opt[Fl::OPTION_SHOW_SCALING ][1], 2);
   }
   {
-    Fl_Preferences prefs(Fl_Preferences::USER, "fltk.org", "fltk");
+    Fl_Preferences prefs(Fl_Preferences::USER_L, "fltk.org", "fltk");
     Fl_Preferences opt_prefs(prefs, "options");
     opt_prefs.get("ArrowFocus", opt[Fl::OPTION_ARROW_FOCUS][0], 2);
     opt_prefs.get("VisibleFocus", opt[Fl::OPTION_VISIBLE_FOCUS][0], 2);
@@ -593,7 +670,7 @@ static void readPrefs() {
 static void writePrefs() {
   // write all preferences using the array
   {
-    Fl_Preferences prefs(Fl_Preferences::SYSTEM, "fltk.org", "fltk");
+    Fl_Preferences prefs(Fl_Preferences::SYSTEM_L, "fltk.org", "fltk");
     Fl_Preferences opt_prefs(prefs, "options");
     if (opt[Fl::OPTION_ARROW_FOCUS][1]==2) opt_prefs.deleteEntry("ArrowFocus");
     else opt_prefs.set("ArrowFocus", opt[Fl::OPTION_ARROW_FOCUS][1]);
@@ -611,7 +688,7 @@ static void writePrefs() {
     else opt_prefs.set("ShowZoomFactor", opt[Fl::OPTION_SHOW_SCALING][1]);
   }
   {
-    Fl_Preferences prefs(Fl_Preferences::USER, "fltk.org", "fltk");
+    Fl_Preferences prefs(Fl_Preferences::USER_L, "fltk.org", "fltk");
     Fl_Preferences opt_prefs(prefs, "options");
     if (opt[Fl::OPTION_ARROW_FOCUS][0]==2) opt_prefs.deleteEntry("ArrowFocus");
     else opt_prefs.set("ArrowFocus", opt[Fl::OPTION_ARROW_FOCUS][0]);
@@ -651,7 +728,7 @@ Fl_Choice *wVisibleFocus=(Fl_Choice *)0;
 
 static void cb_wVisibleFocus(Fl_Choice*, void*) {
   int mode = wUserOrSystem->value();
-opt[Fl::OPTION_VISIBLE_FOCUS][mode] = wVisibleFocus->value();
+  opt[Fl::OPTION_VISIBLE_FOCUS][mode] = wVisibleFocus->value();
 }
 
 Fl_Menu_Item menu_wVisibleFocus[] = {
@@ -665,7 +742,7 @@ Fl_Choice *wArrowFocus=(Fl_Choice *)0;
 
 static void cb_wArrowFocus(Fl_Choice*, void*) {
   int mode = wUserOrSystem->value();
-opt[Fl::OPTION_ARROW_FOCUS][mode] = wArrowFocus->value();
+  opt[Fl::OPTION_ARROW_FOCUS][mode] = wArrowFocus->value();
 }
 
 Fl_Menu_Item menu_wArrowFocus[] = {
@@ -679,7 +756,7 @@ Fl_Choice *wShowTooltips=(Fl_Choice *)0;
 
 static void cb_wShowTooltips(Fl_Choice*, void*) {
   int mode = wUserOrSystem->value();
-opt[Fl::OPTION_SHOW_TOOLTIPS][mode] = wShowTooltips->value();
+  opt[Fl::OPTION_SHOW_TOOLTIPS][mode] = wShowTooltips->value();
 }
 
 Fl_Menu_Item menu_wShowTooltips[] = {
@@ -693,7 +770,7 @@ Fl_Choice *wDNDText=(Fl_Choice *)0;
 
 static void cb_wDNDText(Fl_Choice*, void*) {
   int mode = wUserOrSystem->value();
-opt[Fl::OPTION_DND_TEXT][mode] = wDNDText->value();
+  opt[Fl::OPTION_DND_TEXT][mode] = wDNDText->value();
 }
 
 Fl_Menu_Item menu_wDNDText[] = {
@@ -707,7 +784,7 @@ Fl_Choice *wGTKText=(Fl_Choice *)0;
 
 static void cb_wGTKText(Fl_Choice*, void*) {
   int mode = wUserOrSystem->value();
-opt[Fl::OPTION_FNFC_USES_GTK ][mode] = wGTKText->value();
+  opt[Fl::OPTION_FNFC_USES_GTK ][mode] = wGTKText->value();
 }
 
 Fl_Menu_Item menu_wGTKText[] = {
@@ -721,7 +798,7 @@ Fl_Choice *wPrintGTKText=(Fl_Choice *)0;
 
 static void cb_wPrintGTKText(Fl_Choice*, void*) {
   int mode = wUserOrSystem->value();
-opt[Fl::OPTION_PRINTER_USES_GTK ][mode] = wPrintGTKText->value();
+  opt[Fl::OPTION_PRINTER_USES_GTK ][mode] = wPrintGTKText->value();
 }
 
 Fl_Menu_Item menu_wPrintGTKText[] = {
@@ -735,7 +812,7 @@ Fl_Choice *wShowZoomFactor=(Fl_Choice *)0;
 
 static void cb_wShowZoomFactor(Fl_Choice*, void*) {
   int mode = wUserOrSystem->value();
-opt[Fl::OPTION_SHOW_SCALING ][mode] = wShowZoomFactor->value();
+  opt[Fl::OPTION_SHOW_SCALING ][mode] = wShowZoomFactor->value();
 }
 
 Fl_Menu_Item menu_wShowZoomFactor[] = {
@@ -763,7 +840,7 @@ static void cb_Cancel1(Fl_Button*, void*) {
 
 static void cb_OK(Fl_Button*, void*) {
   writePrefs();
-global_settings_window->hide();
+  global_settings_window->hide();
 }
 
 Fl_Double_Window* make_global_settings_window() {

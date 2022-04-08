@@ -2,7 +2,7 @@
 // Definition of Apple Cocoa Screen interface
 // for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2010-2018 by Bill Spitzak and others.
+// Copyright 2010-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -75,20 +75,13 @@ public:
   // --- audible output
   virtual void beep(int type);
   // --- global events
-  virtual double wait(double time_to_wait);
-  virtual int ready();
   virtual void grab(Fl_Window* win);
   // --- global colors
   virtual void get_system_colors();
-  // --- global timers
-  virtual void add_timeout(double time, Fl_Timeout_Handler cb, void *argp);
-  virtual void repeat_timeout(double time, Fl_Timeout_Handler cb, void *argp);
-  virtual int has_timeout(Fl_Timeout_Handler cb, void *argp);
-  virtual void remove_timeout(Fl_Timeout_Handler cb, void *argp);
-  virtual int has_marked_text();
-  virtual void reset_marked_text();
-  virtual void insertion_point_location(int x, int y, int height);
-  int insertion_point_location(int *px, int *py, int *pheight);
+  virtual int has_marked_text() const;
+  static void reset_marked_text();
+  static void insertion_point_location(int x, int y, int height);
+  static int insertion_point_location(int *px, int *py, int *pheight);
   virtual int dnd(int use_selection);
   virtual int compose(int &del);
   virtual int input_widget_handle_key(int key, unsigned mods, unsigned shift, Fl_Input *input);
@@ -100,10 +93,13 @@ public:
   virtual void offscreen_size(Fl_Offscreen o, int &width, int &height);
 
   virtual APP_SCALING_CAPABILITY rescalable() { return SYSTEMWIDE_APP_SCALING; }
-  virtual float scale(int n) {return scale_;}
-  virtual void scale(int n, float f) { scale_ = f;}
+  virtual float scale(int /*nscreen*/) {return scale_;}
+  virtual void scale(int /*nscreen*/, float f) { scale_ = f;}
   virtual Fl_RGB_Image *read_win_rectangle(int X, int Y, int w, int h, Fl_Window *win, bool may_capture_subwins, bool *did_capture_subwins);
   virtual void default_icons(const Fl_RGB_Image *icons[], int count);
+  virtual void copy(const char *stuff, int len, int clipboard, const char *type);
+  virtual void paste(Fl_Widget &receiver, int clipboard, const char *type);
+  virtual int clipboard_contains(const char *type);
 private:
   float scale_;
 };

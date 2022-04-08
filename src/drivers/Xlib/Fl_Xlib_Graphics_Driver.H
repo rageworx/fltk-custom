@@ -1,7 +1,7 @@
 //
 // Definition of class Fl_Xlib_Graphics_Driver for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2010-2020 by Bill Spitzak and others.
+// Copyright 2010-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -96,8 +96,7 @@ private:
   static GC gc_;
   uchar *mask_bitmap_;
   uchar **mask_bitmap() {return &mask_bitmap_;}
-  typedef struct {short x, y;} XPOINT;
-  XPOINT *p;
+  XPoint *short_point;
 #if USE_XFT
   static Window draw_window;
   static struct _XftDraw* draw_;
@@ -120,8 +119,8 @@ public:
   static int fl_overlay;
 
   // --- bitmap stuff
-  Fl_Bitmask create_bitmask(int w, int h, const uchar *array);
-  void delete_bitmask(Fl_Bitmask bm);
+  unsigned long create_bitmask(int w, int h, const uchar *array); // NOT virtual
+  virtual void delete_bitmask(fl_uintptr_t bm);
   virtual void draw_unscaled(const char* str, int n, int x, int y);
   virtual void draw_unscaled(int angle, const char *str, int n, int x, int y);
   virtual void rtl_draw_unscaled(const char* str, int n, int x, int y);
@@ -143,6 +142,7 @@ protected:
   void fixloop();
   virtual void focus_rect(int x, int y, int w, int h);
   virtual void rectf_unscaled(int x, int y, int w, int h);
+  virtual void colored_rectf(int x, int y, int w, int h, uchar r, uchar g, uchar b);
   virtual void line_unscaled(int x, int y, int x1, int y1);
   virtual void xyline_unscaled(int x, int y, int x1);
   virtual void *change_pen_width(int lwidth);
@@ -207,6 +207,7 @@ protected:
   virtual float scale_bitmap_for_PostScript();
   virtual void set_spot(int font, int size, int X, int Y, int W, int H, Fl_Window *win);
   virtual void reset_spot();
+  virtual void set_status(int X, int Y, int W, int H);
   virtual const char* get_font_name(Fl_Font fnum, int* ap);
   virtual int get_font_sizes(Fl_Font fnum, int*& sizep);
 #if !USE_XFT

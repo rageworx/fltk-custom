@@ -24,24 +24,17 @@
 // button: it draws the text of the current pick and a down-arrow.
 
 void Fl_Choice::draw() {
-  Fl_Boxtype btype = Fl::scheme() ? FL_UP_BOX		// non-default uses up box
-                                  : FL_DOWN_BOX;	// default scheme uses down box
-
-  if ( Fl::scheme() )
-  {
-	  btype = FL_UP_BOX;
-	  if (Fl::is_scheme("flat")) btype = FL_DOWN_BOX;
-  }
-
+  Fl_Boxtype btype = Fl::scheme() ? FL_UP_BOX           // non-default uses up box
+                                  : FL_DOWN_BOX;        // default scheme uses down box
   int dx = Fl::box_dx(btype);
   int dy = Fl::box_dy(btype);
 
   // Arrow area
   int H = h() - 2 * dy;
-  int W = Fl::is_scheme("gtk+")    ? 20 :			// gtk+  -- fixed size
-          Fl::is_scheme("gleam")   ? 20 :			// gleam -- fixed size
-          Fl::is_scheme("plastic") ? ((H > 20) ? 20 : H)	// plastic: shrink if H<20
-                                   : ((H > 20) ? 20 : H);	// default: shrink if H<20
+  int W = Fl::is_scheme("gtk+")    ? 20 :                       // gtk+  -- fixed size
+          Fl::is_scheme("gleam")   ? 20 :                       // gleam -- fixed size
+          Fl::is_scheme("plastic") ? ((H > 20) ? 20 : H)        // plastic: shrink if H<20
+                                   : ((H > 20) ? 20 : H);       // default: shrink if H<20
   int X = x() + w() - W - dx;
   int Y = y() + dy;
 
@@ -196,7 +189,7 @@ int Fl_Choice::handle(int e) {
     if (Fl::visible_focus()) Fl::focus(this);
   J1:
     if (Fl::scheme()
-	|| fl_contrast(textcolor(), FL_BACKGROUND2_COLOR) != textcolor()) {
+        || fl_contrast(textcolor(), FL_BACKGROUND2_COLOR) != textcolor()) {
       v = menu()->pulldown(x(), y(), w(), h(), mvalue(), this);
       if (wp.deleted()) return 1;
     } else {

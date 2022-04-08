@@ -2,7 +2,7 @@
 // Definition of Windows window driver
 // for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2010-2018 by Bill Spitzak and others.
+// Copyright 2010-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -80,7 +80,7 @@ public:
   };
   static type_for_resize_window_between_screens data_for_resize_window_between_screens_;
   void set_minmax(LPMINMAXINFO minmax);
-  int fake_X_wm(int &X, int &Y, int &bt,int &bx,int &by);
+  int fake_X_wm(int &X, int &Y, int &bt, int &bx, int &by, DWORD style = 0, DWORD styleEx = 0);
   void make_fullscreen(int X, int Y, int W, int H);
   // --- window data
   virtual int decorated_w();
@@ -89,6 +89,9 @@ public:
 
   // --- window management
   virtual Fl_X *makeWindow();
+  virtual void size_range() {
+    // currently nothing to do
+  }
   virtual void flush_double();
   virtual void flush_overlay();
   virtual void draw_begin();

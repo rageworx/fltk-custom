@@ -1,8 +1,7 @@
 //
-// Definition of Windows screen interface
-// for the Fast Light Tool Kit (FLTK).
+// Windows screen interface for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2010-2018 by Bill Spitzak and others.
+// Copyright 2010-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -62,16 +61,9 @@ public:
   virtual void beep(int type);
   // --- global events
   virtual void flush();
-  virtual double wait(double time_to_wait);
-  virtual int ready();
   virtual void grab(Fl_Window* win);
   // --- global colors
   virtual void get_system_colors();
-  // --- global timers
-  virtual void add_timeout(double time, Fl_Timeout_Handler cb, void *argp);
-  virtual void repeat_timeout(double time, Fl_Timeout_Handler cb, void *argp);
-  virtual int has_timeout(Fl_Timeout_Handler cb, void *argp);
-  virtual void remove_timeout(Fl_Timeout_Handler cb, void *argp);
   virtual int dnd(int unused);
   virtual int compose(int &del);
   virtual Fl_RGB_Image *read_win_rectangle(int X, int Y, int w, int h, Fl_Window *win, bool may_capture_subwins, bool *did_capture_subwins);
@@ -92,6 +84,14 @@ public:
   }
   virtual void desktop_scale_factor();
   virtual void default_icons(const Fl_RGB_Image *icons[], int count);
+  // this one is implemented in Fl_win32.cxx
+  virtual void copy(const char *stuff, int len, int clipboard, const char *type);
+  // this one is implemented in Fl_win32.cxx
+  virtual void paste(Fl_Widget &receiver, int clipboard, const char *type);
+  // this one is implemented in Fl_win32.cxx
+  virtual int clipboard_contains(const char *type);
+  // this one is implemented in Fl_win32.cxx
+  virtual void clipboard_notify_change();
 };
 
 

@@ -1,7 +1,7 @@
 //
 // "Block Attack!" scrolling blocks game using the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2006-2018 by Michael Sweet.
+// Copyright © 2006-2021 by Michael Sweet.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -48,8 +48,8 @@
 #  include <mmsystem.h>
 #endif // _WIN32
 
-#define BLOCK_COLS      20
-#define BLOCK_ROWS      10
+#define BLOCK_COLS      25
+#define BLOCK_ROWS      15
 #define BLOCK_SIZE      32
 #define BLOCK_BLAST     100
 
@@ -60,9 +60,9 @@
 // (b) click on a "normal block", destroy this one and adjacent blocks
 // (c) click on a "bomb", destroy all blocks of the same color
 
-#define LEVEL_FACTOR    0.90    // was: 0.95
-#define NORMAL_FACTOR   0.999
-#define BOMB_FACTOR     0.995
+#define LEVEL_FACTOR    0.900f    // was: 0.95
+#define NORMAL_FACTOR   0.999f
+#define BOMB_FACTOR     0.995f
 
 // Set this to 1 to debug the timer callback (should be 0)
 #define DEBUG_TIMER     0
@@ -309,8 +309,8 @@ BlockSound::BlockSound() {
 
     for (int j = max_sample; j > 0; j --, sample_ptr ++) {
       float freq = (float)j / (float)max_sample;
-      float volume = 32767.0 * (0.5 * sqrt(freq) + 0.5);
-      float sample = 0.0001 * ((rand() % 20001) - 10000);
+      float volume = float(32767.0 * (0.5 * sqrt(freq) + 0.5));
+      float sample = float(0.0001 * ((rand() % 20001) - 10000));
 
       *sample_ptr = (int)(volume * freq * sample +
                           (1.0 - freq) * sample_ptr[-2]);
@@ -440,16 +440,21 @@ class BlockWindow : public Fl_Double_Window {
   struct Block {
     int         color;
     bool        bomb;
-    int         y;
+    float       y;
   };
 
   struct Column {
     int         num_blocks;
     Block       blocks[BLOCK_ROWS];
-    int         x;
+    float       x;
   };
 
   private:
+
+  int           frames_,
+                frames_per_second_;
+  time_t        frame_time_;
+  bool          show_fps_;
 
   Fl_Button     *help_button_,
                 *play_button_;
@@ -492,7 +497,7 @@ class BlockWindow : public Fl_Double_Window {
 };
 
 
-Fl_Preferences  BlockWindow::prefs_(Fl_Preferences::USER, "fltk.org", "blocks");
+Fl_Preferences  BlockWindow::prefs_(Fl_Preferences::USER_L, "fltk.org", "blocks");
 
 
 int main(int argc, char *argv[]) {
@@ -546,7 +551,7 @@ void BlockWindow::_BlockWindow() {
 
   prefs_.get("high_score", high_score_, 0);
 
-  Fl::add_timeout(0.1, (Fl_Timeout_Handler)timeout_cb, (void *)this);
+  Fl::add_timeout(0.01666666, (Fl_Timeout_Handler)timeout_cb, (void *)this);
 }
 
 
@@ -629,8 +634,8 @@ void BlockWindow::draw() {
   // Draw the blocks...
   for (j = num_columns_, c = columns_; j > 0; j --, c ++)
     for (k = c->num_blocks, b = c->blocks; k > 0; k --, b ++) {
-      xx = w() - c->x;
-      yy = h() - BLOCK_SIZE - b->y;
+      xx = w() - (int)c->x;
+      yy = h() - BLOCK_SIZE - (int)b->y;
 
       if (b->color >= BLOCK_BLAST) {
         b->color ++;
@@ -704,6 +709,14 @@ void BlockWindow::draw() {
     }
   }
 
+  time_t curtime = time(NULL);
+  frames_ ++;
+  if (curtime > frame_time_) {
+    frames_per_second_ = (frames_per_second_ + 3 * frames_ / int(curtime - frame_time_)) / 4;
+    frames_            = 0;
+    frame_time_        = curtime;
+  }
+
   // Draw the scores and level...
   char s[255];
 
@@ -718,6 +731,11 @@ void BlockWindow::draw() {
   if (level_ > 1 || title_y_ <= 0) {
     sprintf(s, "Level: %d ", level_);
     fl_draw(s, 0, 0, w(), 20, FL_ALIGN_CENTER);
+  }
+
+  if (show_fps_) {
+    sprintf(s, "FPS: %d ", frames_per_second_);
+    fl_draw(s, 0, h() - 20, w(), 20, FL_ALIGN_LEFT);
   }
 
   if (title_y_ > 0 && interval_ > 0.0) {
@@ -760,6 +778,10 @@ int BlockWindow::handle(int event) {
         prefs_.set("high_score", high_score_);
         return (1);
       }
+      // 'f': toggle showing frames-per-second
+      if (Fl::event_text() && !strcmp(Fl::event_text(), "f")) {
+        show_fps_ = !show_fps_;
+      }
       break;
 
     case FL_PUSH:
@@ -785,12 +807,12 @@ int BlockWindow::handle(int event) {
         count --;
 
         if (b->bomb) {
-          sound_->play_explosion(0.19 + 0.005 * count);
+          sound_->play_explosion(float(0.19 + 0.005 * count));
 
           interval_ *= BOMB_FACTOR;
           score_ += count;
         } else {
-          sound_->play_explosion(0.09 + 0.005 * count);
+          sound_->play_explosion(float(0.09 + 0.005 * count));
 
           interval_ *= NORMAL_FACTOR;
           score_ += count * count;
@@ -825,27 +847,31 @@ void BlockWindow::help_cb(Fl_Widget *, BlockWindow *bw) {
 
 // Initialize the block window...
 void BlockWindow::init() {
-  count_       = 0;
-  help_        = false;
-  interval_    = -1.0;
-  level_       = 1;
-  num_colors_  = 3;
-  num_columns_ = 0;
-  paused_      = false;
-  score_       = 0;
-  title_[0]    = '\0';
-  title_y_     = 0;
+  frames_            = 0;
+  frames_per_second_ = 0;
+  frame_time_        = time(NULL);
+  show_fps_          = false;
+  count_             = 0;
+  help_              = false;
+  interval_          = -1.0;
+  level_             = 1;
+  num_colors_        = 3;
+  num_columns_       = 0;
+  paused_            = false;
+  score_             = 0;
+  title_[0]          = '\0';
+  title_y_           = 0;
 }
 
 
 // Start a new game...
 void BlockWindow::new_game() {
   // Seed the random number generator...
-  srand(time(NULL));
+  srand((unsigned int)time(NULL));
 
   init();
 
-  interval_       = 0.1;
+  interval_       = 0.01666666666f;
   opened_columns_ = 0;
 
   strcpy(title_, "Level: 1");
@@ -881,7 +907,7 @@ void BlockWindow::timeout_cb(BlockWindow *bw) {
   int           i, j;
   Block         *b;
   Column        *c;
-  int           lastx, lasty;
+  float         lastx, lasty;
 
 #if DEBUG_TIMER
   static double lasttime;
@@ -941,7 +967,7 @@ void BlockWindow::timeout_cb(BlockWindow *bw) {
   // Update blocks that have been destroyed...
   for (i = 0, c = bw->columns_; i < bw->num_columns_; i ++, c ++)
     for (j = 0, b = c->blocks; j < c->num_blocks; j ++, b ++)
-      if (b->color > (BLOCK_BLAST + 1)) {
+      if (b->color > (BLOCK_BLAST + 5)) {
         bw->redraw();
 
         c->num_blocks --;
@@ -977,13 +1003,13 @@ void BlockWindow::timeout_cb(BlockWindow *bw) {
 
     if (!bw->paused_ && bw->interval_ > 0.0) {
       bw->redraw();
-      c->x ++;
+      c->x += 0.25;
     }
 
     for (j = c->num_blocks, b = c->blocks, lasty = 0; j > 0; j --, b ++) {
       if (b->y > lasty) {
         bw->redraw();
-        b->y -= 8;
+        b->y -= 4;
       }
 
       lasty = b->y + BLOCK_SIZE;
@@ -993,7 +1019,7 @@ void BlockWindow::timeout_cb(BlockWindow *bw) {
   // Slide the title text as needed...
   if (bw->title_y_ > 0) {
     bw->redraw();
-    bw->title_y_ -= 5;
+    bw->title_y_ -= 2;
   }
 
   // Play the game...
@@ -1002,11 +1028,11 @@ void BlockWindow::timeout_cb(BlockWindow *bw) {
 
     if (bw->count_ <= 0) {
       bw->redraw();
-      bw->count_ = BLOCK_SIZE;
+      bw->count_ = 4 * BLOCK_SIZE;
 
       if (bw->num_columns_ == BLOCK_COLS) {
         bw->interval_ = -1.0;
-        bw->sound_->play_explosion(0.8);
+        bw->sound_->play_explosion(0.8f);
         bw->play_button_->label("@>");
       } else {
         bw->opened_columns_ ++;
@@ -1028,7 +1054,7 @@ void BlockWindow::timeout_cb(BlockWindow *bw) {
         for (j = 0, b = c->blocks; j < BLOCK_ROWS; j ++, b ++) {
           b->bomb  = bw->num_colors_ > 3 && (rand() & 127) < bw->num_colors_;
           b->color = 1 + (rand() % bw->num_colors_);
-          b->y     = j * (BLOCK_SIZE + 8) + 24;
+          b->y     = float(j * (BLOCK_SIZE + 8) + 24);
         }
       }
     }
@@ -1044,14 +1070,14 @@ void BlockWindow::timeout_cb(BlockWindow *bw) {
   // Update the play/pause button as needed...
   if ((bw->paused_ || bw->interval_< 0.0) &&
       bw->play_button_->w() < 80) {
-    int s = bw->play_button_->w() + 10;
+    int s = bw->play_button_->w() + 5;
 
     bw->play_button_->resize(s, (s - 20) * (bw->h() - s) / 120, s, s);
     bw->play_button_->labelsize(s / 2 + 4);
     bw->redraw();
   } else if ((!bw->paused_ && bw->interval_ > 0.0) &&
              bw->play_button_->w() > 20) {
-    int s = bw->play_button_->w() - 5;
+    int s = bw->play_button_->w() - 2;
 
     bw->play_button_->resize(s, (s - 20) * (bw->h() - s) / 120, s, s);
     bw->play_button_->labelsize(s / 2 + 4);

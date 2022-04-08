@@ -19,17 +19,13 @@
 #ifndef alignment_panel_h
 #define alignment_panel_h
 #include <FL/Fl.H>
+#include "fluid.h"
+#include "widget_browser.h"
+#include "shell_command.h"
 #include <FL/Fl_Text_Buffer.H>
 #include <FL/Fl_Text_Display.H>
 #include <FL/filename.H>
-extern void load_history();
-extern void redraw_browser();
-extern int show_comments;
-extern int G_use_external_editor;
-extern char G_external_editor_command[512];
-extern int show_coredevmenus;
 extern struct Fl_Menu_Item *dbmanager_item;
-extern Fl_Preferences fluid_prefs;
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Preferences.H>
 #include <FL/Fl_Tooltip.H>
@@ -48,16 +44,22 @@ extern void include_H_from_C_button_cb(Fl_Check_Button*, void*);
 extern Fl_Check_Button *include_H_from_C_button;
 extern void use_FL_COMMAND_button_cb(Fl_Check_Button*, void*);
 extern Fl_Check_Button *use_FL_COMMAND_button;
+extern void utf8_in_src_cb(Fl_Check_Button*, void*);
+extern Fl_Check_Button *utf8_in_src_button;
+extern void avoid_early_includes_cb(Fl_Check_Button*, void*);
+extern Fl_Check_Button *avoid_early_includes_button;
 #include <FL/Fl_Choice.H>
 extern void i18n_type_cb(Fl_Choice*, void*);
 extern Fl_Choice *i18n_type_chooser;
 extern void i18n_text_cb(Fl_Input*, void*);
 extern Fl_Input *i18n_include_input;
+extern Fl_Input *i18n_conditional_input;
 extern Fl_Input *i18n_file_input;
 #include <FL/Fl_Int_Input.H>
 extern void i18n_int_cb(Fl_Int_Input*, void*);
 extern Fl_Int_Input *i18n_set_input;
 extern Fl_Input *i18n_function_input;
+extern Fl_Input *i18n_static_function_input;
 Fl_Double_Window* make_project_window();
 extern Fl_Menu_Item menu_i18n_type_chooser[];
 extern void i18n_cb(Fl_Choice *,void *);
@@ -78,11 +80,11 @@ Fl_Double_Window* make_settings_window();
 extern Fl_Menu_Item menu_scheme_choice[];
 extern Fl_Double_Window *shell_window;
 extern Fl_Input *shell_command_input;
+extern Fl_Check_Button *shell_savefl_button;
 extern Fl_Check_Button *shell_writecode_button;
 extern Fl_Check_Button *shell_writemsgs_button;
-extern Fl_Check_Button *shell_savefl_button;
+extern Fl_Check_Button *shell_use_fl_button;
 #include <FL/Fl_Return_Button.H>
-extern void do_shell_command(Fl_Return_Button*, void*);
 extern Fl_Double_Window *shell_run_window;
 #include <FL/Fl_Simple_Terminal.H>
 extern Fl_Simple_Terminal *shell_run_terminal;

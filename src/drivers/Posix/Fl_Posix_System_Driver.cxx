@@ -19,7 +19,7 @@
 #include "../../flstring.h"
 #include <FL/Fl_File_Icon.H>
 #include <FL/filename.H>
-#include <FL/fl_string.h>
+#include <FL/fl_string_functions.h>
 #include <FL/Fl.H>
 #include <locale.h>
 #include <stdio.h>
@@ -172,7 +172,8 @@ int Fl_Posix_System_Driver::run_program(const char *program, char **argv, char *
 }
 
 
-#if HAVE_DLSYM && HAVE_DLFCN_H
+#if HAVE_DLSYM && HAVE_DLFCN_H && !defined (__APPLE_CC__)
+
 static void* quadruple_dlopen(const char *libname)
 {
   char filename2[FL_PATH_MAX];
@@ -192,7 +193,7 @@ static void* quadruple_dlopen(const char *libname)
   }
   return ptr;
 }
-#endif
+#endif // HAVE_DLSYM && HAVE_DLFCN_H && !defined (__APPLE_CC__)
 
 
 /**
@@ -272,7 +273,7 @@ bool Fl_Posix_System_Driver::probe_for_GTK(int major, int minor, void **p_ptr_gt
     }
     init_f = (init_t)dlsym(Fl_Posix_System_Driver::ptr_gtk, "gtk_init_check");
     if (!init_f) return false;
-  
+
   *p_ptr_gtk = Fl_Posix_System_Driver::ptr_gtk;
   // The point here is that after running gtk_init_check, the calling program's current locale can be modified.
   // To avoid that, we memorize the calling program's current locale and restore the locale
@@ -331,7 +332,7 @@ static void unlock_function_std() {
   if (!--counter) pthread_mutex_unlock(&fltk_mutex);
 }
 
-#  ifdef PTHREAD_MUTEX_RECURSIVE
+#  ifdef HAVE_PTHREAD_MUTEX_RECURSIVE
 static bool lock_function_init_rec() {
   pthread_mutexattr_t attrib;
   pthread_mutexattr_init(&attrib);
@@ -351,7 +352,7 @@ static void lock_function_rec() {
 static void unlock_function_rec() {
   pthread_mutex_unlock(&fltk_mutex);
 }
-#  endif // PTHREAD_MUTEX_RECURSIVE
+#  endif // HAVE_PTHREAD_MUTEX_RECURSIVE
 
 void Fl_Posix_System_Driver::awake(void* msg) {
   if (thread_filedes[1]) {
@@ -401,18 +402,18 @@ int Fl_Posix_System_Driver::lock() {
 
     // Set lock/unlock functions for this system, using a system-supplied
     // recursive mutex if supported...
-#  ifdef PTHREAD_MUTEX_RECURSIVE
+#  ifdef HAVE_PTHREAD_MUTEX_RECURSIVE
     if (!lock_function_init_rec()) {
       fl_lock_function   = lock_function_rec;
       fl_unlock_function = unlock_function_rec;
     } else {
-#  endif // PTHREAD_MUTEX_RECURSIVE
+#  endif // HAVE_PTHREAD_MUTEX_RECURSIVE
       lock_function_init_std();
       fl_lock_function   = lock_function_std;
       fl_unlock_function = unlock_function_std;
-#  ifdef PTHREAD_MUTEX_RECURSIVE
+#  ifdef HAVE_PTHREAD_MUTEX_RECURSIVE
     }
-#  endif // PTHREAD_MUTEX_RECURSIVE
+#  endif // HAVE_PTHREAD_MUTEX_RECURSIVE
   }
 
   fl_lock_function();

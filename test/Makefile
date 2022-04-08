@@ -1,7 +1,7 @@
 #
-# Test/example program makefile for the Fast Light Tool Kit (FLTK).
+# Test/example program Makefile for the Fast Light Tool Kit (FLTK).
 #
-# Copyright 1998-2020 by Bill Spitzak and others.
+# Copyright 1998-2021 by Bill Spitzak and others.
 #
 # This library is free software. Distribution and use rights are outlined in
 # the file "COPYING" which should have been included with this file.  If this
@@ -16,6 +16,36 @@
 
 include ../makeinclude
 
+CPPUNITTEST = \
+	unittests.cxx \
+	unittest_about.cxx \
+	unittest_points.cxx \
+	unittest_complex_shapes.cxx \
+	unittest_fast_shapes.cxx \
+	unittest_circles.cxx \
+	unittest_text.cxx \
+	unittest_symbol.cxx \
+	unittest_images.cxx \
+	unittest_viewport.cxx \
+	unittest_scrollbarsize.cxx \
+	unittest_schemes.cxx \
+	unittest_simple_terminal.cxx
+
+OBJUNITTEST = \
+	unittests.o \
+	unittest_about.o \
+	unittest_points.o \
+	unittest_complex_shapes.o \
+	unittest_fast_shapes.o \
+	unittest_circles.o \
+	unittest_text.o \
+	unittest_symbol.o \
+	unittest_images.o \
+	unittest_viewport.o \
+	unittest_scrollbarsize.o \
+	unittest_schemes.o \
+	unittest_simple_terminal.o
+
 CPPFILES =\
 	adjuster.cxx \
 	animated.cxx \
@@ -29,6 +59,7 @@ CPPFILES =\
 	buttons.cxx \
 	cairo_test.cxx \
 	checkers.cxx \
+	clipboard.cxx \
 	clock.cxx \
 	colbrowser.cxx \
 	color_chooser.cxx \
@@ -86,6 +117,9 @@ CPPFILES =\
 	resize-example3c.cxx \
 	resize-example4a.cxx \
 	resize-example4b.cxx \
+	resize-example5a.cxx \
+	resize-example5b.cxx \
+	resize-example5c.cxx \
 	rotated_text.cxx \
 	scroll.cxx \
 	shape.cxx \
@@ -99,13 +133,12 @@ CPPFILES =\
 	tiled_image.cxx \
 	tree.cxx \
 	twowin.cxx \
-	unittests.cxx \
 	utf8.cxx \
 	valuators.cxx \
-	windowfocus.cxx
+	windowfocus.cxx \
+	$(CPPUNITTEST)
 
 ALL =	\
-	unittests$(EXEEXT) \
 	animated$(EXEEXT) \
 	adjuster$(EXEEXT) \
 	arc$(EXEEXT) \
@@ -118,6 +151,7 @@ ALL =	\
 	buttons$(EXEEXT) \
 	cairo_test$(EXEEXT) \
 	checkers$(EXEEXT) \
+	clipboard$(EXEEXT) \
 	clock$(EXEEXT) \
 	colbrowser$(EXEEXT) \
 	color_chooser$(EXEEXT) \
@@ -168,6 +202,9 @@ ALL =	\
 	resize-example3c$(EXEEXT) \
 	resize-example4a$(EXEEXT) \
 	resize-example4b$(EXEEXT) \
+	resize-example5a$(EXEEXT) \
+	resize-example5b$(EXEEXT) \
+	resize-example5c$(EXEEXT) \
 	rotated_text$(EXEEXT) \
 	scroll$(EXEEXT) \
 	subwindow$(EXEEXT) \
@@ -192,7 +229,8 @@ GLALL = \
 	fullscreen$(EXEEXT) \
 	gl_overlay$(EXEEXT) \
 	glpuzzle$(EXEEXT) \
-	shape$(EXEEXT)
+	shape$(EXEEXT) \
+	unittests$(EXEEXT)
 
 all:	$(ALL) $(GLDEMOS)
 
@@ -208,35 +246,9 @@ depend:	$(CPPFILES)
 # Automatically generated dependencies...
 include makedepend
 
-# Additional dependencies...
-cairo_test.o: ../FL/Fl_Bitmap.H
-cairo_test.o: ../FL/Fl_Box.H
-cairo_test.o: ../FL/Fl_Cairo_Window.H
-cairo_test.o: ../FL/Fl_Device.H
-cairo_test.o: ../FL/Fl_Double_Window.H
-cairo_test.o: ../FL/fl_draw.H
-cairo_test.o: ../FL/Fl_Graphics_Driver.H
-cairo_test.o: ../FL/Fl_Group.H
-cairo_test.o: ../FL/Fl.H
-cairo_test.o: ../FL/Fl_Image.H
-cairo_test.o: ../FL/Fl_Pixmap.H
-cairo_test.o: ../FL/Fl_Plugin.H
-cairo_test.o: ../FL/Fl_Preferences.H
-cairo_test.o: ../FL/Fl_RGB_Image.H
-cairo_test.o: ../FL/fl_utf8.h
-cairo_test.o: ../FL/Fl_Widget.H
-cairo_test.o: ../FL/Fl_Window.H
-cairo_test.o: ../FL/math.h
-cairo_test.o: ../FL/platform.H
-
 clean:
 	$(RM) $(ALL) $(GLALL) core
-	for file in $(ALL) $(GLALL); do \
-		if [ $$file = "blocks" -o $$file = "checkers" -o $$file = "sudoku" ]; then \
-			continue; \
-		fi; \
-		$(OSX_ONLY) rm -f -r $$file.app; \
-	done
+	$(RMDIR) *.app
 	$(RM) *.o core.* *~ *.bck *.bak
 	$(RM) CubeViewUI.cxx CubeViewUI.h
 	$(RM) checkers_pieces.cxx checkers_pieces.h
@@ -250,9 +262,6 @@ clean:
 	$(RM) tabs.cxx tabs.h
 	$(RM) tree.cxx tree.h
 	$(RM) valuators.cxx valuators.h
-	$(OSX_ONLY) $(RM) blocks.app/Contents/MacOS/blocks$(EXEEXT)
-	$(OSX_ONLY) $(RM) checkers.app/Contents/MacOS/checkers$(EXEEXT)
-	$(OSX_ONLY) $(RM) sudoku.app/Contents/MacOS/sudoku$(EXEEXT)
 
 install:	all
 	echo "Installing example programs to $(DESTDIR)$(docdir)/examples..."
@@ -288,7 +297,6 @@ install-osx:
 			$(INSTALL_DIR) $(DESTDIR)/Applications/$$game.app/Contents/Resources; \
 		fi; \
 		$(INSTALL_DATA) $$game.app/Contents/Info.plist $(DESTDIR)/Applications/$$game.app/Contents; \
-		$(INSTALL_DATA) $$game.app/Contents/PkgInfo $(DESTDIR)/Applications/$$game.app/Contents; \
 		$(INSTALL_BIN) $$game.app/Contents/MacOS/$$game $(DESTDIR)/Applications/$$game.app/Contents/MacOS; \
 		$(INSTALL_DATA) $$game.app/Contents/Resources/$$game.icns $(DESTDIR)/Applications/$$game.app/Contents/Resources; \
 	done
@@ -321,11 +329,7 @@ uninstall-osx:
 $(ALL): $(LIBNAME)
 
 # General demos...
-unittests$(EXEEXT): unittests.o
-
-unittests.o: unittests.cxx unittest_about.cxx unittest_points.cxx unittest_lines.cxx unittest_circles.cxx \
-	unittest_rects.cxx unittest_text.cxx unittest_symbol.cxx unittest_viewport.cxx unittest_images.cxx \
-	unittest_schemes.cxx unittest_scrollbarsize.cxx unittest_simple_terminal.cxx
+unittests$(EXEEXT): $(OBJUNITTEST)
 
 adjuster$(EXEEXT): adjuster.o
 
@@ -348,20 +352,30 @@ buttons$(EXEEXT): buttons.o
 blocks$(EXEEXT): blocks.o
 	echo Linking $@...
 	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(LDFLAGS) blocks.o -o $@ $(AUDIOLIBS) $(LINKFLTK) $(LDLIBS)
-	$(OSX_ONLY) $(RM) -f -r blocks.app/Contents/MacOS
-	$(OSX_ONLY) mkdir blocks.app/Contents/MacOS
+	$(OSX_ONLY) $(RM) -f -r blocks.app
+	$(OSX_ONLY) mkdir -p blocks.app/Contents/MacOS blocks.app/Contents/Resources
 	$(OSX_ONLY) $(INSTALL_BIN) blocks$(EXEEXT) blocks.app/Contents/MacOS
+	$(OSX_ONLY) $(INSTALL_BIN) mac-resources/blocks.icns blocks.app/Contents/Resources/
+	$(OSX_ONLY) $(INSTALL_BIN) mac-resources/blocks.plist blocks.app/Contents/Info.plist
 
 checkers$(EXEEXT): checkers.o checkers_pieces.o
 	echo Linking $@...
 	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(LDFLAGS) checkers.o checkers_pieces.o -o $@ $(LINKFLTKIMG) $(LDLIBS)
-	$(OSX_ONLY) $(RM) -f -r checkers.app/Contents/MacOS
-	$(OSX_ONLY) mkdir checkers.app/Contents/MacOS
+	$(OSX_ONLY) $(RM) -f -r checkers.app
+	$(OSX_ONLY) mkdir -p checkers.app/Contents/MacOS checkers.app/Contents/Resources
 	$(OSX_ONLY) $(INSTALL_BIN) checkers$(EXEEXT) checkers.app/Contents/MacOS
+	$(OSX_ONLY) $(INSTALL_BIN) mac-resources/checkers.icns checkers.app/Contents/Resources/
+	$(OSX_ONLY) $(INSTALL_BIN) mac-resources/checkers.plist checkers.app/Contents/Info.plist
+
 checkers.cxx:		checkers_pieces.h
 checkers_pieces.o:	checkers_pieces.h
 checkers_pieces.h:	checkers_pieces.fl
 checkers_pieces.cxx:	checkers_pieces.fl ../fluid/fluid$(EXEEXT)
+
+clipboard$(EXEEXT): clipboard.o $(IMGLIBNAME)
+	echo Linking $@...
+	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(LDFLAGS) clipboard.o -o $@ $(LINKFLTKIMG) $(LDLIBS)
+	$(OSX_ONLY) ../fltk-config --post $@
 
 clock$(EXEEXT): clock.o
 
@@ -396,7 +410,7 @@ editor$(EXEEXT): editor.o
 	echo Linking $@...
 	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(LDFLAGS) editor.o -o $@ $(LINKFLTKIMG) $(LDLIBS)
 	$(OSX_ONLY) ../fltk-config --post $@
-	$(OSX_ONLY) cp -f editor-Info.plist editor.app/Contents/Info.plist
+	$(OSX_ONLY) cp -f mac-resources/editor.plist editor.app/Contents/Info.plist
 
 fast_slow$(EXEEXT): fast_slow.o
 fast_slow.cxx:	fast_slow.fl ../fluid/fluid$(EXEEXT)
@@ -539,6 +553,21 @@ resize-example4b$(EXEEXT): resize-example4b.o resize-arrows.o
 	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(LDFLAGS) resize-example4b.o resize-arrows.o -o $@ $(LINKFLTK) $(LDLIBS)
 	$(OSX_ONLY) ../fltk-config --post $@
 
+resize-example5a$(EXEEXT): resize-example5a.o resize-arrows.o
+	echo Linking $@...
+	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(LDFLAGS) resize-example5a.o resize-arrows.o -o $@ $(LINKFLTK) $(LDLIBS)
+	$(OSX_ONLY) ../fltk-config --post $@
+
+resize-example5b$(EXEEXT): resize-example5b.o resize-arrows.o
+	echo Linking $@...
+	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(LDFLAGS) resize-example5b.o resize-arrows.o -o $@ $(LINKFLTK) $(LDLIBS)
+	$(OSX_ONLY) ../fltk-config --post $@
+
+resize-example5c$(EXEEXT): resize-example5c.o resize-arrows.o
+	echo Linking $@...
+	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(LDFLAGS) resize-example5c.o resize-arrows.o -o $@ $(LINKFLTK) $(LDLIBS)
+	$(OSX_ONLY) ../fltk-config --post $@
+
 rotated_text$(EXEEXT): rotated_text.o
 
 scroll$(EXEEXT): scroll.o
@@ -548,9 +577,11 @@ subwindow$(EXEEXT): subwindow.o
 sudoku: sudoku.o
 	echo Linking $@...
 	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(LDFLAGS) sudoku.o -o $@ $(AUDIOLIBS) $(LINKFLTKIMG) $(LDLIBS)
-	$(OSX_ONLY) $(RM) -r -f sudoku.app/Contents/MacOS
-	$(OSX_ONLY) mkdir sudoku.app/Contents/MacOS
+	$(OSX_ONLY) $(RM) -f -r sudoku.app
+	$(OSX_ONLY) mkdir -p sudoku.app/Contents/MacOS sudoku.app/Contents/Resources
 	$(OSX_ONLY) $(INSTALL_BIN) sudoku$(EXEEXT) sudoku.app/Contents/MacOS
+	$(OSX_ONLY) $(INSTALL_BIN) mac-resources/sudoku.icns sudoku.app/Contents/Resources/
+	$(OSX_ONLY) $(INSTALL_BIN) mac-resources/sudoku.plist sudoku.app/Contents/Info.plist
 
 sudoku.exe: sudoku.o sudoku.rc
 	echo Linking $@...
@@ -619,6 +650,11 @@ glpuzzle$(EXEEXT): glpuzzle.o
 gl_overlay$(EXEEXT): gl_overlay.o
 	echo Linking $@...
 	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ gl_overlay.o $(LINKFLTKGL) $(LINKFLTK) $(GLDLIBS)
+	$(OSX_ONLY) ../fltk-config --post $@
+
+unittests$(EXEEXT): $(OBJUNITTEST)
+	echo Linking $@...
+	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJUNITTEST) $(LINKFLTKGL) $(LINKFLTK) $(GLDLIBS)
 	$(OSX_ONLY) ../fltk-config --post $@
 
 shape$(EXEEXT): shape.o

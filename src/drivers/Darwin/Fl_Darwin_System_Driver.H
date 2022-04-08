@@ -44,7 +44,9 @@ public:
   Fl_Darwin_System_Driver();
   virtual int single_arg(const char *arg);
   virtual int arg_and_value(const char *name, const char *value);
-  virtual int clocale_printf(FILE *output, const char *format, va_list args);
+  virtual int clocale_vprintf(FILE *output, const char *format, va_list args);
+  virtual int clocale_vsnprintf(char *output, size_t output_size, const char *format, va_list args);
+  virtual int clocale_vsscanf(const char *input, const char *format, va_list args);
   static void *get_carbon_function(const char *name);
   static int calc_mac_os_version(); // computes the fl_mac_os_version global variable
   static unsigned short *compute_macKeyLookUp();
@@ -71,9 +73,6 @@ public:
   static const char * const tree_close_xpm_darwin[]; // used by tree_closepixmap()
   virtual int tree_connector_style();
   virtual const char *filename_name(const char *buf);
-  virtual void copy(const char *stuff, int len, int clipboard, const char *type);
-  virtual void paste(Fl_Widget &receiver, int clipboard, const char *type);
-  virtual int clipboard_contains(const char *type);
   virtual void add_fd(int fd, int when, Fl_FD_Handler cb, void* = 0);
   virtual void add_fd(int fd, Fl_FD_Handler cb, void* = 0);
   virtual void remove_fd(int, int when);
@@ -84,6 +83,8 @@ public:
   virtual const char *alt_name();
   virtual const char *control_name();
   virtual Fl_Sys_Menu_Bar_Driver *sys_menu_bar_driver();
+  virtual double wait(double time_to_wait);
+  virtual int ready();
 };
 
 #endif // FL_DARWIN_SYSTEM_DRIVER_H

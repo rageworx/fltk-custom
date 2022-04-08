@@ -54,7 +54,7 @@ public:
   virtual int execvp(const char *file, char *const *argv);
   virtual int chmod(const char *fnam, int mode);
   virtual int access(const char *fnam, int mode);
-  virtual int stat(const char *fnam, struct stat *b);
+  virtual int flstat(const char *fnam, struct stat *b);
   virtual char *getcwd(char *b, int l);
   virtual int chdir(const char *path);
   virtual int unlink(const char *fnam);
@@ -66,7 +66,9 @@ public:
   virtual int utf8locale();
   virtual unsigned utf8to_mb(const char *src, unsigned srclen, char *dst, unsigned dstlen);
   virtual unsigned utf8from_mb(char *dst, unsigned dstlen, const char *src, unsigned srclen);
-  virtual int clocale_printf(FILE *output, const char *format, va_list args);
+  virtual int clocale_vprintf(FILE *output, const char *format, va_list args);
+  virtual int clocale_vsnprintf(char *output, size_t output_size, const char *format, va_list args);
+  virtual int clocale_vsscanf(const char *input, const char *format, va_list args);
   // these 2 are in Fl_get_key_win32.cxx
   virtual int event_key(int k);
   virtual int get_key(int k);
@@ -105,14 +107,6 @@ public:
   virtual int case_insensitive_filenames() {return 1;}
   // this one is implemented in Fl_win32.cxx
   virtual const char *filename_name(const char *buf);
-  // this one is implemented in Fl_win32.cxx
-  virtual void copy(const char *stuff, int len, int clipboard, const char *type);
-  // this one is implemented in Fl_win32.cxx
-  virtual void paste(Fl_Widget &receiver, int clipboard, const char *type);
-  // this one is implemented in Fl_win32.cxx
-  virtual int clipboard_contains(const char *type);
-  // this one is implemented in Fl_win32.cxx
-  virtual void clipboard_notify_change();
   virtual void add_fd(int fd, int when, Fl_FD_Handler cb, void* = 0);
   virtual void add_fd(int fd, Fl_FD_Handler cb, void* = 0);
   virtual void remove_fd(int, int when);
@@ -121,6 +115,8 @@ public:
   virtual char* strdup(const char *s) { return ::_strdup(s); }
   virtual void lock_ring();
   virtual void unlock_ring();
+  virtual double wait(double time_to_wait);
+  virtual int ready();
 };
 
 #endif // FL_WINAPI_SYSTEM_DRIVER_H

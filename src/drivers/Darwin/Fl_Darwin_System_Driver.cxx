@@ -89,16 +89,6 @@ const char *Fl_Darwin_System_Driver::control_name() {
   return "⌃\\"; // "\xe2\x8c\x83\\"; // U+2303 (up arrowhead)
 }
 
-/*
- Creates a driver that manages all system related calls.
-
- This function must be implemented once for every platform.
- */
-Fl_System_Driver *Fl_System_Driver::newSystemDriver()
-{
-  return new Fl_Darwin_System_Driver();
-}
-
 Fl_Darwin_System_Driver::Fl_Darwin_System_Driver() : Fl_Posix_System_Driver() {
   if (fl_mac_os_version == 0) fl_mac_os_version = calc_mac_os_version();
   // initialize key table
@@ -116,10 +106,15 @@ int Fl_Darwin_System_Driver::arg_and_value(const char *name, const char *value) 
   return strcmp(name, "NSDocumentRevisionsDebugMode") == 0;
 }
 
-int Fl_Darwin_System_Driver::clocale_printf(FILE *output, const char *format, va_list args) {
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
+static locale_t postscript_locale = NULL;
+#endif
+
+int Fl_Darwin_System_Driver::clocale_vprintf(FILE *output, const char *format, va_list args) {
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
   if (fl_mac_os_version >= 100400) {
-    static locale_t postscript_locale = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
+    if (!postscript_locale)
+      postscript_locale = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
     return vfprintf_l(output, postscript_locale, format, args);
   }
 #endif
@@ -129,6 +124,37 @@ int Fl_Darwin_System_Driver::clocale_printf(FILE *output, const char *format, va
   setlocale(LC_NUMERIC, saved_locale);
   return retval;
 }
+
+int Fl_Darwin_System_Driver::clocale_vsnprintf(char *output, size_t output_size, const char *format, va_list args) {
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
+  if (fl_mac_os_version >= 100400) {
+    if (!postscript_locale)
+      postscript_locale = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
+    return vsnprintf_l(output, output_size, postscript_locale, format, args);
+  }
+#endif
+  char *saved_locale = setlocale(LC_NUMERIC, NULL);
+  setlocale(LC_NUMERIC, "C");
+  int retval = vsnprintf(output, output_size, format, args);
+  setlocale(LC_NUMERIC, saved_locale);
+  return retval;
+}
+
+int Fl_Darwin_System_Driver::clocale_vsscanf(const char *input, const char *format, va_list args) {
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
+  if (fl_mac_os_version >= 100400) {
+    if (!postscript_locale)
+      postscript_locale = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
+    return vsscanf_l(input, postscript_locale, format, args);
+  }
+#endif
+  char *saved_locale = setlocale(LC_NUMERIC, NULL);
+  setlocale(LC_NUMERIC, "C");
+  int retval = vsscanf(input, format, args);
+  setlocale(LC_NUMERIC, saved_locale);
+  return retval;
+}
+
 
 /* Returns the address of a Carbon function after dynamically loading the Carbon library if needed.
  Supports old Mac OS X versions that may use a couple of Carbon calls:
