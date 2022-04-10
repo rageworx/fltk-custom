@@ -7,7 +7,7 @@
 
 if [ ! -e configure ];then
     echo "configure stopped,"
-    ecoh "need to generate configure first by autogen.sh !"
+    echo "need to generate configure first by autogen.sh !"
     exit 0
 fi
 
