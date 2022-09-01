@@ -50,14 +50,29 @@ void Fl_Light_Button::draw() {
       case _FL_PLASTIC_DOWN_BOX :
       case _FL_PLASTIC_UP_BOX :
         // Check box...
+#ifdef FLTK_EXT_VERSION        
         // rageworx fix : why background color always set to FL_BACKGROUND2_COLOR ?
-        // draw_box(down_box(), cx, cy, W, W, FL_BACKGROUND2_COLOR);
-        draw_box(down_box(), cx, cy, W, W, color() );
+        if (Fl::is_scheme("flat"))
+        {
+          draw_box( FL_UP_BOX, cx, cy, W, W, color() );
+        }
+        else
+        {
+          draw_box(down_box(), cx, cy, W, W, color() );
+        }
+#else
+        draw_box(down_box(), cx, cy, W, W, FL_BACKGROUND2_COLOR);
+#endif /// of FLTK_EXT_VERSION
         if (value()) {
           // Check mark...
           if (Fl::is_scheme("gtk+")) {
             col = FL_SELECTION_COLOR;
           }
+#ifdef FLTK_EXT_VERSION
+          else if (Fl::is_scheme("flat")) {
+            col = fl_lighter( color() );
+          }
+#endif /// of FLTK_EXT_VERSION
           // Calculate box position and size
           cx += Fl::box_dx(down_box());
           cy += Fl::box_dy(down_box());
@@ -68,9 +83,12 @@ void Fl_Light_Button::draw() {
       case _FL_ROUND_DOWN_BOX :
       case _FL_ROUND_UP_BOX :
         // Radio button...
+#ifdef FLTK_EXT_VERSION        
         // rageworx fix : why background color always set to FL_BACKGROUND2_COLOR ?
-        //draw_box(down_box(), x()+dx, y()+dy, W, W, FL_BACKGROUND2_COLOR);
         draw_box(down_box(), x()+dx, y()+dy, W, W, color() );
+#else
+        draw_box(down_box(), x()+dx, y()+dy, W, W, FL_BACKGROUND2_COLOR);
+#endif /// of FLTK_EXT_VERSION
         if (value()) {
           int tW = (W - Fl::box_dw(down_box())) / 2 + 1;
           if ((W - tW) & 1) tW++; // Make sure difference is even to center
@@ -82,6 +100,10 @@ void Fl_Light_Button::draw() {
             tW --;
             fl_pie(x() + tdx - 1, y() + tdy - 1, tW + 3, tW + 3, 0.0, 360.0);
             fl_color(fl_color_average(FL_WHITE, FL_SELECTION_COLOR, 0.2f));
+#ifdef FLTK_EXT_VERSION
+          } else if (Fl::is_scheme("flat")) {
+            fl_color( fl_lighter( color() ) );
+#endif /// of FLTK_EXT_VERSION            
           } else fl_color(col);
 
           switch (tW) {
@@ -114,6 +136,12 @@ void Fl_Light_Button::draw() {
             fl_color(fl_color_average(FL_WHITE, FL_SELECTION_COLOR, 0.5));
             fl_arc(x() + tdx, y() + tdy, tW + 1, tW + 1, 60.0, 180.0);
           }
+#ifdef FLTK_EXT_VERSION
+          else if (Fl::is_scheme("flat")) {
+            fl_color( fl_lighter( color() ) );
+          }
+#endif /// of FLTK_EXT_VERSION
+          
         }
         break;
       default :
