@@ -28,7 +28,7 @@
 class Fl_Window;
 
 
-class FL_EXPORT Fl_WinAPI_Screen_Driver : public Fl_Screen_Driver
+class Fl_WinAPI_Screen_Driver : public Fl_Screen_Driver
 {
 protected:
   RECT screens[MAX_SCREENS];
@@ -92,6 +92,8 @@ public:
   virtual int clipboard_contains(const char *type);
   // this one is implemented in Fl_win32.cxx
   virtual void clipboard_notify_change();
+  // this one is implemented in Fl_win32.cxx
+  void set_spot(int font, int size, int X, int Y, int W, int H, Fl_Window *win);
 };
 
 

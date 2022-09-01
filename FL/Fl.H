@@ -61,6 +61,8 @@ extern FL_EXPORT const char* fl_local_ctrl;  ///< string pointer used in shortcu
 extern FL_EXPORT const char* fl_local_meta;  ///< string pointer used in shortcuts, you can change it to another language
 extern FL_EXPORT const char* fl_local_shift; ///< string pointer used in shortcuts, you can change it to another language
 
+extern FL_EXPORT void fl_disable_wayland();
+
 /** \defgroup  callback_functions  Callback Function Typedefs
 
   \brief Typedefs defined in <FL/Fl.H> for callback or handler functions passed as function parameters.
@@ -1334,6 +1336,7 @@ int main() {
    */
   static int draw_GL_text_with_textures() { return draw_GL_text_with_textures_; }
 
+  static int system(const char *command);
 
 #ifdef FLTK_HAVE_CAIRO
   /** \defgroup group_cairo Cairo Support Functions and Classes

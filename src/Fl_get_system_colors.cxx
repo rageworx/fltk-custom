@@ -169,7 +169,9 @@ int Fl::scheme(const char *s) {
     else if (!fl_ascii_strcasecmp(s, "gtk+")) s = fl_strdup("gtk+");
     else if (!fl_ascii_strcasecmp(s, "plastic")) s = fl_strdup("plastic");
     else if (!fl_ascii_strcasecmp(s, "gleam")) s = fl_strdup("gleam");
+#ifdef FLTK_EXT_VERSION
     else if (!fl_ascii_strcasecmp(s, "flat")) s = fl_strdup("flat");
+#endif /// of FLTK_EXT_VERSION
     else s = 0;
   }
   if (scheme_) free((void*)scheme_);

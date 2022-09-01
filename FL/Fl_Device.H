@@ -28,6 +28,7 @@
 class Fl_Graphics_Driver;
 class Fl_RGB_Image;
 class Fl_Widget;
+class Fl_Image_Surface;
 
 /**
  A drawing surface that's susceptible to receive graphical output.
@@ -91,6 +92,7 @@ public:
   }
   /** \brief The destructor. */
   virtual ~Fl_Surface_Device();
+  virtual Fl_Image_Surface *as_image_surface();
   static void push_current(Fl_Surface_Device *new_current);
   static Fl_Surface_Device *pop_current();
 };
@@ -112,7 +114,7 @@ public:
  It is currently used to provide an automated printing
  service and screen capture for OpenGL windows, if linked with fltk_gl.
  */
-class FL_EXPORT Fl_Device_Plugin : public Fl_Plugin {
+class Fl_Device_Plugin : public Fl_Plugin {
 public:
   /** \brief The constructor */
   Fl_Device_Plugin(const char *pluginName)

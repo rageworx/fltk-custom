@@ -43,8 +43,6 @@ static void fl_xft_font(Fl_Xlib_Graphics_Driver *driver, Fl_Font fnum, Fl_Fontsi
 XftDraw* Fl_Xlib_Graphics_Driver::draw_ = 0;
 Window Fl_Xlib_Graphics_Driver::draw_window = (Window)0;
 
-extern Fl_Fontdesc* fl_fonts;
-
 Fl_Fontsize Fl_Xlib_Graphics_Driver::size_unscaled() {
   return (Fl_Fontsize)(size_);
 }
@@ -722,7 +720,7 @@ void Fl_Xlib_Graphics_Driver::draw_unscaled(const char *str, int n, int x, int y
   else //if (draw_window != fl_window)
     XftDrawChange(draw_, draw_window = fl_window);
 
-  Region region = fl_clip_region();
+  Region region = (Region)fl_clip_region();
   if (!(region && XEmptyRegion(region))) {
     XftDrawSetClip(draw_, region);
 
@@ -758,7 +756,7 @@ void Fl_Xlib_Graphics_Driver::drawUCS4(const void *str, int n, int x, int y) {
   else //if (draw_window != fl_window)
     XftDrawChange(draw_, draw_window = fl_window);
 
-  Region region = fl_clip_region();
+  Region region = (Region)fl_clip_region();
   if (region && XEmptyRegion(region)) return;
   XftDrawSetClip(draw_, region);
 
@@ -905,10 +903,6 @@ const char* Fl_Xlib_Graphics_Driver::get_font_name(Fl_Font fnum, int* ap) {
   }
   if (ap) *ap = f->fontname[ENDOFBUFFER];
   return f->fontname;
-}
-
-float Fl_Xlib_Graphics_Driver::scale_bitmap_for_PostScript() {
-  return 2;
 }
 
 Fl_Xlib_Font_Descriptor::~Fl_Xlib_Font_Descriptor() {
@@ -1198,7 +1192,7 @@ static void fl_pango_layout_get_pixel_extents(PangoLayout *layout, int &dx, int 
 
 void Fl_Xlib_Graphics_Driver::do_draw(int from_right, const char *str, int n, int x, int y) {
   if (!fl_display || n == 0) return;
-  Region region = clip_region();
+  Region region = (Region)clip_region();
   if (region && XEmptyRegion(region)) return;
   if (!playout_) context();
 

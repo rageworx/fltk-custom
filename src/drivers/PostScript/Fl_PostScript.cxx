@@ -32,6 +32,9 @@
 #include <FL/math.h> // for M_PI
 #include <pango/pangocairo.h>
 #include <cairo/cairo-ps.h>
+#  if ! PANGO_VERSION_CHECK(1,22,0)
+#    error "Requires Pango 1.22 or higher"
+#  endif
 #endif
 
 const char *Fl_PostScript_File_Device::file_chooser_title = "Select a .ps file";
@@ -89,6 +92,21 @@ int Fl_PostScript_File_Device::begin_job(int pagecount, int* from, int* to, char
 Fl_PostScript_File_Device::~Fl_PostScript_File_Device() {
   Fl_PostScript_Graphics_Driver *ps = driver();
   if (ps) delete ps;
+}
+
+void Fl_PostScript_File_Device::set_current() {
+  Fl_Graphics_Driver& driver = Fl_Graphics_Driver::default_driver();
+  display_font_ = driver.font();
+  display_size_ = driver.size();
+  Fl_Paged_Device::set_current();
+}
+
+void Fl_PostScript_File_Device::end_current() {
+  if (display_font_ >= 0 && display_size_ > 0)  {
+    Fl_Graphics_Driver& driver = Fl_Graphics_Driver::default_driver();
+    driver.font(display_font_, display_size_);
+  }
+  Fl_Paged_Device::end_current();
 }
 
 /**
@@ -196,14 +214,6 @@ int Fl_PostScript_Graphics_Driver::descent() {
 void Fl_PostScript_Graphics_Driver::text_extents(const char *c, int n, int &dx, int &dy, int &w, int &h) {
   Fl_Graphics_Driver::default_driver().text_extents(c, n, dx, dy, w, h);
 }
-
-
-void Fl_PostScript_Graphics_Driver::color(Fl_Color c) {
-  Fl::get_color(c, cr_, cg_, cb_);
-  color(cr_, cg_, cb_);
-}
-
-Fl_Color Fl_PostScript_Graphics_Driver::color() { return Fl_Graphics_Driver::color(); }
 
 void Fl_PostScript_Graphics_Driver::point(int x, int y){
   rectf(x,y,1,1);
@@ -1044,6 +1054,13 @@ void Fl_PostScript_Graphics_Driver::line_style(int style, int width, char* dashe
   fprintf(output, "] 0 setdash\n");
 }
 
+void Fl_PostScript_Graphics_Driver::color(Fl_Color c) {
+  Fl::get_color(c, cr_, cg_, cb_);
+  color(cr_, cg_, cb_);
+}
+
+Fl_Color Fl_PostScript_Graphics_Driver::color() { return Fl_Graphics_Driver::color(); }
+
 void Fl_PostScript_Graphics_Driver::color(unsigned char r, unsigned char g, unsigned char b) {
   Fl_Graphics_Driver::color( fl_rgb_color(r, g, b) );
   cr_ = r; cg_ = g; cb_ = b;
@@ -1451,14 +1468,14 @@ static cairo_status_t write_to_cairo_stream(FILE *output, unsigned char *data, u
   return (l == length ? CAIRO_STATUS_SUCCESS : CAIRO_STATUS_WRITE_ERROR);
 }
 
-static int init_cairo_postscript(FILE* output, cairo_t* &cairo_, PangoLayout* &pango_layout,
-                                     int w, int h) {
-  cairo_surface_t* cs = cairo_ps_surface_create_for_stream((cairo_write_func_t)write_to_cairo_stream, output, w, h);
-  if (cairo_surface_status(cs) != CAIRO_STATUS_SUCCESS) return 1;
+static cairo_t* init_cairo_postscript(FILE* output, int w, int h) {
+  cairo_surface_t* cs = cairo_ps_surface_create_for_stream(
+                        (cairo_write_func_t)write_to_cairo_stream, output, w, h);
+  if (cairo_surface_status(cs) != CAIRO_STATUS_SUCCESS) return NULL;
   cairo_ps_surface_restrict_to_level(cs, CAIRO_PS_LEVEL_2);
-  cairo_ = cairo_create(cs);
-  pango_layout = pango_cairo_create_layout(cairo_);
-  return 0;
+  cairo_t* cairo_ = cairo_create(cs);
+  cairo_surface_destroy(cs);
+  return cairo_;
 }
 
 int Fl_PostScript_Graphics_Driver::start_postscript(int pagecount,
@@ -1481,7 +1498,9 @@ int Fl_PostScript_Graphics_Driver::start_postscript(int pagecount,
     pw_ = Fl_Paged_Device::page_formats[format].width;
     ph_ = Fl_Paged_Device::page_formats[format].height;
   }
-  if (init_cairo_postscript(output, cairo_, pango_layout_, Fl_Paged_Device::page_formats[format].width, Fl_Paged_Device::page_formats[format].height)) return 1;
+  cairo_ = init_cairo_postscript(output, Fl_Paged_Device::page_formats[format].width,
+                            Fl_Paged_Device::page_formats[format].height);
+  if (!cairo_) return 1;
   nPages=0;
   char feature[250];
   sprintf(feature, "%%%%BeginFeature: *PageSize %s\n<</PageSize[%d %d]>>setpagedevice\n%%%%EndFeature",
@@ -1493,7 +1512,8 @@ int Fl_PostScript_Graphics_Driver::start_postscript(int pagecount,
 int Fl_PostScript_Graphics_Driver::start_eps(int width, int height) {
   pw_ = width;
   ph_ = height;
-  if (init_cairo_postscript(output, cairo_, pango_layout_, width, height)) return 1;
+  cairo_ = init_cairo_postscript(output, width, height);
+  if (!cairo_) return 1;
   cairo_ps_surface_set_eps(cairo_get_target(cairo_), true);
   nPages=0; //useful?
   return 0;
@@ -1502,7 +1522,12 @@ int Fl_PostScript_Graphics_Driver::start_eps(int width, int height) {
 
 void Fl_PostScript_Graphics_Driver::transformed_draw(const char* str, int n, double x, double y) {
   if (!n) return;
-  PangoFontDescription *pfd = Fl_Graphics_Driver::default_driver().pango_font_description(font());
+  if (!pango_context_) {
+    PangoFontMap *def_font_map = pango_cairo_font_map_get_default(); // 1.10
+    pango_context_ = pango_font_map_create_context(def_font_map); // 1.22
+    pango_layout_ = pango_layout_new(pango_context_);
+  }
+  PangoFontDescription *pfd = Fl_Graphics_Driver::default_driver().pango_font_description();
   pango_layout_set_font_description(pango_layout_, pfd);
   int pwidth, pheight;
   cairo_save(cairo_);
@@ -1513,7 +1538,7 @@ void Fl_PostScript_Graphics_Driver::transformed_draw(const char* str, int n, dou
     cairo_translate(cairo_, x, y - height() + descent());
     s = (s/pwidth) * PANGO_SCALE;
     cairo_scale(cairo_, s, s);
-    pango_cairo_show_layout(cairo_, pango_layout_);
+    pango_cairo_show_layout(cairo_, pango_layout_); // 1.10
   }
   cairo_restore(cairo_);
   check_status();
@@ -1664,8 +1689,6 @@ void Fl_PostScript_File_Device::end_job (void)
     fputs("\n", ps->output); // creates an stdio error
   }
   cairo_destroy(ps->cr());
-  cairo_surface_destroy(s);
-  g_object_unref(ps->pango_layout());
   if (!error) error = fflush(ps->output);
 #else
   if (ps->nPages) {  // for eps nPages is 0 so it is fine ....
@@ -1732,8 +1755,6 @@ int Fl_EPS_File_Surface::close() {
   cairo_surface_finish(s);
   cairo_status_t status = cairo_surface_status(s);
   cairo_destroy(ps->cr());
-  cairo_surface_destroy(s);
-  g_object_unref(ps->pango_layout());
   fflush(ps->output);
   error = ferror(ps->output);
   if (status !=  CAIRO_STATUS_SUCCESS) error = status;

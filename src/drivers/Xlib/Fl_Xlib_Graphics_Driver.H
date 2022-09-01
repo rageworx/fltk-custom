@@ -51,7 +51,7 @@ struct _XRegion {
 
  This class is implemented only on the Xlib platform.
  */
-class FL_EXPORT Fl_Xlib_Graphics_Driver : public Fl_Scalable_Graphics_Driver {
+class Fl_Xlib_Graphics_Driver : public Fl_Scalable_Graphics_Driver {
 private:
   int offset_x_, offset_y_; // translation between user and graphical coordinates: graphical = user + offset
   unsigned depth_; // depth of translation stack
@@ -76,7 +76,7 @@ protected:
 #endif
   virtual int height_unscaled();
   virtual int descent_unscaled();
-  virtual Region scale_clip(float f);
+  virtual Fl_Region scale_clip(float f);
 #if USE_XFT
   void drawUCS4(const void *str, int n, int x, int y);
 #endif
@@ -85,7 +85,7 @@ protected:
   static PangoFontMap *pfmap_;
   static PangoLayout *playout_;
 public:
-  virtual PangoFontDescription* pango_font_description(Fl_Font fnum) { return pfd_array[fnum]; }
+  virtual PangoFontDescription* pango_font_description() { return pfd_array[font()]; }
 private:
   static PangoFontDescription **pfd_array; // one array element for each Fl_Font
   static int pfd_array_length;
@@ -204,14 +204,11 @@ protected:
   Fl_Color color() { return color_; }
   void color(uchar r, uchar g, uchar b);
   virtual float scale_font_for_PostScript(Fl_Font_Descriptor *desc, int s);
-  virtual float scale_bitmap_for_PostScript();
-  virtual void set_spot(int font, int size, int X, int Y, int W, int H, Fl_Window *win);
-  virtual void reset_spot();
-  virtual void set_status(int X, int Y, int W, int H);
   virtual const char* get_font_name(Fl_Font fnum, int* ap);
   virtual int get_font_sizes(Fl_Font fnum, int*& sizep);
 #if !USE_XFT
   virtual unsigned font_desc_size();
+  virtual float scale_bitmap_for_PostScript();
 #endif
   virtual const char *font_name(int num);
   virtual void font_name(int num, const char *name);

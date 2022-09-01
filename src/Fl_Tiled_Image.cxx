@@ -1,7 +1,7 @@
 //
 // Tiled image code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2020 by Bill Spitzak and others.
+// Copyright 1998-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -19,6 +19,8 @@
 #include <FL/Fl_Tiled_Image.H>
 #include <FL/Fl_Window.H>
 #include <FL/fl_draw.H>
+
+bool Fl_Tiled_Image::drawing_tiled_image_ = false;
 
 /**
   The constructors create a new tiled image containing the specified image.
@@ -77,9 +79,9 @@ Fl_Tiled_Image::Fl_Tiled_Image(Fl_Image *i,     // I - Image to tile
 // 'Fl_Tiled_Image::copy()' - Copy and resize a tiled image...
 //
 
-Fl_Image *                      // O - New image
-Fl_Tiled_Image::copy(int W,     // I - New width
-                     int H) {   // I - New height
+Fl_Image *                            // O - New image
+Fl_Tiled_Image::copy(int W,           // I - New width
+                     int H) const {   // I - New height
   return new Fl_Tiled_Image(image_, W, H);
 }
 
@@ -92,7 +94,9 @@ void
 Fl_Tiled_Image::color_average(Fl_Color c,       // I - Color to blend with
                               float    i) {     // I - Blend fraction
   if (!alloc_image_) {
-    image_       = image_->copy();
+    int W = image_->w(), H = image_->h();
+    image_       = image_->copy(image_->data_w(), image_->data_h());
+    image_->scale(W, H, 0, 1);
     alloc_image_ = 1;
   }
 
@@ -107,7 +111,9 @@ Fl_Tiled_Image::color_average(Fl_Color c,       // I - Color to blend with
 void
 Fl_Tiled_Image::desaturate() {
   if (!alloc_image_) {
-    image_       = image_->copy();
+    int W = image_->w(), H = image_->h();
+    image_       = image_->copy(image_->data_w(), image_->data_h());
+    image_->scale(W, H, 0, 1);
     alloc_image_ = 1;
   }
 
@@ -177,6 +183,7 @@ Fl_Tiled_Image::draw(int X,     // I - Starting X position
   if (W == 0 || H == 0) return;
 
   fl_push_clip(X, Y, W, H);
+  drawing_tiled_image_ = true;
 
   if (cx > 0) iw -= cx;         // crop image
   if (cy > 0) ih -= cy;
@@ -190,5 +197,6 @@ Fl_Tiled_Image::draw(int X,     // I - Starting X position
       }
     }
   }
+  drawing_tiled_image_ = false;
   fl_pop_clip();
 }

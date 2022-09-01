@@ -41,22 +41,26 @@
  */
 
 typedef struct _cairo_pattern cairo_pattern_t;
-
-struct Fl_Window_Driver::shape_data_type {
-  int lw_; ///<  width of shape image
-  int lh_; ///<  height of shape image
-  Fl_Image* shape_; ///<  shape image
-  cairo_pattern_t *mask_pattern_;
-};
+class Fl_Wayland_Plugin;
 
 
-class FL_EXPORT Fl_Wayland_Window_Driver : public Fl_Window_Driver
+class Fl_Wayland_Window_Driver : public Fl_Window_Driver
 {
   friend class Fl_X;
+  friend class Fl_Wayland_Gl_Window_Driver;
+  friend class Fl_Wayland_Screen_Driver;
 private:
+  struct shape_data_type {
+    int lw_; ///<  width of shape image
+    int lh_; ///<  height of shape image
+    Fl_Image* shape_; ///<  shape image
+    cairo_pattern_t *mask_pattern_;
+  } *shape_data_;
   static bool in_flush; // useful for progressive window drawing
+  static Fl_Wayland_Plugin *gl_plugin();
   struct wl_cursor *cursor_;
   void delete_cursor_();
+  struct gl_start_support *gl_start_support_; // for support of gl_start/gl_finish
 public:
   struct wl_cursor *cursor() { return cursor_; };
   bool in_handle_configure; // distinguish OS and user window resize
@@ -64,12 +68,6 @@ public:
     Fl_Wayland_Screen_Driver::output* output;
     struct wl_list link;
   };
-
-  struct icon_data {
-    const void *legacy_icon;
-    Fl_RGB_Image **icons;
-    int count;
-  } *icon_;
   // --- support for screen-specific scaling factors
   struct type_for_resize_window_between_screens {
     int screen;
@@ -82,8 +80,6 @@ public:
   void shape_bitmap_(Fl_Image* b);
   void shape_alpha_(Fl_Image* img, int offset);
   void update_scale();
-
-public:
   enum kind {DECORATED, SUBWINDOW, POPUP, UNFRAMED};
   struct xdg_toplevel *xdg_toplevel();
   Fl_Wayland_Window_Driver(Fl_Window*);
@@ -120,17 +116,11 @@ public:
   virtual void size_range();
   virtual void iconize();
   virtual void decoration_sizes(int *top, int *left,  int *right, int *bottom);
-  virtual void show_with_args_begin();
-  virtual void show_with_args_end(int argc, char **argv);
   // --- window cursor stuff
   virtual int set_cursor(Fl_Cursor);
   virtual int set_cursor(const Fl_RGB_Image*, int, int);
 
   virtual void shape(const Fl_Image* img);
-  virtual void icons(const Fl_RGB_Image *icons[], int count);
-  virtual const void *icon() const;
-  virtual void icon(const void * ic);
-  virtual void free_icons();
   virtual void capture_titlebar_and_borders(Fl_RGB_Image*& top, Fl_RGB_Image*& left, Fl_RGB_Image*& bottom, Fl_RGB_Image*& right);
   virtual int scroll(int src_x, int src_y, int src_w, int src_h, int dest_x, int dest_y, void (*draw_area)(void*, int,int,int,int), void* data);
   virtual void wait_for_expose();
@@ -168,6 +158,8 @@ public:
   virtual const char *name() = 0;
   virtual void do_swap(Fl_Window*) = 0;
   virtual void invalidate(Fl_Window*) = 0;
+  virtual void terminate() = 0;
+  virtual void destroy(struct gl_start_support *) = 0;
 };
 
 #endif // FL_WAYLAND_WINDOW_DRIVER_H

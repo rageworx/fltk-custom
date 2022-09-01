@@ -42,7 +42,7 @@
 
   This class is implemented only on the Windows platform.
 */
-class FL_EXPORT Fl_GDI_Graphics_Driver : public Fl_Scalable_Graphics_Driver {
+class Fl_GDI_Graphics_Driver : public Fl_Scalable_Graphics_Driver {
 private:
   BOOL alpha_blend_(int x, int y, int w, int h, HDC src_gc, int srcx, int srcy, int srcw, int srch);
   int depth; // to support translation
@@ -143,7 +143,6 @@ protected:
   void color(uchar r, uchar g, uchar b);
   void set_color(Fl_Color i, unsigned int c);
   void free_color(Fl_Color i, int overlay);
-  void set_spot(int font, int size, int X, int Y, int W, int H, Fl_Window *win);
   virtual Fl_Font set_fonts(const char *name);
   virtual int get_font_sizes(Fl_Font fnum, int*& sizep);
   virtual const char* get_font_name(Fl_Font fnum, int* ap);
@@ -163,7 +162,7 @@ protected:
   This class is implemented only on the Windows platform.
   It is extremely similar to Fl_GDI_Graphics_Driver.
 */
-class FL_EXPORT Fl_GDI_Printer_Graphics_Driver : public Fl_GDI_Graphics_Driver {
+class Fl_GDI_Printer_Graphics_Driver : public Fl_GDI_Graphics_Driver {
 private:
   typedef BOOL (WINAPI* transparent_f_type) (HDC,int,int,int,int,HDC,int,int,int,int,UINT);
   transparent_f_type TransparentBlt();

@@ -190,10 +190,12 @@ Fl_Shared_Image::add() {
 void
 Fl_Shared_Image::update() {
   if (image_) {
-    w(image_->w());
-    h(image_->h());
+    int W = w(), H = h();
+    w(image_->data_w());
+    h(image_->data_h());
     d(image_->d());
     data(image_->data(), image_->count());
+    if (W && H) scale(W, H, 0, 1);
   }
 }
 
@@ -275,17 +277,6 @@ void Fl_Shared_Image::reload() {
     for (i = 0, img = 0; i < num_handlers_; i ++) {
       img = (handlers_[i])(name_, header, count);
       if (img) break;
-
-      // bug fixed by fire-eggs
-      // see this : https://github.com/fltk/fltk/pull/228/commits/439494248bd313a45b6c7b745e29db53ed2ce3d6
-      if (img) {
-        // We might have an object, but it might not be valid.
-        if (img->fail()) {
-            delete img;
-            img = 0;
-        }
-        else break;
-      }
     }
   }
 
@@ -311,7 +302,7 @@ void Fl_Shared_Image::reload() {
 // For doxygen docs see Fl_Image::copy().
 
 Fl_Image *
-Fl_Shared_Image::copy(int W, int H) {
+Fl_Shared_Image::copy(int W, int H) const {
   Fl_Image              *temp_image;    // New image file
   Fl_Shared_Image       *temp_shared;   // New shared image
 

@@ -17,11 +17,9 @@
 
 #include <config.h>
 #include "Fl_X11_Screen_Driver.H"
-#include "../Xlib/Fl_Font.H"
 #include "Fl_X11_Window_Driver.H"
 #include "Fl_X11_System_Driver.H"
 #include "../Posix/Fl_Posix_System_Driver.H"
-#include "../Xlib/Fl_Xlib_Graphics_Driver.H"
 #include <FL/Fl.H>
 #include <FL/platform.H>
 #include <FL/fl_ask.H>
@@ -49,13 +47,27 @@
 #endif // DEBUG
 
 extern Atom fl_NET_WORKAREA;
-extern XIC fl_xim_ic; // in Fl_x.cxx
 
 // these are set by Fl::args() and override any system colors: from Fl_get_system_colors.cxx
 extern const char *fl_fg;
 extern const char *fl_bg;
 extern const char *fl_bg2;
 // end of extern additions workaround
+
+#if !USE_XFT
+extern char *fl_get_font_xfld(int fnum, int size);
+#endif
+
+XIM Fl_X11_Screen_Driver::xim_im = 0;
+
+XIC Fl_X11_Screen_Driver::xim_ic = 0;
+
+int Fl_X11_Screen_Driver::fl_spotf = -1;
+int Fl_X11_Screen_Driver::fl_spots = -1;
+XRectangle Fl_X11_Screen_Driver::fl_spot;
+char Fl_X11_Screen_Driver::fl_is_over_the_spot = 0;
+
+Window Fl_X11_Screen_Driver::xim_win = 0;
 
 
 void Fl_X11_Screen_Driver::display(const char *d)
@@ -326,17 +338,18 @@ void Fl_X11_Screen_Driver::screen_dpi(float &h, float &v, int n)
 
 void Fl_X11_Screen_Driver::beep(int type)
 {
+  int vol;
   switch (type) {
-    case FL_BEEP_DEFAULT :
     case FL_BEEP_ERROR :
-      if (!fl_display) open_display();
-      XBell(fl_display, 100);
+      vol = 100;
       break;
+    case FL_BEEP_DEFAULT :
     default :
-      if (!fl_display) open_display();
-      XBell(fl_display, 50);
+      vol = 0;
       break;
   }
+  if (!fl_display) open_display();
+  XBell(fl_display, vol);
 }
 
 
@@ -486,7 +499,7 @@ int Fl_X11_Screen_Driver::compose(int& del) {
 void Fl_X11_Screen_Driver::compose_reset()
 {
   Fl::compose_state = 0;
-  if (fl_xim_ic) XmbResetIC(fl_xim_ic);
+  if (xim_ic) XmbResetIC(xim_ic);
 }
 
 int Fl_X11_Screen_Driver::text_display_can_leak() const {
@@ -971,10 +984,91 @@ void Fl_X11_Screen_Driver::offscreen_size(Fl_Offscreen off, int &width, int &hei
   int px, py;
   unsigned w, h, b, d;
   Window root;
-  XGetGeometry(fl_display, off, &root, &px, &py, &w, &h, &b, &d);
+  XGetGeometry(fl_display, (Pixmap)off, &root, &px, &py, &w, &h, &b, &d);
   width = (int)w;
   height = (int)h;
 }
+
+
+void Fl_X11_Screen_Driver::reset_spot(void)
+{
+  fl_spot.x = -1;
+  fl_spot.y = -1;
+  //if (xim_ic) XUnsetICFocus(xim_ic);
+}
+
+
+void Fl_X11_Screen_Driver::set_spot(int font, int size, int X, int Y, int W, int H, Fl_Window *win)
+{
+  int change = 0;
+  XVaNestedList preedit_attr;
+  static XFontSet fs = NULL;
+  char **missing_list;
+  int missing_count;
+  char *def_string;
+  char *fnt = NULL;
+  bool must_free_fnt =true;
+
+  static XIC ic = NULL;
+
+  if (!xim_ic || !fl_is_over_the_spot) return;
+  if (Fl::focus()) { // handle case when text widget is inside subwindow
+    Fl_Window *focuswin = Fl::focus()->window();
+    while (focuswin && focuswin->parent()) {
+      X += focuswin->x(); Y += focuswin->y();
+      focuswin = focuswin->window();
+    }
+  }
+  //XSetICFocus(xim_ic);
+  if (X != fl_spot.x || Y != fl_spot.y) {
+    fl_spot.x = X;
+    fl_spot.y = Y;
+    fl_spot.height = H;
+    fl_spot.width = W;
+    change = 1;
+  }
+  if (font != fl_spotf || size != fl_spots) {
+    fl_spotf = font;
+    fl_spots = size;
+    change = 1;
+    if (fs) {
+      XFreeFontSet(fl_display, fs);
+    }
+#if USE_XFT
+
+#if defined(__GNUC__)
+    // FIXME: warning XFT support here
+#endif /*__GNUC__*/
+
+    fnt = NULL; // fl_get_font_xfld(font, size);
+    if (!fnt) {fnt = (char*)"-misc-fixed-*";must_free_fnt=false;}
+    fs = XCreateFontSet(fl_display, fnt, &missing_list,
+                        &missing_count, &def_string);
+#else
+    fnt = fl_get_font_xfld(font, size);
+    if (!fnt) {fnt = (char*)"-misc-fixed-*";must_free_fnt=false;}
+    fs = XCreateFontSet(fl_display, fnt, &missing_list,
+                        &missing_count, &def_string);
+#endif
+  }
+  if (xim_ic != ic) {
+    ic = xim_ic;
+    change = 1;
+  }
+
+  if (fnt && must_free_fnt) free(fnt);
+  if (!change) return;
+
+  float s = Fl_Graphics_Driver::default_driver().scale();
+  XRectangle fl_spot_unscaled = { short(fl_spot.x * s), short(fl_spot.y * s),
+    (unsigned short)(fl_spot.width * s), (unsigned short)(fl_spot.height * s) };
+  preedit_attr = XVaCreateNestedList(0,
+                                     XNSpotLocation, &fl_spot_unscaled,
+                                     XNFontSet, fs, NULL);
+  XSetICValues(xim_ic, XNPreeditAttributes, preedit_attr, NULL);
+  XFree(preedit_attr);
+}
+
 
 #if USE_XFT
 //NOTICE: returns -1 if x,y is not in any screen

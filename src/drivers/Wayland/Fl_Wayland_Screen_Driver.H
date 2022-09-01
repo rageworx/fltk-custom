@@ -53,7 +53,7 @@ struct seat {
   struct zwp_text_input_v3 *text_input;
 };
 
-class FL_EXPORT Fl_Wayland_Screen_Driver : public Fl_Screen_Driver
+class Fl_Wayland_Screen_Driver : public Fl_Screen_Driver
 {
   friend class Fl_Screen_Driver;
   friend class Fl_Wayland_Graphics_Driver;
@@ -63,11 +63,13 @@ class FL_EXPORT Fl_Wayland_Screen_Driver : public Fl_Screen_Driver
   static int insertion_point_height;
   static bool insertion_point_location_is_valid;
 public:
-  static struct wl_display *wl_display;
+  static FL_EXPORT struct wl_display *wl_display;
+  // use it to make sure the Wayland leg was selected and fl_open_display() has run
+  static struct wl_registry *wl_registry;
   static void insertion_point_location(int x, int y, int height);
   static bool insertion_point_location(int *px, int *py, int *pwidth, int *pheight);
   int get_mouse_unscaled(int &xx, int &yy);
-  void screen_count(int count) {num_screens = count;}
+  void screen_count_set(int count) {num_screens = count;}
 
   void reset_cursor();
   struct wl_cursor *xc_arrow;
@@ -170,6 +172,9 @@ public:
   static bool own_output(struct wl_output *output);
   typedef enum {unspecified, MUTTER, WESTON, KDE} compositor_name;
   static compositor_name compositor; // identifies the used Wayland compositor
+  void set_spot(int font, int height, int x, int y, int w, int h, Fl_Window *win);
+  void reset_spot();
+  static bool undo_wayland_backend_if_needed(const char *backend = NULL);
 };
 
 

@@ -50,7 +50,9 @@ void Fl_Light_Button::draw() {
       case _FL_PLASTIC_DOWN_BOX :
       case _FL_PLASTIC_UP_BOX :
         // Check box...
-        draw_box(down_box(), cx, cy, W, W, FL_BACKGROUND2_COLOR);
+        // rageworx fix : why background color always set to FL_BACKGROUND2_COLOR ?
+        // draw_box(down_box(), cx, cy, W, W, FL_BACKGROUND2_COLOR);
+        draw_box(down_box(), cx, cy, W, W, color() );
         if (value()) {
           // Check mark...
           if (Fl::is_scheme("gtk+")) {
@@ -66,7 +68,9 @@ void Fl_Light_Button::draw() {
       case _FL_ROUND_DOWN_BOX :
       case _FL_ROUND_UP_BOX :
         // Radio button...
-        draw_box(down_box(), x()+dx, y()+dy, W, W, FL_BACKGROUND2_COLOR);
+        // rageworx fix : why background color always set to FL_BACKGROUND2_COLOR ?
+        //draw_box(down_box(), x()+dx, y()+dy, W, W, FL_BACKGROUND2_COLOR);
+        draw_box(down_box(), x()+dx, y()+dy, W, W, color() );
         if (value()) {
           int tW = (W - Fl::box_dw(down_box())) / 2 + 1;
           if ((W - tW) & 1) tW++; // Make sure difference is even to center

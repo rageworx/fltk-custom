@@ -153,7 +153,7 @@ _CMake_ will be smart enough to update the build files as well.
 
 Now this is easy if all the previous steps were successful. If you are still in _CMake_, just click
 _Open Project_ and _CMake_ will launch _XCode_ for you. If not, just launch _XCode_ and
-open `Macintosh HD⁩ ▸ ⁨Users⁩ ▸ your_name⁩ ▸ ⁨dev⁩ ▸ ⁨fltk-1.4⁩ ▸ ⁨build⁩ ▸ ⁨Xcode⁩ ▸ ⁨FLTK.xcodeproj`.
+open `Macintosh HD?????�Users????your_name?????�dev?????�fltk-1.4?????�build?????�Xcode?????�FLTK.xcodeproj`.
 
 _XCode_ may or may not ask to Autocreate Schemes. Click _Automatically Create Schemes_.
 
@@ -478,6 +478,7 @@ file is:
 
 ```bash
 cat << EOF > main.cxx
+  #include <FL/Fl.H>
   #include <FL/Fl_Window.H>
   int main(int argc, char **argv) {
     Fl_Window *win = new Fl_Window(600, 400, "Hello, world!");

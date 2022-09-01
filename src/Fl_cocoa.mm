@@ -14,10 +14,6 @@
 //     https://www.fltk.org/bugs.php
 //
 
-#ifndef FLTK_CONSOLIDATE_MOTION
-#define FLTK_CONSOLIDATE_MOTION 0
-#endif
-
 extern "C" {
 #include <pthread.h>
 }
@@ -85,7 +81,7 @@ int fl_mac_os_version = Fl_Darwin_System_Driver::calc_mac_os_version();         
 
 // public variables
 void *fl_capture = 0;                   // (NSWindow*) we need this to compensate for a missing(?) mouse capture
-Window fl_window;
+FLWindow *fl_window;
 
 // forward declarations of variables in this file
 static int main_screen_height; // height of menubar-containing screen used to convert between Cocoa and FLTK global screen coordinates
@@ -110,11 +106,6 @@ static bool in_nsapp_run = false; // true during execution of [NSApp run]
 static NSMutableArray *dropped_files_list = nil; // list of files dropped at app launch
 typedef void (*open_cb_f_type)(const char *);
 static Fl_Window *starting_moved_window = NULL; // the moved window which brings its subwins with it
-
-#if FLTK_CONSOLIDATE_MOTION
-static Fl_Window* send_motion;
-extern Fl_Window* fl_xmousewin;
-#endif
 
 enum { FLTKTimerEvent = 1, FLTKDataReadyEvent };
 
@@ -768,21 +759,17 @@ static int do_queued_events( double time = 0.0 )
   time = Fl_Timeout::time_to_wait(time);
 
   fl_unlock_function();
-  NSEvent *event = [NSApp nextEventMatchingMask:NSAnyEventMask
+  NSEvent *event;
+  while ( (event = [NSApp nextEventMatchingMask:NSAnyEventMask
                                       untilDate:[NSDate dateWithTimeIntervalSinceNow:time]
-                                         inMode:NSDefaultRunLoopMode dequeue:YES];
-  if (event != nil) {
+                                         inMode:NSDefaultRunLoopMode
+                                        dequeue:YES]) != nil ) {
     got_events = 1;
     [FLApplication sendEvent:event]; // will then call [NSApplication sendevent:]
+    time = 0;
   }
   fl_lock_function();
 
-#if FLTK_CONSOLIDATE_MOTION
-  if (send_motion && send_motion == fl_xmousewin) {
-    send_motion = 0;
-    Fl::handle(FL_MOVE, fl_xmousewin);
-  }
-#endif
   return got_events;
 }
 
@@ -816,7 +803,7 @@ static NSInteger max_normal_window_level(void)
 
   for (x = Fl_X::first;x;x = x->next) {
     NSInteger level;
-    FLWindow *cw = x->xid;
+    FLWindow *cw = (FLWindow*)x->xid;
     Fl_Window *win = x->w;
     if (!win || !cw || ![cw isVisible])
       continue;
@@ -881,7 +868,7 @@ static void fixup_window_levels(void)
   prev_non_modal = NULL;
 
   for (x = Fl_X::first;x;x = x->next) {
-    FLWindow *cw = x->xid;
+    FLWindow *cw = (FLWindow*)x->xid;
     Fl_Window *win = x->w;
     if (!win || !cw || ![cw isVisible])
       continue;
@@ -1226,7 +1213,7 @@ static FLWindowDelegate *flwindowdelegate_instance = nil;
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14
   FLView *view = (FLView*)[nsw contentView];
   if (views_use_CA && [view did_view_resolution_change]) {
-    if (window->as_gl_window() && Fl::use_high_res_GL()) [view setNeedsDisplay:YES]; // necessary with  macOS ≥ 10.14.2; harmless before
+    if (window->as_gl_window() && Fl::use_high_res_GL()) [view setNeedsDisplay:YES]; // necessary with  macOS ??10.14.2; harmless before
   }
 #endif
   if (window == starting_moved_window) {
@@ -1503,7 +1490,7 @@ static FLWindowDelegate *flwindowdelegate_instance = nil;
       else {
         CFArrayRef inputSources;
         CFDictionaryRef filter;
-        // FLΤΚ previously used TISCreateASCIICapableInputSourceList(),
+        // FLΤ? previously used TISCreateASCIICapableInputSourceList(),
         // which mostly hits the mark. But it excludes things like Greek
         // and Cyrillic keyboards. So let's be more explicit.
         filter = CFDictionaryCreate(NULL, (const void **)kTISPropertyInputSourceType,
@@ -1526,7 +1513,7 @@ static FLWindowDelegate *flwindowdelegate_instance = nil;
   FLWindow *top = 0;
   // sort in all regular windows
   for (x = Fl_X::first;x;x = x->next) {
-    FLWindow *cw = x->xid;
+    FLWindow *cw = (FLWindow*)x->xid;
     Fl_Window *win = x->w;
     if (win && cw) {
       if (win->modal()) {
@@ -1538,7 +1525,7 @@ static FLWindowDelegate *flwindowdelegate_instance = nil;
   }
   // now sort in all modals
   for (x = Fl_X::first;x;x = x->next) {
-    FLWindow *cw = x->xid;
+    FLWindow *cw = (FLWindow*)x->xid;
     Fl_Window *win = x->w;
     if (win && cw && [cw isVisible]) {
       if (win->modal()) {
@@ -1549,7 +1536,7 @@ static FLWindowDelegate *flwindowdelegate_instance = nil;
   }
   // finally all non-modals
   for (x = Fl_X::first;x;x = x->next) {
-    FLWindow *cw = x->xid;
+    FLWindow *cw = (FLWindow*)x->xid;
     Fl_Window *win = x->w;
     if (win && cw && [cw isVisible]) {
       if (win->non_modal()) {
@@ -1585,7 +1572,7 @@ static FLWindowDelegate *flwindowdelegate_instance = nil;
 {
   if (fl_mac_os_version < 101300) {
   // without the next two statements, the opening of the 1st window is delayed by several seconds
-  // under 10.8 ≤ Mac OS < 10.13 when a file is dragged on the application icon
+  // under 10.8 ??Mac OS < 10.13 when a file is dragged on the application icon
     Fl_Window *firstw = Fl::first_window();
     if (firstw) firstw->wait_for_expose();
   } else if (in_nsapp_run) { // memorize all dropped filenames
@@ -1613,8 +1600,8 @@ static FLWindowDelegate *flwindowdelegate_instance = nil;
 { // before 10.5, subwindows are lost when application is unhidden
   fl_lock_function();
   for (Fl_X *x = Fl_X::first; x; x = x->next) {
-    if (![x->xid parentWindow]) {
-      orderfront_subwindows(x->xid);
+    if (![(FLWindow*)x->xid parentWindow]) {
+      orderfront_subwindows((FLWindow*)x->xid);
     }
   }
   fl_unlock_function();
@@ -2284,6 +2271,7 @@ static FLTextInputContext* fltextinputcontext_instance = nil;
   FLWindow *cw = (FLWindow*)[self window];
   Fl_Window *window = [cw getFl_Window];
   if (!window) return; // may happen after closing full-screen window
+  if (!Fl_X::i(window)) return; // reported to happen with Gmsh (issue #434)
   fl_lock_function();
   Fl_Cocoa_Window_Driver *d = Fl_Cocoa_Window_Driver::driver(window);
   if (!through_Fl_X_flush
@@ -2410,8 +2398,7 @@ static FLTextInputContext* fltextinputcontext_instance = nil;
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5
 - (void)updateTrackingAreas {
   if (fl_mac_os_version >= 100500) {
-    Fl_Window *win = [(FLWindow*)[self window] getFl_Window];
-    if (!win->parent()) {
+    if (![[self window] parentWindow]) {
       while (true) {
         NSArray *a = [self trackingAreas]; // 10.5
         if ([a count] == 0) break;
@@ -2428,8 +2415,8 @@ static FLTextInputContext* fltextinputcontext_instance = nil;
       if (tracking) {
         [self addTrackingArea:tracking]; // 10.5
       }
-      [super updateTrackingAreas];
     }
+    [super updateTrackingAreas];
   }
 }
 #endif
@@ -3116,7 +3103,7 @@ Fl_X* Fl_Cocoa_Window_Driver::makeWindow()
     [cw setOpaque:NO]; // shaped windows must be non opaque
     [cw setBackgroundColor:[NSColor clearColor]]; // and with transparent background color
   }
-  x->xid = cw;
+  x->xid = (fl_uintptr_t)cw;
   x->w = w;
   i(x);
   wait_for_expose_value = 1;
@@ -3457,7 +3444,7 @@ void Fl_Cocoa_Window_Driver::make_current()
   q_release_context();
   Fl_X *i = Fl_X::i(pWindow);
   //NSLog(@"region-count=%d damage=%u",i->region?i->region->count:0, pWindow->damage());
-  fl_window = i->xid;
+  fl_window = (FLWindow*)i->xid;
   ((Fl_Quartz_Graphics_Driver&)Fl_Graphics_Driver::default_driver()).high_resolution( mapped_to_retina() );
 
   if (pWindow->as_overlay_window() && other_xid && changed_resolution()) {
@@ -3479,6 +3466,9 @@ void Fl_Cocoa_Window_Driver::make_current()
     gc = (CGContextRef)[nsgc performSelector:gc_sel];
   }
   Fl_Graphics_Driver::default_driver().gc(gc);
+#if defined(FLTK_HAVE_CAIROEXT)
+  CGContextSaveGState(gc); // one extra level
+#endif
   CGContextSaveGState(gc); // native context
   // antialiasing must be deactivated because it applies to rectangles too
   // and escapes even clipping!!!
@@ -3496,12 +3486,8 @@ void Fl_Cocoa_Window_Driver::make_current()
   }
 // this is the context with origin at top left of (sub)window
   CGContextSaveGState(gc);
-#if defined(FLTK_HAVE_CAIROEXT)
-  if (Fl::cairo_autolink_context()) Fl::cairo_make_current(pWindow); // capture gc changes automatically to update the cairo context adequately
-#endif
   fl_clip_region( 0 );
-
-#if defined(FLTK_HAVE_CAIROEXT)
+#ifdef FLTK_HAVE_CAIROEXT
   // update the cairo_t context
   if (Fl::cairo_autolink_context()) Fl::cairo_make_current(pWindow);
 #endif
@@ -3517,7 +3503,7 @@ void Fl_Cocoa_Window_Driver::q_release_context(Fl_Cocoa_Window_Driver *x) {
   CGContextFlush(gc);
   Fl_Graphics_Driver::default_driver().gc(0);
 #if defined(FLTK_HAVE_CAIROEXT)
-  if (Fl::cairo_autolink_context()) Fl::cairo_make_current((Fl_Window*) 0); // capture gc changes automatically to update the cairo context adequately
+  CGContextRestoreGState(gc);
 #endif
 }
 
@@ -3780,7 +3766,7 @@ void Fl_Cocoa_Window_Driver::destroy(FLWindow *xid) {
 
 
 void Fl_Cocoa_Window_Driver::map() {
-  Window xid = fl_xid(pWindow);
+  FLWindow *xid = fl_xid(pWindow);
   if (pWindow && xid && ![xid parentWindow]) { // 10.2
     // after a subwindow has been unmapped, it has lost its parent window and its frame may be wrong
     [xid setSubwindowFrame];
@@ -3793,7 +3779,7 @@ void Fl_Cocoa_Window_Driver::map() {
 
 
 void Fl_Cocoa_Window_Driver::unmap() {
-  Window xid = fl_xid(pWindow);
+  FLWindow *xid = fl_xid(pWindow);
   if (pWindow && xid) {
     if (parent()) [[xid parentWindow] removeChildWindow:xid]; // necessary with at least 10.5
     [xid orderOut:nil];

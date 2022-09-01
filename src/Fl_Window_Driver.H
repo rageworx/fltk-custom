@@ -48,7 +48,7 @@ class Fl_RGB_Image;
  sure that the Graphics Driver will draw into the bitmap associated with
  this window.
 */
-class FL_EXPORT Fl_Window_Driver
+class Fl_Window_Driver
 {
   friend class Fl_Window;
 private:
@@ -56,13 +56,13 @@ private:
 
 protected:
   Fl_Window *pWindow;
-  struct shape_data_type;
-  shape_data_type *shape_data_; ///< non-null means the window has a non-rectangular shape
   void flush_Fl_Window(); // accessor to protected Fl_Window::flush()
 public:
   Fl_Window_Driver(Fl_Window *);
   virtual ~Fl_Window_Driver();
   static Fl_Window_Driver *newWindowDriver(Fl_Window *);
+  static fl_uintptr_t xid(const Fl_Window *win);
+  static Fl_Window *find(fl_uintptr_t xid);
   int wait_for_expose_value;
   Fl_Offscreen other_xid; // offscreen bitmap (overlay and double-buffered windows)
   virtual int screen_num();

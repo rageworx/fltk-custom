@@ -24,8 +24,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-extern XIC fl_xim_ic;
-extern char fl_is_over_the_spot;
 #if !USE_XFT
 extern char *fl_get_font_xfld(int fnum, int size);
 #endif
@@ -39,6 +37,8 @@ int Fl_Xlib_Graphics_Driver::fl_overlay = 0;
  Fl_Surface_Device::surface()->driver()->gc().
  */
 GC fl_gc = 0;
+
+GC fl_x11_gc() { return fl_gc; }
 
 Fl_Xlib_Graphics_Driver::Fl_Xlib_Graphics_Driver(void) {
   mask_bitmap_ = NULL;
@@ -73,14 +73,14 @@ void Fl_Xlib_Graphics_Driver::scale(float f) {
 }
 
 void Fl_Xlib_Graphics_Driver::copy_offscreen(int x, int y, int w, int h, Fl_Offscreen pixmap, int srcx, int srcy) {
-  XCopyArea(fl_display, pixmap, fl_window, gc_, srcx*scale(), srcy*scale(), w*scale(), h*scale(), (x+offset_x_)*scale(), (y+offset_y_)*scale());
+  XCopyArea(fl_display, (Pixmap)pixmap, fl_window, gc_, srcx*scale(), srcy*scale(), w*scale(), h*scale(), (x+offset_x_)*scale(), (y+offset_y_)*scale());
 
 }
 
 void Fl_Xlib_Graphics_Driver::add_rectangle_to_region(Fl_Region r, int X, int Y, int W, int H) {
   XRectangle R;
   R.x = X; R.y = Y; R.width = W; R.height = H;
-  XUnionRectWithRegion(&R, r, r);
+  XUnionRectWithRegion(&R, (Region)r, (Region)r);
 }
 
 void Fl_Xlib_Graphics_Driver::transformed_vertex0(float fx, float fy) {
@@ -98,89 +98,6 @@ void Fl_Xlib_Graphics_Driver::transformed_vertex0(float fx, float fy) {
 
 void Fl_Xlib_Graphics_Driver::fixloop() {  // remove equal points from closed path
   while (n>2 && short_point[n-1].x == short_point[0].x && short_point[n-1].y == short_point[0].y) n--;
-}
-
-// FIXME: should be members of Fl_Xlib_Graphics_Driver
-XRectangle fl_spot;
-int fl_spotf = -1;
-int fl_spots = -1;
-
-void Fl_Xlib_Graphics_Driver::reset_spot(void)
-{
-  fl_spot.x = -1;
-  fl_spot.y = -1;
-  //if (fl_xim_ic) XUnsetICFocus(fl_xim_ic);
-}
-
-void Fl_Xlib_Graphics_Driver::set_spot(int font, int size, int X, int Y, int W, int H, Fl_Window *win)
-{
-  int change = 0;
-  XVaNestedList preedit_attr;
-  static XFontSet fs = NULL;
-  char **missing_list;
-  int missing_count;
-  char *def_string;
-  char *fnt = NULL;
-  bool must_free_fnt =true;
-
-  static XIC ic = NULL;
-
-  if (!fl_xim_ic || !fl_is_over_the_spot) return;
-  if (Fl::focus()) { // handle case when text widget is inside subwindow
-    Fl_Window *focuswin = Fl::focus()->window();
-    while (focuswin && focuswin->parent()) {
-      X += focuswin->x(); Y += focuswin->y();
-      focuswin = focuswin->window();
-    }
-  }
-  //XSetICFocus(fl_xim_ic);
-  if (X != fl_spot.x || Y != fl_spot.y) {
-    fl_spot.x = X;
-    fl_spot.y = Y;
-    fl_spot.height = H;
-    fl_spot.width = W;
-    change = 1;
-  }
-  if (font != fl_spotf || size != fl_spots) {
-    fl_spotf = font;
-    fl_spots = size;
-    change = 1;
-    if (fs) {
-      XFreeFontSet(fl_display, fs);
-    }
-#if USE_XFT
-
-#if defined(__GNUC__)
-    // FIXME: warning XFT support here
-#endif /*__GNUC__*/
-
-    fnt = NULL; // fl_get_font_xfld(font, size);
-    if (!fnt) {fnt = (char*)"-misc-fixed-*";must_free_fnt=false;}
-    fs = XCreateFontSet(fl_display, fnt, &missing_list,
-                        &missing_count, &def_string);
-#else
-    fnt = fl_get_font_xfld(font, size);
-    if (!fnt) {fnt = (char*)"-misc-fixed-*";must_free_fnt=false;}
-    fs = XCreateFontSet(fl_display, fnt, &missing_list,
-                        &missing_count, &def_string);
-#endif
-  }
-  if (fl_xim_ic != ic) {
-    ic = fl_xim_ic;
-    change = 1;
-  }
-
-  if (fnt && must_free_fnt) free(fnt);
-  if (!change) return;
-
-  float s = scale();
-  XRectangle fl_spot_unscaled = { short(fl_spot.x * s), short(fl_spot.y * s),
-    (unsigned short)(fl_spot.width * s), (unsigned short)(fl_spot.height * s) };
-  preedit_attr = XVaCreateNestedList(0,
-                                     XNSpotLocation, &fl_spot_unscaled,
-                                     XNFontSet, fs, NULL);
-  XSetICValues(fl_xim_ic, XNPreeditAttributes, preedit_attr, NULL);
-  XFree(preedit_attr);
 }
 
 #if !USE_XFT
@@ -229,8 +146,8 @@ void Fl_Xlib_Graphics_Driver::font_name(int num, const char *name) {
 }
 
 
-Region Fl_Xlib_Graphics_Driver::scale_clip(float f) {
-  Region r = rstack[rstackptr];
+Fl_Region Fl_Xlib_Graphics_Driver::scale_clip(float f) {
+  Region r = (Region)rstack[rstackptr];
   if (r == 0 || (f == 1 && offset_x_ == 0 && offset_y_ == 0) ) return 0;
   Region r2 = XCreateRegion();
   for (int i = 0; i < r->numRects; i++) {
@@ -238,7 +155,7 @@ Region Fl_Xlib_Graphics_Driver::scale_clip(float f) {
     int y = floor(r->rects[i].y1 + offset_y_, f);
     int w = floor((r->rects[i].x2 + offset_x_) , f) - x;
     int h = floor((r->rects[i].y2 + offset_y_) , f) - y;
-    Region R = XRectangleRegion(x, y, w, h);
+    Region R = (Region)XRectangleRegion(x, y, w, h);
     XUnionRegion(R, r2, r2);
     ::XDestroyRegion(R);
   }

@@ -662,10 +662,10 @@ Fl_Help_View::draw()
   i  = 0;
 
   draw_box(b, x(), y(), ww, hh, bgcolor_);
-
+#ifdef FLTK_EXT_VERSION
   int hf = 0;
   if (Fl::is_scheme("flat")) hf = 3;
-
+#endif /// of FLTK_EXT_VERSION
   if ( hscrollbar_.visible() || scrollbar_.visible() ) {
     int scrollsize = scrollbar_size_ ? scrollbar_size_ : Fl::scrollbar_size();
     int hor_vis = hscrollbar_.visible();
@@ -683,7 +683,11 @@ Fl_Help_View::draw()
     }
     if ( ver_vis ) {
       if ( scrollbar_.w() != scrollsize ) {             // scrollsize changed?
+#ifdef FLTK_EXT_VERSION
 	scrollbar_.resize(scorn_x, y()+hf, scrollsize, scorn_y - y() - hf);
+#else
+        scrollbar_.resize(scorn_x, y(), scrollsize, scorn_y - y());
+#endif /// of FLTK_EXT_VERSION
         init_sizes();
       }
       draw_child(scrollbar_);
@@ -1195,7 +1199,7 @@ Fl_Help_View::draw()
 
   \todo complex HTML entities for Unicode code points \> 0x80 are currently treated
     like one byte (not character!) and do not (yet) match correctly ("<" matches "&lt;"
-    but "€" doesn't match "&euro;", and "ü" doesn't match "&uuml;")
+    but "?? doesn't match "&euro;", and "ü" doesn't match "&uuml;")
 
   \param[in]  s   search string in UTF-8 encoding
   \param[in]  p   starting position for search (0,...), Default = 0

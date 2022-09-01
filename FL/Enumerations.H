@@ -176,9 +176,9 @@
 /*
   FLTK_EXT_VERSION is for identifying customized version for
   rageworx's github repository.
-  --- currently 1.4.0.7
+  --- currently 1.4.0.8
 */
-#define FLTK_EXT_VERSION 7
+#define FLTK_EXT_VERSION 8
 
 /*@}*/	// group: Version Numbers
 
@@ -744,7 +744,7 @@ extern FL_EXPORT Fl_Boxtype fl_define_FL_FLAT_UP_BOX();
   is undefined and some random box or frame is returned.
  */
 inline Fl_Boxtype fl_box(Fl_Boxtype b) {
-  return (Fl_Boxtype)((b<FL_UP_BOX||b%5>1)?b:(b-2));
+  return (Fl_Boxtype)((b<FL_UP_BOX||b%4>1)?b:(b-2));
 }
 /**
   Get the "pressed" or "down" version of a box.
@@ -760,7 +760,7 @@ inline Fl_Boxtype fl_down(Fl_Boxtype b) {
   is undefined and some random box or frame is returned.
  */
 inline Fl_Boxtype fl_frame(Fl_Boxtype b) {
-  return (Fl_Boxtype)((b%5<2)?b:(b+2));
+  return (Fl_Boxtype)((b%4<2)?b:(b+2));
 }
 
 // back-compatibility box types:

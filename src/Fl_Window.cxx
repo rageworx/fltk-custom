@@ -516,9 +516,6 @@ void Fl_Window::draw()
 
   pWindowDriver->draw_end();
   if (!to_display) current_ = save_current;
-# if defined(FLTK_HAVE_CAIROEXT)
-  Fl::cairo_make_current(this); // checkout if an update is necessary
-# endif
 }
 
 void Fl_Window::make_current()
@@ -879,7 +876,7 @@ bool Fl_Window::is_a_rescale() {return Fl_Window_Driver::is_a_rescale_;}
 
 /** Returns a platform-specific identification of a shown window, or 0 if not shown.
  \li X11 platform: the window's XID.
- \li macOS platform: The window number of the windowâ€™s window device.
+ \li macOS platform: The window number of the window?™s window device.
  \li other platforms: 0.
  */
 fl_uintptr_t Fl_Window::os_id() { return pWindowDriver->os_id();}

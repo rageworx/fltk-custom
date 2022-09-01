@@ -25,26 +25,30 @@
 #include <cairo/cairo.h>
 
 typedef struct _PangoLayout  PangoLayout;
+typedef struct _PangoContext PangoContext;
 typedef struct _PangoFontDescription PangoFontDescription;
 
 
 class Fl_Cairo_Font_Descriptor : public Fl_Font_Descriptor {
 public:
-  Fl_Cairo_Font_Descriptor(const char* fontname, Fl_Fontsize size);
+  Fl_Cairo_Font_Descriptor(const char* fontname, Fl_Fontsize size, PangoContext *context);
   FL_EXPORT ~Fl_Cairo_Font_Descriptor();
   PangoFontDescription *fontref;
   int **width; // array of arrays of character widths
+  int line_height;
 };
 
 
 class FL_EXPORT Fl_Cairo_Graphics_Driver : public Fl_Graphics_Driver {
 private:
   bool *needs_commit_tag_; // NULL or points to whether cairo surface was drawn to
-protected:
-  PangoLayout *dummy_pango_layout_; // used to measure text width before showing a window
-  cairo_t *cairo_;
-  PangoLayout *pango_layout_;
+  cairo_t *dummy_cairo_; // used to measure text width before showing a window
   int linestyle_;
+  int width_unscaled_(unsigned int c);
+protected:
+  cairo_t *cairo_;
+  PangoContext *pango_context_;
+  PangoLayout *pango_layout_;
 public:
   Fl_Cairo_Graphics_Driver();
   virtual ~Fl_Cairo_Graphics_Driver();
@@ -60,6 +64,7 @@ public:
   int gap_;
   cairo_t *cr() { return cairo_; }
   PangoLayout *pango_layout() {return pango_layout_;}
+  void set_cairo(cairo_t *c, float f = 0);
 
   void check_status(void);
 
@@ -151,6 +156,8 @@ public:
   void cache(Fl_RGB_Image *rgb);
   void uncache(Fl_RGB_Image *img, fl_uintptr_t &id_, fl_uintptr_t &mask_);
   void draw_bitmap(Fl_Bitmap *bm,int XP, int YP, int WP, int HP, int cx, int cy);
+  static cairo_pattern_t *bitmap_to_pattern(Fl_Bitmap *bm, bool complement,
+                                            cairo_surface_t **p_surface);
   void cache(Fl_Bitmap *img);
   virtual void delete_bitmask(fl_uintptr_t bm);
   void cache(Fl_Pixmap *pxm);
@@ -168,17 +175,24 @@ public:
   double width(const char *str, int n);
   double width(unsigned c);
   void text_extents(const char* txt, int n, int& dx, int& dy, int& w, int& h);
-  virtual PangoFontDescription* pango_font_description(Fl_Font /*fnum*/) {
+  virtual PangoFontDescription* pango_font_description() {
     return ((Fl_Cairo_Font_Descriptor*)font_descriptor())->fontref;
   }
   static void init_built_in_fonts();
   virtual Fl_Font set_fonts(const char* pattern_name);
   virtual const char *font_name(int num);
-  virtual void font_name(int num, const char *name);  virtual const char* get_font_name(Fl_Font fnum, int* ap);
+  virtual void font_name(int num, const char *name);
+  virtual const char* get_font_name(Fl_Font fnum, int* ap);
   virtual int get_font_sizes(Fl_Font fnum, int*& sizep);
   virtual Fl_Region XRectangleRegion(int x, int y, int w, int h);
   virtual void XDestroyRegion(Fl_Region r);
   virtual void add_rectangle_to_region(Fl_Region r, int X, int Y, int W, int H);
+  virtual void cache_size(Fl_Image *img, int &width, int &height);
+  virtual char can_do_alpha_blending();
+  virtual float override_scale();
+  virtual void restore_scale(float);
+  virtual void antialias(int state);
+  virtual int antialias();
 };
 
 #endif // FL_CAIRO_GRAPHICS_DRIVER_H

@@ -41,7 +41,7 @@
 
 #include "../Cairo/Fl_Cairo_Graphics_Driver.H"
 
-class FL_EXPORT Fl_PostScript_Graphics_Driver : public Fl_Cairo_Graphics_Driver {
+class Fl_PostScript_Graphics_Driver : public Fl_Cairo_Graphics_Driver {
 public:
   FILE *output;
   Fl_PostScript_Close_Command close_cmd_;
@@ -76,9 +76,6 @@ public:
   void draw(const char* s, int nBytes, float x, float y) {transformed_draw(s,nBytes,x,y); }
   void draw(int angle, const char *str, int n, int x, int y) {Fl_Cairo_Graphics_Driver::draw(angle, str, n, x, y);}
 
-  void color(Fl_Color c);
-  void color(uchar r, uchar g, uchar b) {Fl_Cairo_Graphics_Driver::color(r,g,b);}
-  Fl_Color color();
   void point(int x, int y);
   int not_clipped(int x, int y, int w, int h);
   int clip_box(int x, int y, int w, int h, int &X, int &Y, int &W, int &H);
@@ -92,7 +89,7 @@ public:
 
 #else // ! USE_PANGO
 
-class FL_EXPORT Fl_PostScript_Graphics_Driver : public Fl_Graphics_Driver {
+class Fl_PostScript_Graphics_Driver : public Fl_Graphics_Driver {
 private:
   void transformed_draw_extra(const char* str, int n, double x, double y, int w, bool rtl);
   void *prepare_rle85();

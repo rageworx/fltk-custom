@@ -75,6 +75,10 @@ static FL_BLENDFUNCTION blendfunc = { 0, 0, 255, 1};
  */
 HDC fl_gc = 0;
 
+
+HDC fl_win32_gc() { return fl_gc; }
+
+
 Fl_GDI_Graphics_Driver::Fl_GDI_Graphics_Driver() {
   mask_bitmap_ = NULL;
   gc_ = NULL;
@@ -157,7 +161,7 @@ void Fl_GDI_Graphics_Driver::copy_offscreen(int x, int y, int w, int h, Fl_Offsc
   if (w <= 0 || h <= 0) return;
   HDC new_gc = CreateCompatibleDC(gc_);
   int save = SaveDC(new_gc);
-  SelectObject(new_gc, bitmap);
+  SelectObject(new_gc, (HBITMAP)bitmap);
   BitBlt(gc_, x, y, w, h, new_gc, srcx, srcy, SRCCOPY);
   RestoreDC(new_gc, save);
   DeleteDC(new_gc);
@@ -211,8 +215,8 @@ void Fl_GDI_Graphics_Driver::untranslate_all() {
 #endif
 
 void Fl_GDI_Graphics_Driver::add_rectangle_to_region(Fl_Region r, int X, int Y, int W, int H) {
-  Fl_Region R = XRectangleRegion(X, Y, W, H);
-  CombineRgn(r, r, R, RGN_OR);
+  HRGN R = (HRGN)XRectangleRegion(X, Y, W, H);
+  CombineRgn((HRGN)r, (HRGN)r, R, RGN_OR);
   XDestroyRegion(R);
 }
 
@@ -241,44 +245,7 @@ Fl_Region Fl_GDI_Graphics_Driver::XRectangleRegion(int x, int y, int w, int h) {
 }
 
 void Fl_GDI_Graphics_Driver::XDestroyRegion(Fl_Region r) {
-  DeleteObject(r);
-}
-
-
-typedef BOOL(WINAPI* flTypeImmAssociateContextEx)(HWND, HIMC, DWORD);
-extern flTypeImmAssociateContextEx flImmAssociateContextEx;
-typedef HIMC(WINAPI* flTypeImmGetContext)(HWND);
-extern flTypeImmGetContext flImmGetContext;
-typedef BOOL(WINAPI* flTypeImmSetCompositionWindow)(HIMC, LPCOMPOSITIONFORM);
-extern flTypeImmSetCompositionWindow flImmSetCompositionWindow;
-typedef BOOL(WINAPI* flTypeImmReleaseContext)(HWND, HIMC);
-extern flTypeImmReleaseContext flImmReleaseContext;
-
-
-void Fl_GDI_Graphics_Driver::set_spot(int font, int size, int X, int Y, int W, int H, Fl_Window *win)
-{
-  if (!win) return;
-  Fl_Window* tw = win->top_window();
-
-  if (!tw->shown())
-    return;
-
-  HIMC himc = flImmGetContext(fl_xid(tw));
-
-  if (himc) {
-    COMPOSITIONFORM cfs;
-    float s = scale();
-    cfs.dwStyle = CFS_POINT;
-    cfs.ptCurrentPos.x = int(X * s);
-    cfs.ptCurrentPos.y = int(Y * s) - int(tw->labelsize() * s);
-    // Attempt to have temporary text entered by input method use scaled font.
-    // Does good, but still not always effective.
-    Fl_GDI_Font_Descriptor *desc = (Fl_GDI_Font_Descriptor*)font_descriptor();
-    if (desc) SelectObject((HDC)gc(), desc->fid);
-    MapWindowPoints(fl_xid(win), fl_xid(tw), &cfs.ptCurrentPos, 1);
-    flImmSetCompositionWindow(himc, &cfs);
-    flImmReleaseContext(fl_xid(tw), himc);
-  }
+  DeleteObject((HRGN)r);
 }
 
 
@@ -324,7 +291,7 @@ HRGN Fl_GDI_Graphics_Driver::scale_region(HRGN r, float f, Fl_GDI_Graphics_Drive
 
 
 Fl_Region Fl_GDI_Graphics_Driver::scale_clip(float f) {
-  HRGN r = rstack[rstackptr];
+  HRGN r = (HRGN)rstack[rstackptr];
   HRGN r2 = scale_region(r, f, this);
   return (r == r2 ? NULL : (rstack[rstackptr] = r2, r));
 }

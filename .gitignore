@@ -93,16 +93,12 @@ etc/FLTKConfig.cmake
 
 # /fluid/
 /fluid/fluid
-/fluid/*.app
 /fluid/fluid-shared
 /fluid/*.bck
 /fluid/*.exe
-/fluid/*.ilk
-/fluid/*.pdb
 /fluid/TAGS
 /fluid/fluid.app
 /fluid/pixmaps/*.bck
-
 /fluid/documentation/html/
 
 # /ide/VisualC2008/
@@ -166,7 +162,6 @@ etc/FLTKConfig.cmake
 /lib/lib*
 /lib/*.lib
 /lib/*.a
-/lib/*.bsc
 
 # /misc/
 /misc/doxystar
@@ -180,125 +175,9 @@ etc/FLTKConfig.cmake
 /src/*.dylib
 
 # /test/
-/test/*.pdb
-/test/*.app
-/test/CubeView
-/test/CubeViewUI.cxx
-/test/CubeViewUI.h
-/test/adjuster
-/test/animated
-/test/arc
-/test/ask
-/test/bitmap
-/test/blocks
-/test/boxtype
-/test/browser
-/test/button
-/test/buttons
-/test/cairo_test
-/test/checkers
-/test/clock
-/test/colbrowser
-/test/color_chooser
-/test/cube
-/test/cursor
-/test/curve
-/test/demo
-/test/device
-/test/doublebuffer
-/test/editor
-/test/fast_slow
-/test/fast_slow.cxx
-/test/fast_slow.h
-/test/file_chooser
-/test/fonts
-/test/forms
-/test/fractals
-/test/fullscreen
-/test/gl_overlay
-/test/glpuzzle
-/test/hello
-/test/help
-/test/icon
-/test/iconize
-/test/image
-/test/inactive
-/test/inactive.cxx
-/test/inactive.h
-/test/input
-/test/input_choice
-/test/keyboard
-/test/keyboard_ui.cxx
-/test/keyboard_ui.h
-/test/label
-/test/line_style
-/test/list_visuals
-/test/mandelbrot
-/test/mandelbrot_ui.cxx
-/test/mandelbrot_ui.h
-/test/menubar
-/test/message
-/test/minimum
-/test/native-filechooser
-/test/navigation
-/test/offscreen
-/test/output
-/test/overlay
-/test/pack
-/test/pixmap
-/test/pixmap_browser
-/test/preferences
-/test/preferences.cxx
-/test/preferences.h
-/test/print
-/test/radio
-/test/radio.cxx
-/test/radio.h
-/test/resize
-/test/resize.cxx
-/test/resize.h
-/test/resizebox
-/test/rotated_text
-/test/scroll
-/test/shape
-/test/shiny
-/test/shiny_panel.cxx
-/test/shiny_panel.h
-/test/subwindow
-/test/sudoku
-/test/symbols
-/test/table
-/test/tabs
-/test/tabs.cxx
-/test/tabs.h
-/test/threads
-/test/tile
-/test/tiled_image
-/test/tree
-/test/tree.cxx
-/test/tree.h
-/test/twowin
-/test/unittests
-/test/utf8
-/test/valuators
-/test/valuators.cxx
-/test/valuators.h
-/test/windowfocus
-/test/*.bck
-/test/*.exe
-/test/*.ilk
-/test/fltk*.lib
-/test/fltk*.exp
-/test/fltk*.dll
-/test/blocks.app/Contents/MacOS/blocks
-/test/checkers.app/Contents/MacOS/checkers
-/test/sudoku.app/Contents/MacOS/sudoku
-/test/checkers_pieces.cxx
-/test/checkers_pieces.h
+# see test/.gitignore
 
-# Configure temporaries
-configure
-configure~
+**/.DS_Store
 
-# Cmake build directory ( mostly people doing )
-build/
+*.back
+*.bak

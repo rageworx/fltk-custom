@@ -111,7 +111,8 @@ int Fl_Cocoa_Printer_Driver::begin_job (int pagecount, int *frompage, int *topag
     NSPrintInfo *info = [NSPrintInfo sharedPrintInfo];
     NSPrintPanel *panel = [NSPrintPanel printPanel];
     //from 10.5
-    [panel setOptions:NSPrintPanelShowsCopies | NSPrintPanelShowsPageRange | NSPrintPanelShowsPageSetupAccessory];
+    [panel setOptions:NSPrintPanelShowsCopies | NSPrintPanelShowsPageRange |
+      NSPrintPanelShowsPageSetupAccessory | NSPrintPanelShowsOrientation | NSPrintPanelShowsPaperSize];
     NSInteger retval = -1;
     Fl_Window *top = Fl::first_window();
     NSWindow *main = (top ? (NSWindow*)fl_xid(top->top_window()) : nil);
@@ -346,7 +347,7 @@ int Fl_Cocoa_Printer_Driver::begin_page (void)
   CGContextSaveGState(gc);
   CGContextSaveGState(gc);
   fl_line_style(FL_SOLID);
-  fl_window = (Window)1; // TODO: something better
+  fl_window = (FLWindow*)1; // TODO: something better
   fl_clip_region(0);
   return status != noErr;
 }

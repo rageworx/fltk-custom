@@ -25,6 +25,16 @@
  \brief declaration of class Fl_System_Driver.
 */
 
+/* Class hierarchy
+ + Fl_System_Driver
+ | + Fl_Posix_System_Driver
+ | | + Fl_Unix_System_Driver
+ | | | + Fl_X11_System_Driver
+ | | | + Fl_Wayland_System_Driver
+ | | + Fl_Darwin_System_Driver
+ | + Fl_WinAPI_System_Driver
+ */
+
 #ifndef FL_SYSTEM_DRIVER_H
 #define FL_SYSTEM_DRIVER_H
 
@@ -49,7 +59,7 @@ class Fl_Sys_Menu_Bar_Driver;
  This class is only for internal use by the FLTK library.
  Each supported platform implements several of the virtual methods of this class.
   */
-class FL_EXPORT Fl_System_Driver {
+class Fl_System_Driver {
   friend class Fl;
 public:
   struct Keyname {
@@ -74,6 +84,8 @@ public:
   static const int fl_YValue;
   static const int fl_XNegative;
   static const int fl_YNegative;
+  static int command_key;
+  static int control_key;
 
   // implement if the system adds unwanted program argument(s)
   virtual int single_arg(const char *) { return 0; }
@@ -243,6 +255,7 @@ public:
   virtual void unlock_ring() {}
   virtual double wait(double);                             // must override
   virtual int ready() { return 0; }                        // must override
+  virtual void disable_wayland() {}
 };
 
 #endif // FL_SYSTEM_DRIVER_H

@@ -1,7 +1,7 @@
 //
 // Bitmap drawing routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2016 by Bill Spitzak and others.
+// Copyright 1998-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -55,7 +55,7 @@ void Fl_Bitmap::label(Fl_Menu_Item* m) {
   m->label(FL_IMAGE_LABEL, (const char*)this);
 }
 
-Fl_Image *Fl_Bitmap::copy(int W, int H) {
+Fl_Image *Fl_Bitmap::copy(int W, int H) const {
   Fl_Bitmap     *new_image;     // New RGB image
   uchar         *new_array;     // New array for image data
 

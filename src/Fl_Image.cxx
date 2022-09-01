@@ -1,7 +1,7 @@
 //
 // Image drawing code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2017 by Bill Spitzak and others.
+// Copyright 1998-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -76,43 +76,64 @@ void Fl_Image::draw_empty(int X, int Y) {
 }
 
 /**
-  Creates a resized copy of the specified image.
-  The image should be released when you are done with it.
+  Creates a resized copy of the image.
 
-    Note: since FLTK 1.4.0 you can use Fl_Image::release() for
-    all types of images (i.e. all subclasses of Fl_Image) instead
-    of operator \em delete for Fl_Image's and release() for
-    Fl_Shared_Image's.
+  The new image should be released when you are done with it.
 
-  \see Fl_Image::release()
+  Note: since FLTK 1.4.0 you can use Fl_Image::release() for all types
+  of images (i.e. all subclasses of Fl_Image) instead of operator \em delete
+  for Fl_Image's and Fl_Image::release() for Fl_Shared_Image's.
 
-  \param[in] W,H  Requested width and height of the copied image
+  The new image data will be converted to the requested size. RGB images
+  are resized using the algorithm set by Fl_Image::RGB_scaling().
+
+  For the new image the following equations are true:
+  - w() == data_w() == \p W
+  - h() == data_h() == \p H
+
+  Note: the returned image can be safely cast to the same image type as that
+  of the source image provided this type is one of Fl_RGB_Image, Fl_SVG_Image,
+  Fl_Pixmap, Fl_Bitmap, Fl_Tiled_Image, and Fl_Shared_Image.
+  Returned objects copied from images of other, derived, image classes belong
+  to the parent class appearing in this list. For example, the copy of an
+  Fl_GIF_Image is an object of class Fl_Pixmap.
+
+  \param[in] W,H  Requested width and height of the new image
+
+  \note Since FLTK 1.4.0 this method is 'const'. If you derive your own class
+    from Fl_Image or any subclass your overridden methods of 'Fl_Image::copy() const'
+    and 'Fl_Image::copy(int, int) const' \b must also be 'const' for inheritage
+    to work properly. This is different than in FLTK 1.3.x and earlier where these
+    methods have not been 'const'.
 */
-Fl_Image *Fl_Image::copy(int W, int H) {
+Fl_Image *Fl_Image::copy(int W, int H) const {
   return new Fl_Image(W, H, d());
 }
 
 /**
-  The color_average() method averages the colors in
-  the image with the FLTK color value c. The i
-  argument specifies the amount of the original image to combine
-  with the color, so a value of 1.0 results in no color blend, and
-  a value of 0.0 results in a constant image of the specified
-  color.
+  The color_average() method averages the colors in the image with
+  the provided FLTK color value.
 
-  An internal copy is made of the original image before
-  changes are applied, to avoid modifying the original image.
+  The first argument specifies the FLTK color to be used.
+
+  The second argument specifies the amount of the original image to combine
+  with the color, so a value of 1.0 results in no color blend, and a value
+  of 0.0 results in a constant image of the specified color.
+
+  An internal copy is made of the original image data before changes are
+  applied, to avoid modifying the original image data in memory.
 */
 void Fl_Image::color_average(Fl_Color, float) {
 }
 
 /**
-  The desaturate() method converts an image to
-  grayscale. If the image contains an alpha channel (depth = 4),
+  The desaturate() method converts an image to grayscale.
+
+  If the image contains an alpha channel (depth = 4),
   the alpha channel is preserved.
 
-  An internal copy is made of the original image before
-  changes are applied, to avoid modifying the original image.
+  An internal copy is made of the original image data before changes are
+  applied, to avoid modifying the original image data in memory.
 */
 void Fl_Image::desaturate() {
 }
@@ -128,63 +149,59 @@ Fl_Labeltype Fl_Image::define_FL_IMAGE_LABEL() {
 }
 
 /**
-  The label() methods are an obsolete way to set the
-  image attribute of a widget or menu item. Use the
-  image() or deimage() methods of the
-  Fl_Widget and Fl_Menu_Item classes
-  instead.
+  This method is an obsolete way to set the image attribute of a widget
+  or menu item.
+
+  \deprecated Please use Fl_Widget::image() or Fl_Widget::deimage() instead.
 */
 void Fl_Image::label(Fl_Widget* widget) {
   widget->image(this);
 }
 
 /**
-  The label() methods are an obsolete way to set the
-  image attribute of a widget or menu item. Use the
-  image() or deimage() methods of the
-  Fl_Widget and Fl_Menu_Item classes
-  instead.
+  This method is an obsolete way to set the image attribute of a menu item.
+
+  \deprecated Please use Fl_Menu_Item::image() instead.
 */
 void Fl_Image::label(Fl_Menu_Item* m) {
   m->label(FL_IMAGE_LABEL, (const char*)this);
 }
 
 /**
- Returns a value that is not 0 if there is currently no image
- available.
+  Returns a value that is not 0 if there is currently no image available.
 
- Example use:
- \code
-    [..]
-    Fl_Box box(X,Y,W,H);
-    Fl_JPEG_Image jpg("/tmp/foo.jpg");
-    switch ( jpg.fail() ) {
+  Example use:
+  \code
+    // [..]
+      Fl_Box box(X, Y, W, H);
+      Fl_JPEG_Image jpg("/tmp/foo.jpg");
+      switch (jpg.fail()) {
         case Fl_Image::ERR_NO_IMAGE:
         case Fl_Image::ERR_FILE_ACCESS:
-            fl_alert("/tmp/foo.jpg: %s", strerror(errno));    // shows actual os error to user
-            exit(1);
+          fl_alert("/tmp/foo.jpg: %s", strerror(errno));    // shows actual os error to user
+          exit(1);
         case Fl_Image::ERR_FORMAT:
-            fl_alert("/tmp/foo.jpg: couldn't decode image");
-            exit(1);
-    }
-    box.image(jpg);
-    [..]
- \endcode
+          fl_alert("/tmp/foo.jpg: couldn't decode image");
+          exit(1);
+      }
+      box.image(jpg);
+  \endcode
 
- \return ERR_NO_IMAGE if no image was found
- \return ERR_FILE_ACCESS if there was a file access related error (errno should be set)
- \return ERR_FORMAT if image decoding failed.
- */
-int Fl_Image::fail() const
-{
-    // if no image exists, ld_ may contain a simple error code
-    if ( (w_<=0) || (h_<=0) || (d_<=0) ) {
-        if (ld_==0)
-            return ERR_NO_IMAGE;
-        else
-            return ld_;
-    }
-    return 0;
+  \returns                Image load failure if non-zero
+  \retval 0               the image was loaded successfully
+  \retval ERR_NO_IMAGE    no image was found
+  \retval ERR_FILE_ACCESS there was a file access related error (errno should be set)
+  \retval ERR_FORMAT      image decoding failed
+*/
+int Fl_Image::fail() const {
+  // if no image exists, ld_ may contain a simple error code
+  if ((w_ <= 0) || (h_ <= 0) || (d_ <= 0)) {
+    if (ld_ == 0)
+      return ERR_NO_IMAGE;
+    else
+      return ld_;
+  }
+  return 0;
 }
 
 void
@@ -401,7 +418,7 @@ void Fl_RGB_Image::uncache() {
   Fl_Graphics_Driver::default_driver().uncache(this, id_, mask_);
 }
 
-Fl_Image *Fl_RGB_Image::copy(int W, int H) {
+Fl_Image *Fl_RGB_Image::copy(int W, int H) const {
   Fl_RGB_Image  *new_image;     // New RGB image
   uchar         *new_array;     // New array for image data
 
@@ -411,26 +428,25 @@ Fl_Image *Fl_RGB_Image::copy(int W, int H) {
       !w() || !h() || !d() || !array) {
     if (array) {
       // Make a copy of the image data and return a new Fl_RGB_Image...
-      new_array = new uchar[data_w() * data_h() * d()];
-      if (ld() && ld()!=data_w()*d()) {
+      new_array = new uchar[W * H * d()];
+      if (ld() && (ld() != W  *d())) {
         const uchar *src = array;
         uchar *dst = new_array;
-        int dy, dh = h(), wd = data_w()*d(), wld = ld();
+        int dy, dh = H, wd = W*d(), wld = ld();
         for (dy=0; dy<dh; dy++) {
           memcpy(dst, src, wd);
           src += wld;
           dst += wd;
         }
       } else {
-        memcpy(new_array, array, data_w() * data_h() * d());
+        memcpy(new_array, array, W * H * d());
       }
-      new_image = new Fl_RGB_Image(new_array, data_w(), data_h(), d());
+      new_image = new Fl_RGB_Image(new_array, W, H, d());
       new_image->alloc_array = 1;
-
-      return new_image;
     } else {
-      return new Fl_RGB_Image(array, data_w(), data_h(), d(), ld());
+      new_image = new Fl_RGB_Image(array, W, H, d(), ld());
     }
+    return new_image;
   }
   if (W <= 0 || H <= 0) return 0;
 
@@ -560,7 +576,7 @@ void Fl_RGB_Image::color_average(Fl_Color c, float i) {
   uchar         *new_array,
                 *new_ptr;
 
-  if (!alloc_array) new_array = new uchar[h() * w() * d()];
+  if (!alloc_array) new_array = new uchar[data_h() * data_w() * d()];
   else new_array = (uchar *)array;
 
   // Get the color to blend with...
@@ -579,19 +595,19 @@ void Fl_RGB_Image::color_average(Fl_Color c, float i) {
   // Update the image data to do the blend...
   const uchar   *old_ptr;
   int           x, y;
-  int   line_i = ld() ? ld() - (w()*d()) : 0; // increment from line end to beginning of next line
+  int   line_i = ld() ? ld() - (data_w()*d()) : 0; // increment from line end to beginning of next line
 
   if (d() < 3) {
     ig = (r * 31 + g * 61 + b * 8) / 100 * (256 - ia);
 
-    for (new_ptr = new_array, old_ptr = array, y = 0; y < h(); y ++, old_ptr += line_i)
-      for (x = 0; x < w(); x ++) {
+    for (new_ptr = new_array, old_ptr = array, y = 0; y < data_h(); y ++, old_ptr += line_i)
+      for (x = 0; x < data_w(); x ++) {
         *new_ptr++ = (*old_ptr++ * ia + ig) >> 8;
         if (d() > 1) *new_ptr++ = *old_ptr++;
       }
   } else {
-    for (new_ptr = new_array, old_ptr = array, y = 0; y < h(); y ++, old_ptr += line_i)
-      for (x = 0; x < w(); x ++) {
+    for (new_ptr = new_array, old_ptr = array, y = 0; y < data_h(); y ++, old_ptr += line_i)
+      for (x = 0; x < data_w(); x ++) {
         *new_ptr++ = (*old_ptr++ * ia + ir) >> 8;
         *new_ptr++ = (*old_ptr++ * ia + ig) >> 8;
         *new_ptr++ = (*old_ptr++ * ia + ib) >> 8;
@@ -624,15 +640,15 @@ void Fl_RGB_Image::desaturate() {
   int           new_d;
 
   new_d     = d() - 2;
-  new_array = new uchar[h() * w() * new_d];
+  new_array = new uchar[data_h() * data_w() * new_d];
 
   // Copy the image data, converting to grayscale...
   const uchar   *old_ptr;
   int           x, y;
-  int   line_i = ld() ? ld() - (w()*d()) : 0; // increment from line end to beginning of next line
+  int   line_i = ld() ? ld() - (data_w()*d()) : 0; // increment from line end to beginning of next line
 
-  for (new_ptr = new_array, old_ptr = array, y = 0; y < h(); y ++, old_ptr += line_i)
-    for (x = 0; x < w(); x ++, old_ptr += d()) {
+  for (new_ptr = new_array, old_ptr = array, y = 0; y < data_h(); y ++, old_ptr += line_i)
+    for (x = 0; x < data_w(); x ++, old_ptr += d()) {
       *new_ptr++ = (uchar)((31 * old_ptr[0] + 61 * old_ptr[1] + 8 * old_ptr[2]) / 100);
       if (d() > 3) *new_ptr++ = old_ptr[3];
     }

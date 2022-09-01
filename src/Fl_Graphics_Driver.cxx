@@ -38,6 +38,8 @@ const Fl_Graphics_Driver::matrix Fl_Graphics_Driver::m0 = {1, 0, 0, 1, 0, 0};
 /** Used by the Windows platform to print Fl_Pixmap objects. */
 unsigned Fl_Graphics_Driver::need_pixmap_bg_color = 0;
 
+extern unsigned fl_cmap[256]; // defined in fl_color.cxx
+
 /** Constructor */
 Fl_Graphics_Driver::Fl_Graphics_Driver()
 {
@@ -124,21 +126,6 @@ void Fl_Graphics_Driver::copy_offscreen(int x, int y, int w, int h, Fl_Offscreen
   }
 }
 
-/** see fl_set_spot() */
-void Fl_Graphics_Driver::set_spot(int font, int size, int X, int Y, int W, int H, Fl_Window *win)
-{
-  // nothing to do, reimplement in driver if needed
-}
-
-void Fl_Graphics_Driver::set_status(int X, int Y, int W, int H) {}
-
-
-/** see fl_reset_spot() */
-void Fl_Graphics_Driver::reset_spot()
-{
-  // nothing to do, reimplement in driver if needed
-}
-
 
 /** Sets the value of the fl_gc global variable when it changes */
 void Fl_Graphics_Driver::global_gc()
@@ -150,7 +137,9 @@ void Fl_Graphics_Driver::global_gc()
 /** see Fl::set_color(Fl_Color, unsigned) */
 void Fl_Graphics_Driver::set_color(Fl_Color i, unsigned c)
 {
-  // nothing to do, reimplement in driver if needed
+  if (fl_cmap[i] != c) {
+    fl_cmap[i] = c;
+  }
 }
 
 
@@ -621,9 +610,6 @@ int Fl_Graphics_Driver::height() { return size(); }
 
 /** Return the current line descent */
 int Fl_Graphics_Driver::descent() { return 0; }
-
-/** Set the current Fl_Font_Descriptor */
-void Fl_Graphics_Driver::font_descriptor(Fl_Font_Descriptor *d) { font_descriptor_ = d;}
 
 /** Sets the value of the driver-specific graphics context. */
 void Fl_Graphics_Driver::gc(void*) {}

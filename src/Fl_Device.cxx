@@ -24,6 +24,7 @@
   +- Fl_Surface_Device: any kind of surface that we can draw onto -> uses an Fl_Graphics_Driver
       |
       +- Fl_Display_Device: some kind of video device (one object per app)
+      +- Fl_OpenGL_Display_Device: supports adding FLTK child widgets to an Fl_Gl_Window
       +- Fl_Widget_Surface: any FLTK widget can be drawn to it
           |
           +- Fl_Copy_Surface: draw into the clipboard (in vectorial form if the platform supports it)
@@ -96,6 +97,10 @@ Fl_Surface_Device::~Fl_Surface_Device()
   if (surface_ == this) surface_ = NULL;
 }
 
+/** Returns non-NULL if this surface is an Fl_Image_Surface object
+ \version 1.4.0
+ */
+Fl_Image_Surface *Fl_Surface_Device::as_image_surface() { return NULL; }
 
 /**  A constructor that sets the graphics driver used by the display */
 Fl_Display_Device::Fl_Display_Device(Fl_Graphics_Driver *graphics_driver) : Fl_Surface_Device(graphics_driver) {

@@ -43,6 +43,7 @@ class Fl_Window;
 class Fl_RGB_Image;
 class Fl_Group;
 class Fl_Input;
+class Fl_System_Driver;
 
 /**
   A base class describing the interface between FLTK and screen-related operations.
@@ -51,7 +52,7 @@ class Fl_Input;
 
   Each supported platform implements several of the virtual methods of this class.
 */
-class FL_EXPORT Fl_Screen_Driver {
+class Fl_Screen_Driver {
 
 protected:
   Fl_Screen_Driver();
@@ -68,6 +69,7 @@ public:
   static char bg_set;
   static char bg2_set;
   static char fg_set;
+  static Fl_System_Driver *system_driver;
 
   virtual float scale(int) { return 1; }
   virtual void scale(int /*n*/, float /*f*/) {}
@@ -186,7 +188,8 @@ public:
 
   void rescale_all_windows_from_screen(int screen, float f);
   static void transient_scale_display(float f, int nscreen);
-  static int scale_handler(int event);
+  // need export to fltk_gl.so because used in glut_compatibility.cxx
+  static FL_EXPORT int scale_handler(int event);
   virtual void desktop_scale_factor() {}
   void use_startup_scale_factor();
   enum APP_SCALING_CAPABILITY {
@@ -207,6 +210,10 @@ public:
   virtual int clipboard_contains(const char * /*type*/) {return 0;}
   //  implement to support paste-from-clipboard
   virtual void clipboard_notify_change() {}
+  // next 3 are related to Input Methods
+  virtual void set_spot(int font, int size, int X, int Y, int W, int H, Fl_Window *win);
+  virtual void reset_spot();
+  virtual void set_status(int X, int Y, int W, int H);
 };
 
 #endif // !FL_SCREEN_DRIVER_H

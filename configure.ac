@@ -85,7 +85,7 @@ AC_SUBST(OPTIM)
 
 
 dnl Other options
-AC_ARG_ENABLE([cairo], AS_HELP_STRING([--enable-cairo], [use Cairo library]))
+AC_ARG_ENABLE([cairo], AS_HELP_STRING([--enable-cairo], [add support for Fl_Cairo_Window]))
 AC_ARG_ENABLE([cairoext], AS_HELP_STRING([--enable-cairoext], [use FLTK code instrumentation for cairo extended use]))
 
 AC_ARG_ENABLE([cp936], AS_HELP_STRING([--enable-cp936], [turn on CP936]))
@@ -111,6 +111,8 @@ AC_ARG_ENABLE([localzlib], AS_HELP_STRING([--enable-localzlib], [use local ZLIB 
 AC_ARG_ENABLE([pango], AS_HELP_STRING([--enable-pango], [turn on Pango support]))
 
 AC_ARG_ENABLE([wayland], AS_HELP_STRING([--enable-wayland], [turn on Wayland support]))
+
+AC_ARG_ENABLE([usecairo], AS_HELP_STRING([--enable-usecairo], [all drawing to X11 windows uses Cairo]))
 
 AC_ARG_ENABLE([print], AS_HELP_STRING([--disable-print], [turn off print support (X11)]))
 AS_IF([test x$enable_print = xno], [
@@ -524,27 +526,6 @@ AS_CASE([$host_os], [darwin*], [
     ], [test $ac_cv_sizeof_long -eq 8], [
         AC_DEFINE([U64], [unsigned long])
     ])
-])
-
-dnl Does the C++ compiler support the bool type?
-AC_CACHE_CHECK([whether the compiler recognizes bool as a built-in type], ac_cv_cxx_bool,[
-    AC_LANG_PUSH([C++])
-    AC_COMPILE_IFELSE(
-        [AC_LANG_PROGRAM([[
-            int f(int  x){return 1;}
-            int f(char x){return 1;}
-            int f(bool x){return 1;}
-          ]], [[
-            bool b = true;
-            return f(b);
-        ]])],
-        [ac_cv_cxx_bool=yes],
-        [ac_cv_cxx_bool=no])
-    AC_LANG_POP([])
-])
-
-AS_IF([test "x$ac_cv_cxx_bool" != xyes], [
-    CXXFLAGS="-Dbool=char -Dfalse=0 -Dtrue=1 $CXXFLAGS"
 ])
 
 
@@ -1006,28 +987,42 @@ AS_CASE([$host_os_gui], [cygwin* | mingw*], [
           AC_MSG_ERROR([Aborting.])
       ])
 
+      dnl Turn option usecairo ON
+      AC_DEFINE([FLTK_USE_CAIRO])
+      AC_MSG_NOTICE([Turning on the usecairo option])
+
       BUILD="WAYLAND"
       AC_DEFINE([FLTK_USE_WAYLAND])
+      AC_DEFINE([FLTK_USE_X11]) # to build a hybrid Wayland/X11 library
       CFLAGS="$CFLAGS -DUSE_SYSTEM_LIBDECOR=0"
       CXXFLAGS="$CXXFLAGS -DUSE_SYSTEM_LIBDECOR=0"
-      graphics="Wayland"
-      LIBS="$LIBS $($PKGCONFIG --libs wayland-cursor) $($PKGCONFIG --libs wayland-client) $($PKGCONFIG --libs xkbcommon)"
+      graphics="Wayland or X11 with cairo"
+      LIBS="$LIBS $($PKGCONFIG --libs wayland-cursor) $($PKGCONFIG --libs wayland-client) $($PKGCONFIG --libs xkbcommon) $($PKGCONFIG --libs pangoxft) $($PKGCONFIG --libs x11)"
       LIBS="$LIBS $($PKGCONFIG --libs dbus-1) -ldl"
       CXXFLAGS="$CXXFLAGS -I../libdecor/src"
       DSOFLAGS="$LIBS $DSOFLAGS"
       enable_pango=yes
       LIBDECORDIR="libdecor/build"
-      LDFLAGS="$LDFLAGS -rdynamic -no-pie"
+      LDFLAGS="$LDFLAGS -rdynamic"
+      AC_SUBST([UNAME])
+      UNAME="$(uname -s)"
+      AS_CASE([$UNAME],
+         [Linux], [LDFLAGS="$LDFLAGS -no-pie"],
+         [*], [CXXFLAGS="$CXXFLAGS -I../libdecor/build"]
+      )
 
       AC_SEARCH_LIBS([dlopen], [dl])
 
       AS_IF([test x$enable_gl != xno], [
-          AC_CHECK_HEADER([GL/gl.h], [AC_DEFINE([HAVE_GL])])
-          AC_CHECK_HEADER([GL/glu.h], [
-              AC_DEFINE([HAVE_GL_GLU_H])
-              GLLIBS="$($PKGCONFIG --libs wayland-egl) $($PKGCONFIG --libs egl) $($PKGCONFIG --libs glu) $($PKGCONFIG --libs gl) $GLLIBS"
+          AS_IF([$PKGCONFIG --exists gl], [
+             AC_DEFINE([HAVE_GL])
+             GLLIBS="$($PKGCONFIG --libs wayland-egl) $($PKGCONFIG --libs egl) $($PKGCONFIG --libs gl) $GLLIBS"
           ])
-          GLWLDEMO="egl"
+          AS_IF([$PKGCONFIG --exists glu], [
+             AC_DEFINE([HAVE_GL_GLU_H])
+             GLLIBS="$($PKGCONFIG --libs glu) $GLLIBS"
+          ])
+           GLWLDEMO="egl"
       ], [
           LINKFLTKGL=""
           GLLIBNAME=""
@@ -1185,6 +1180,15 @@ AS_CASE([$host_os_gui], [cygwin* | mingw*], [
             AC_MSG_ERROR([Aborting.])
         ])
     ])
+
+    dnl Option usecairo
+    AS_IF([test x$enable_usecairo = xyes], [
+      enable_pango=yes
+      BUILD="CAIRO"
+      AC_DEFINE([FLTK_USE_CAIRO])
+      AC_MSG_NOTICE([Processing usecairo option])
+      ]
+    )
 
     dnl test if Pango is asked but xft was not found
     AS_IF([test x$enable_pango = xyes -a x$xft_found = xno], [
@@ -1418,21 +1422,17 @@ AS_IF([test -n "$GCC"], [
         [AC_MSG_RESULT(no)])
     CFLAGS="$OLDCFLAGS"
 
-    AS_IF([test x$enable_wayland = xyes],[
-        DSOFLAGS="$DSOFLAGS -Wl,--allow-shlib-undefined"
-    ] , [
-        dnl Make sure that shared libraries don't have undefined references
-        # See if ld supports -no-undefined...
-        AC_MSG_CHECKING([if ld supports -no-undefined])
-        OLDLDFLAGS="$LDFLAGS"
-        LDFLAGS="$LDFLAGS -Wl,-no-undefined"
-        AC_LINK_IFELSE(
-          [AC_LANG_PROGRAM([[]], [[]])],
-          [DSOFLAGS="$DSOFLAGS -Wl,-no-undefined"
-          AC_MSG_RESULT(yes)],
-          [AC_MSG_RESULT(no)])
-        LDFLAGS="$OLDLDFLAGS"
-    ])
+    dnl Make sure that shared libraries don't have undefined references
+    # See if ld supports -no-undefined...
+    AC_MSG_CHECKING([if ld supports -no-undefined])
+    OLDLDFLAGS="$LDFLAGS"
+    LDFLAGS="$LDFLAGS -Wl,-no-undefined"
+    AC_LINK_IFELSE(
+      [AC_LANG_PROGRAM([[]], [[]])],
+      [DSOFLAGS="$DSOFLAGS -Wl,-no-undefined"
+      AC_MSG_RESULT(yes)],
+      [AC_MSG_RESULT(no)])
+    LDFLAGS="$OLDLDFLAGS"
 
     # See if ld supports -Bsymbolic-functions...
     AC_MSG_CHECKING([if ld supports -Bsymbolic-functions])
@@ -1624,6 +1624,9 @@ AS_CASE([$host_os_gui], [cygwin* | mingw*], [
     ])
     AS_IF([test x$xrender_found = xyes], [
         graphics="$graphics + Xrender"
+    ])
+    AS_IF([test x$enable_usecairo = xyes], [
+        graphics="$graphics + Cairo"
     ])
     AS_IF([test x$pango_found = xyes], [
         graphics="$graphics + Pango"
