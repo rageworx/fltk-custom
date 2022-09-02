@@ -727,6 +727,7 @@ extern FL_EXPORT Fl_Boxtype fl_define_FL_GLEAM_UP_BOX();
 #define FL_GLEAM_ROUND_UP_BOX (Fl_Boxtype)(fl_define_FL_GLEAM_UP_BOX()+6)
 #define FL_GLEAM_ROUND_DOWN_BOX (Fl_Boxtype)(fl_define_FL_GLEAM_UP_BOX()+7)
 
+#ifdef FLTK_EXT_VERSION
 extern FL_EXPORT Fl_Boxtype fl_define_FL_FLAT_UP_BOX();
 #define FL_FLAT_UP_BOX fl_define_FL_FLAT_UP_BOX()
 #define FL_FLAT_DOWN_BOX (Fl_Boxtype)(fl_define_FL_FLAT_UP_BOX()+1)
@@ -736,6 +737,7 @@ extern FL_EXPORT Fl_Boxtype fl_define_FL_FLAT_UP_BOX();
 #define FL_FLAT_THIN_DOWN_BOX (Fl_Boxtype)(fl_define_FL_FLAT_UP_BOX()+5)
 #define FL_FLAT_ROUND_UP_BOX (Fl_Boxtype)(fl_define_FL_FLAT_UP_BOX()+6)
 #define FL_FLAT_ROUND_DOWN_BOX (Fl_Boxtype)(fl_define_FL_FLAT_UP_BOX()+7)
+#endif /// of FLTK_EXT_VERSION
 
 // conversions of box types to other boxtypes:
 /**
