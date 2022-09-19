@@ -372,7 +372,7 @@ void Fl_Gl_Window::draw_begin() {
   glPointSize((GLfloat)(drv->pixels_per_unit_));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_BLEND);
-  glDisable(GL_SCISSOR_TEST);
+  if (!pGlWindowDriver->need_scissor()) glDisable(GL_SCISSOR_TEST);
   // TODO: all of the settings should be saved on the GL stack
 }
 
@@ -521,28 +521,21 @@ char Fl_Gl_Window_Driver::swap_type() {return UNDEFINED;}
 
 
 void* Fl_Gl_Window_Driver::GetProcAddress(const char *procName) {
-#if (HAVE_DLSYM && HAVE_DLFCN_H)
-  char symbol[1024];
-
-  snprintf(symbol, sizeof(symbol), "_%s", procName);
-
-#    ifdef RTLD_DEFAULT
-  return dlsym(RTLD_DEFAULT, symbol);
-
-#    else // No RTLD_DEFAULT support, so open the current a.out symbols...
-  static void *rtld_default = dlopen(0, RTLD_LAZY);
-
-  if (rtld_default) return dlsym(rtld_default, symbol);
-  else return 0;
-
-#    endif // RTLD_DEFAULT
-
-#elif defined(HAVE_GLXGETPROCADDRESSARB)
+#if defined(HAVE_GLXGETPROCADDRESSARB)
   return (void*)glXGetProcAddressARB((const GLubyte *)procName);
+  
+#elif (HAVE_DLSYM && HAVE_DLFCN_H)
+#  ifdef RTLD_DEFAULT
+      void *rtld_default = RTLD_DEFAULT;
+#  else
+      static void *rtld_default = dlopen(0, RTLD_LAZY);
+#  endif
+  char symbol[1024];
+  snprintf(symbol, sizeof(symbol), "_%s", procName);
+  return dlsym(rtld_default, symbol);
 
-#else
-  return 0;
 #endif // HAVE_DLSYM
+  return NULL;
 }
 
 Fl_Font_Descriptor** Fl_Gl_Window_Driver::fontnum_to_fontdescriptor(int fnum) {

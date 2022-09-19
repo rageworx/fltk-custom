@@ -2307,17 +2307,17 @@ static HICON image_to_icon(const Fl_RGB_Image *image, bool is_icon, int hotx, in
   HICON icon;
 
   if (!is_icon) {
-    if ((hotx < 0) || (hotx >= image->w()))
+    if ((hotx < 0) || (hotx >= image->data_w()))
       return NULL;
-    if ((hoty < 0) || (hoty >= image->h()))
+    if ((hoty < 0) || (hoty >= image->data_h()))
       return NULL;
   }
 
   memset(&bi, 0, sizeof(BITMAPV5HEADER));
 
   bi.bV5Size        = sizeof(BITMAPV5HEADER);
-  bi.bV5Width       = image->w();
-  bi.bV5Height      = -image->h(); // Negative for top-down
+  bi.bV5Width       = image->data_w();
+  bi.bV5Height      = -image->data_h(); // Negative for top-down
   bi.bV5Planes      = 1;
   bi.bV5BitCount    = 32;
   bi.bV5Compression = BI_BITFIELDS;
@@ -2336,10 +2336,10 @@ static HICON image_to_icon(const Fl_RGB_Image *image, bool is_icon, int hotx, in
     return NULL;
 
   const uchar *i = (const uchar *)*image->data();
-  const int extra_data = image->ld() ? (image->ld() - image->w() * image->d()) : 0;
+  const int extra_data = image->ld() ? (image->ld() - image->data_w() * image->d()) : 0;
 
-  for (int y = 0; y < image->h(); y++) {
-    for (int x = 0; x < image->w(); x++) {
+  for (int y = 0; y < image->data_h(); y++) {
+    for (int x = 0; x < image->data_w(); x++) {
       switch (image->d()) {
         case 1:
           *bits = (0xff << 24) | (i[0] << 16) | (i[0] << 8) | i[0];
@@ -2361,7 +2361,7 @@ static HICON image_to_icon(const Fl_RGB_Image *image, bool is_icon, int hotx, in
   }
 
   // A mask bitmap is still needed even though it isn't used
-  mask = CreateBitmap(image->w(), image->h(), 1, 1, NULL);
+  mask = CreateBitmap(image->data_w(), image->data_h(), 1, 1, NULL);
   if (mask == NULL) {
     DeleteObject(bitmap);
     return NULL;
@@ -2424,11 +2424,27 @@ void Fl_WinAPI_Screen_Driver::default_icons(const Fl_RGB_Image *icons[], int cou
   best_big = find_best_icon(GetSystemMetrics(SM_CXICON), icons, count);
   best_small = find_best_icon(GetSystemMetrics(SM_CXSMICON), icons, count);
 
-  if (best_big != NULL)
+  bool need_delete;
+  if (best_big != NULL) {
+    need_delete = false;
+    if (best_big->w() != best_big->data_w() || best_big->h() != best_big->data_h()) {
+      best_big = (Fl_RGB_Image *)best_big->copy();
+      need_delete = true;
+    }
     default_big_icon = image_to_icon(best_big, true, 0, 0);
+    if (need_delete) delete best_big;
+  }
 
-  if (best_small != NULL)
+  if (best_small != NULL) {
+    need_delete = false;
+    if (best_small->w() != best_small->data_w() ||
+        best_small->h() != best_small->data_h()) {
+      best_small = (Fl_RGB_Image *)best_small->copy();
+      need_delete = true;
+    }
     default_small_icon = image_to_icon(best_small, true, 0, 0);
+    if (need_delete) delete best_small;
+  }
 }
 
 /** Sets the window icons using Windows' native HICON icon handles.

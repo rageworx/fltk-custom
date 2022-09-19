@@ -172,6 +172,7 @@
 
 #endif
 
+/*@}*/  // group: Version Numbers
 
 /*
   FLTK_EXT_VERSION is for identifying customized version for

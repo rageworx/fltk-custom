@@ -291,6 +291,7 @@ const char *Fl_Window::xclass() const
   \see Fl_Window::default_icons(const Fl_RGB_Image *[], int)
   \see Fl_Window::icon(const Fl_RGB_Image *)
   \see Fl_Window::icons(const Fl_RGB_Image *[], int)
+ \note See \ref osissues_wayland_window_icon for the Wayland platform.
  */
 void Fl_Window::default_icon(const Fl_RGB_Image *icon) {
   if (icon)
@@ -316,6 +317,7 @@ void Fl_Window::default_icon(const Fl_RGB_Image *icon) {
   \see Fl_Window::default_icon(const Fl_RGB_Image *)
   \see Fl_Window::icon(const Fl_RGB_Image *)
   \see Fl_Window::icons(const Fl_RGB_Image *[], int)
+\note See \ref osissues_wayland_window_icon for the Wayland platform.
  */
 void Fl_Window::default_icons(const Fl_RGB_Image *icons[], int count) {
   Fl::screen_driver()->open_display();
@@ -341,6 +343,7 @@ void Fl_Window::default_icons(const Fl_RGB_Image *icons[], int count) {
   \see Fl_Window::default_icon(const Fl_RGB_Image *)
   \see Fl_Window::default_icons(const Fl_RGB_Image *[], int)
   \see Fl_Window::icons(const Fl_RGB_Image *[], int)
+  \note See \ref osissues_wayland_window_icon for the Wayland platform.
  */
 void Fl_Window::icon(const Fl_RGB_Image *icon) {
   if (icon)
@@ -369,6 +372,7 @@ void Fl_Window::icon(const Fl_RGB_Image *icon) {
   \see Fl_Window::default_icon(const Fl_RGB_Image *)
   \see Fl_Window::default_icons(const Fl_RGB_Image *[], int)
   \see Fl_Window::icon(const Fl_RGB_Image *)
+  \note See \ref osissues_wayland_window_icon for the Wayland platform.
  */
 void Fl_Window::icons(const Fl_RGB_Image *icons[], int count) {
   pWindowDriver->icons(icons, count);
@@ -875,6 +879,8 @@ const Fl_Image* Fl_Window::shape() {return pWindowDriver->shape();}
 bool Fl_Window::is_a_rescale() {return Fl_Window_Driver::is_a_rescale_;}
 
 /** Returns a platform-specific identification of a shown window, or 0 if not shown.
+ \note This identification may differ from the platform-specific reference of an
+ Fl_Window object used by functions fl_x11_xid(), fl_mac_xid(), fl_x11_find(), and fl_mac_find().
  \li X11 platform: the window's XID.
  \li macOS platform: The window number of the window?™s window device.
  \li other platforms: 0.

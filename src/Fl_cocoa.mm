@@ -2239,6 +2239,8 @@ static FLTextInputContext* fltextinputcontext_instance = nil;
                                        CGBitmapContextGetBitsPerComponent(gc), CGBitmapContextGetBytesPerRow(gc),
                                        CGBitmapContextGetColorSpace(gc), CGBitmapContextGetBitmapInfo(gc));
   }
+  CGContextClearRect(aux_bitmap, CGRectMake(0, 0,
+                     CGBitmapContextGetWidth(aux_bitmap), CGBitmapContextGetHeight(aux_bitmap)));
   if (r) CGContextScaleCTM(aux_bitmap, 2, 2);
 }
 - (void)reset_aux_bitmap {
@@ -2930,8 +2932,20 @@ NSOpenGLContext* Fl_Cocoa_Window_Driver::create_GLcontext_for_window(NSOpenGLPix
       addr(view, @selector(setWantsBestResolutionOpenGLSurface:), Fl::use_high_res_GL() != 0);
     }
     [context setView:view];
+    if (Fl_Cocoa_Window_Driver::driver(window)->subRect()) {
+      remove_gl_context_opacity(context);
+    }
   }
   return context;
+}
+
+void Fl_Cocoa_Window_Driver::remove_gl_context_opacity(NSOpenGLContext *ctx) {
+  GLint gl_opacity;
+  [ctx getValues:&gl_opacity forParameter:NSOpenGLContextParameterSurfaceOpacity];
+  if (gl_opacity != 0) {
+    gl_opacity = 0;
+    [ctx setValues:&gl_opacity forParameter:NSOpenGLContextParameterSurfaceOpacity];
+  }
 }
 
 void Fl_Cocoa_Window_Driver::GLcontext_update(NSOpenGLContext* ctxt)
@@ -3408,6 +3422,9 @@ void Fl_Cocoa_Window_Driver::resize(int X, int Y, int W, int H) {
     }
     through_resize(0);
   }
+  
+  // make sure subwindow doesn't leak outside parent
+  if (pWindow->parent()) [fl_xid(pWindow) checkSubwindowFrame];
 }
 
 
@@ -4612,15 +4629,15 @@ Fl_Cocoa_Window_Driver::~Fl_Cocoa_Window_Driver()
 static NSImage* rgb_to_nsimage(const Fl_RGB_Image *rgb) {
   if (!rgb) return nil;
   int ld = rgb->ld();
-  if (!ld) ld = rgb->w() * rgb->d();
+  if (!ld) ld = rgb->data_w() * rgb->d();
   NSImage *win_icon = nil;
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
   if (fl_mac_os_version >= 101000) {
-    NSBitmapImageRep *bitmap = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL pixelsWide:rgb->w() pixelsHigh:rgb->h()
+    NSBitmapImageRep *bitmap = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL pixelsWide:rgb->data_w() pixelsHigh:rgb->data_h()
                                                                     bitsPerSample:8 samplesPerPixel:rgb->d() hasAlpha:!(rgb->d() & 1) isPlanar:NO
                                                                    colorSpaceName:(rgb->d()<=2) ? NSDeviceWhiteColorSpace : NSDeviceRGBColorSpace
                                                                      bitmapFormat:NSAlphaNonpremultipliedBitmapFormat bytesPerRow:ld bitsPerPixel:rgb->d()*8]; // 10.4
-    memcpy([bitmap bitmapData], rgb->array, rgb->h() * ld);
+    memcpy([bitmap bitmapData], rgb->array, rgb->data_h() * ld);
     win_icon = [[NSImage alloc] initWithSize:NSMakeSize(0, 0)];
     [win_icon addRepresentation:bitmap];
     [bitmap release];

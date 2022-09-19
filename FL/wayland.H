@@ -42,7 +42,11 @@ extern FL_EXPORT EGLContext fl_wl_glcontext(GLContext rc);
 
 #ifndef FL_DOXYGEN
 
+#  if FLTK_USE_X11
 //  *********** for X11 component ***********
-#  include "x11.H"
+#    include "x11.H"
+#  else
+      typedef struct wld_window *Window;
+#  endif
 
 #endif // FL_DOXYGEN

@@ -25,6 +25,7 @@
 #include <FL/Fl_Graphics_Driver.H>
 #include <OpenGL/OpenGL.h>
 #include <FL/Fl_Image_Surface.H>
+#include <dlfcn.h>
 
 extern void gl_texture_reset();
 
@@ -69,6 +70,9 @@ GLContext Fl_Cocoa_Gl_Window_Driver::create_gl_context(Fl_Window* window, const 
   context = Fl_Cocoa_Window_Driver::create_GLcontext_for_window(((Fl_Cocoa_Gl_Choice*)g)->pixelformat, (NSOpenGLContext*)shared_ctx, window);
   if (!context) return 0;
   add_context(context);
+  Fl_Cocoa_Window_Driver::GLcontext_makecurrent((NSOpenGLContext*)context);
+  glClearColor(0., 0., 0., 1.);
+  apply_scissor();
   return (context);
 }
 
@@ -185,8 +189,27 @@ void Fl_Cocoa_Gl_Window_Driver::swap_buffers() {
 char Fl_Cocoa_Gl_Window_Driver::swap_type() {return copy;}
 
 void Fl_Cocoa_Gl_Window_Driver::resize(int is_a_resize, int w, int h) {
+  if (pWindow->shown()) apply_scissor();
   Fl_Cocoa_Window_Driver::GLcontext_update((NSOpenGLContext*)pWindow->context());
 }
+
+void Fl_Cocoa_Gl_Window_Driver::apply_scissor() {
+  CGRect *extents = Fl_Cocoa_Window_Driver::driver(pWindow)->subRect();
+  if (extents) {
+    Fl_Cocoa_Window_Driver::remove_gl_context_opacity((NSOpenGLContext*)pWindow->context());
+    glDisable(GL_SCISSOR_TEST);
+    GLdouble vals[4];
+    glGetDoublev(GL_COLOR_CLEAR_VALUE, vals);
+    glClearColor(0., 0., 0., 0.);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glClearColor(vals[0], vals[1], vals[2], vals[3]);
+    float s = pWindow->pixels_per_unit();
+    glScissor(s*extents->origin.x, s*extents->origin.y, s*extents->size.width, s*extents->size.height);
+//printf("apply_scissor %dx%d %dx%d\n",extents->x, extents->y, extents->width, extents->height);
+    glEnable(GL_SCISSOR_TEST);
+  }
+}
+
 
 /* Some old Apple hardware doesn't implement the GL_EXT_texture_rectangle extension.
  For it, draw_string_legacy_glut() is used to draw text. */
@@ -268,6 +291,11 @@ Fl_RGB_Image* Fl_Cocoa_Gl_Window_Driver::capture_gl_rectangle(int x, int y, int 
   img->alloc_array = 1;
   Fl_Cocoa_Window_Driver::flush_context((NSOpenGLContext*)glw->context());
   return img;
+}
+
+
+void* Fl_Cocoa_Gl_Window_Driver::GetProcAddress(const char *procName) {
+  return dlsym(RTLD_DEFAULT, procName);
 }
 
 

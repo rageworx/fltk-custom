@@ -89,8 +89,6 @@ void Fl_Cocoa_Window_Driver::draw_begin()
       CGContextClipToMask(my_gc, CGRectMake(0,0,w(),h()), shape_data_->mask); // requires Mac OS 10.4
     }
     CGContextSaveGState(my_gc);
-   CGAffineTransform mat = CGContextGetCTM(my_gc);
-    printf("mat.a=%g\n",mat.a);
 # endif
   }
 }
@@ -328,15 +326,6 @@ void Fl_Cocoa_Window_Driver::capture_titlebar_and_borders(Fl_RGB_Image*& top, Fl
   top->alloc_array = 1;
   top->scale(w(),htop, s <1 ? 0 : 1, 1);
   CGContextRelease(auxgc);
-}
-
-void Fl_Cocoa_Window_Driver::screen_num(int n) {
-  screen_num_ = n;
-}
-
-int Fl_Cocoa_Window_Driver::screen_num() {
-  if (pWindow->parent()) return pWindow->top_window()->screen_num();
-  else return screen_num_;
 }
 
 

@@ -2047,6 +2047,8 @@ int fl_handle(const XEvent& thisevent)
       }
       wd->screen_num(num);
     }
+#else // ! USE_XFT
+    Fl_Window_Driver::driver(window)->screen_num( Fl::screen_num(X, Y, W, H) );
 #endif // USE_XFT
 
     // tell Fl_Window about it and set flag to prevent echoing:
@@ -2215,7 +2217,7 @@ int Fl_X11_Screen_Driver::ewmh_supported() {
   return result;
 }
 
-#if HAVE_XRENDER
+#if HAVE_XRENDER && (!FLTK_USE_CAIRO)
 static int xrender_supported() {
   int nop1, nop2;
   fl_open_display();
@@ -2694,7 +2696,7 @@ static void icons_to_property(const Fl_RGB_Image *icons[], int count,
 
   sz = 0;
   for (int i = 0;i < count;i++)
-    sz += 2 + icons[i]->w() * icons[i]->h();
+    sz += 2 + icons[i]->data_w() * icons[i]->data_h();
 
   // FIXME: Might want to sort the icons
 
@@ -2705,16 +2707,21 @@ static void icons_to_property(const Fl_RGB_Image *icons[], int count,
     const Fl_RGB_Image *image;
 
     image = icons[i];
+    bool need_delete = false;
+    if (image->w() != image->data_w() || image->h() != image->data_h()) {
+      image = (Fl_RGB_Image*)image->copy();
+      need_delete = true;
+    }
 
-    data[0] = image->w();
-    data[1] = image->h();
+    data[0] = image->data_w();
+    data[1] = image->data_h();
     data += 2;
 
-    const int extra_data = image->ld() ? (image->ld()-image->w()*image->d()) : 0;
+    const int extra_data = image->ld() ? (image->ld() - image->data_w() * image->d()) : 0;
 
     const uchar *in = (const uchar*)*image->data();
-    for (int y = 0; y < image->h(); y++) {
-      for (int x = 0; x < image->w(); x++) {
+    for (int y = 0; y < image->data_h(); y++) {
+      for (int x = 0; x < image->data_w(); x++) {
         switch (image->d()) {
         case 1:
           *data = ( 0xff<<24) | (in[0]<<16) | (in[0]<<8) | in[0];
@@ -2734,6 +2741,7 @@ static void icons_to_property(const Fl_RGB_Image *icons[], int count,
       }
       in += extra_data;
     }
+    if (need_delete) delete image;
   }
 }
 

@@ -31,6 +31,7 @@
 #include <stdlib.h>  // abs(int)
 #include <string.h>  // memcpy()
 
+extern unsigned fl_cmap[256]; // defined in fl_color.cxx
 
 // duplicated from Fl_PostScript.cxx
 struct callback_data {
@@ -331,9 +332,29 @@ void Fl_Cairo_Graphics_Driver::color(unsigned char r, unsigned char g, unsigned 
   check_status();
 }
 
-void Fl_Cairo_Graphics_Driver::color(Fl_Color c) {
-  Fl::get_color(c, cr_, cg_, cb_);
-  Fl_Cairo_Graphics_Driver::color(cr_, cg_, cb_);
+void Fl_Cairo_Graphics_Driver::color(Fl_Color i) {
+  Fl_Graphics_Driver::color(i);
+  if (!cairo_) return; // no context yet? We will assign the color later.
+  uchar r, g, b;
+  double fa = 1.0;
+  if (i & 0xFFFFFF00) {
+    // translate rgb colors into color index
+    r = i>>24;
+    g = i>>16;
+    b = i>> 8;
+  } else {
+    // translate index into rgb:
+    unsigned c = fl_cmap[i];
+    c = c ^ 0x000000ff; // trick to restore the color's correct alpha value
+    r = c>>24;
+    g = c>>16;
+    b = c>> 8;
+    fa = (c & 0xff)/255.0;
+  }
+  double fr = r/255.0;
+  double fg = g/255.0;
+  double fb = b/255.0;
+  cairo_set_source_rgba(cairo_, fr, fg, fb, fa);
 }
 
 Fl_Color Fl_Cairo_Graphics_Driver::color() { return Fl_Graphics_Driver::color(); }
@@ -1146,7 +1167,7 @@ void Fl_Cairo_Graphics_Driver::font(Fl_Font fnum, Fl_Fontsize s) {
     pango_layout_ = pango_layout_new(pango_context_);
   }
   font_descriptor( find(fnum, s, pango_context_) );
-  //If no font description is set on the layout, the font description from the layout?�s context is used.
+  //If no font description is set on the layout, the font description from the layout’s context is used.
   pango_context_set_font_description(pango_context_,
                                   ((Fl_Cairo_Font_Descriptor*)font_descriptor())->fontref);
 }
@@ -1255,7 +1276,7 @@ Fl_Region Fl_Cairo_Graphics_Driver::XRectangleRegion(int x, int y, int w, int h)
 }
 
 
-// r1 ??r2
+// r1 ⊂ r2
 static bool CairoRectContainsRect(cairo_rectangle_t *r1, cairo_rectangle_t *r2) {
   return r1->x >= r2->x && r1->y >= r2->y && r1->x+r1->width <= r2->x+r2->width &&
     r1->y+r1->height <= r2->y+r2->height;

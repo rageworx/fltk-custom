@@ -175,6 +175,10 @@ OPTION_USE_WAYLAND - default OFF
    and use X11 for their window operations otherwise, but keep using
    Cairo and Pango - see README.Wayland.txt.
 
+OPTION_WAYLAND_ONLY - default OFF
+   In conjunction with OPTION_USE_WAYLAND, restricts FLTK to support the
+   Wayland backend only.
+
 OPTION_ABI_VERSION - default EMPTY
    Use a numeric value corresponding to the FLTK ABI version you want to
    build in the form 1xxyy for FLTK 1.x.y (xx and yy with leading zeroes).
@@ -518,7 +522,7 @@ which can be used to add the FLTK include directories to the definitions
 used to compile your program using the `target_include_directories()` command.
 
 The target_link_libraries() command is used to specify all necessary FLTK
-libraries. Thus, you may have to add fltk_images, fltk_gl, etc??
+libraries. Thus, you may have to add fltk_images, fltk_gl, etc…
 
 Note: the variable FLTK_USE_FILE used to include another file in
 previous FLTK versions was deprecated since FLTK 1.3.4 and will be
