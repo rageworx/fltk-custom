@@ -480,6 +480,8 @@ public:
   const char* linenumber_format() const;
 
 protected:
+  void empty_display();
+
   // Most (all?) of this stuff should only be called from resize() or
   // draw().
   // Anything with "vline" indicates thats it deals with currently

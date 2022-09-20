@@ -213,6 +213,67 @@ Fl_Text_Display::~Fl_Text_Display() {
 }
 
 
+// Protected: Zero out internals for a buf==0 or buf cleared
+void Fl_Text_Display::empty_display() {
+  int i;
+  // Copied from ctor
+  //    Commented out variables we shouldn't change with //XX
+  //
+  damage_range1_start = damage_range1_end = -1;
+  damage_range2_start = damage_range2_end = -1;
+  mCursorPos = 0;
+  //XX mCursorOn = 0;           // user set by show_cursor()
+  mCursorOldY = -100;
+  mCursorToHint = NO_HINT;
+  //XX mCursorStyle = NORMAL_CURSOR; // user set by cursor_style
+  mCursorPreferredXPos = -1;
+  //XX mNVisibleLines = 1;      // mLineStarts array already configured
+  mNBufferLines = 0;
+  //XX mBuffer = NULL;          // user set by buffer()
+  //XX mStyleBuffer = NULL;     // user set by highlight_data()
+  mFirstChar = 0;
+  mLastChar = 0;
+  //XX mContinuousWrap = 0;     // user set by wrap_mode()
+  mWrapMarginPix = 0;
+  //XX mLineStarts = new int[mNVisibleLines];           // managed internally
+  for (i=1; i<mNVisibleLines; i++) mLineStarts[i] = -1; // just zero out contents
+  mLineStarts[0] = 0;                                   // just zero out contents
+  mTopLineNum = 1;
+  mAbsTopLineNum = 1;
+  mNeedAbsTopLineNum = 0;
+  mHorizOffset = 0;
+  mTopLineNumHint = 1;
+  mHorizOffsetHint = 0;
+  //XX mNStyles = 0;                    // user set by highlight_data()
+  //XX mStyleTable = NULL;              // user set by highlight_data()
+  //XX mUnfinishedStyle = 0;            // user set by highlight_data()
+  //XX mUnfinishedHighlightCB = 0;      // user set by highlight_data()
+  //XX mHighlightCBArg = 0;             // user set by highlight_data()
+  mMaxsize = 0;
+  mSuppressResync = 0;
+  mNLinesDeleted = 0;
+  //XX mModifyingTabDistance = 0;    // XXX: UNUSED
+  mColumnScale = 0;
+  //XX mCursor_color = FL_FOREGROUND_COLOR;
+  //XX mHScrollBar = new Fl_Scrollbar(0,0,1,1);
+  //XX mHScrollBar->callback((Fl_Callback*)h_scrollbar_cb, this);
+  //XX mHScrollBar->type(FL_HORIZONTAL);
+  //XX mVScrollBar = new Fl_Scrollbar(0,0,1,1);
+  //XX mVScrollBar->callback((Fl_Callback*)v_scrollbar_cb, this);
+  //XX scrollbar_width_ = 0;         // 0: default from Fl::scrollbar_size()
+  //XX scrollbar_align_ = FL_ALIGN_BOTTOM_RIGHT;
+  dragPos = 0;
+  dragType = DRAG_CHAR;
+  dragging = 0;
+  display_insert_position_hint = 0;
+  text_area.x = 0;
+  text_area.y = 0;
+  text_area.w = 0;
+  text_area.h = 0;
+  // All other ctor variables from here on are user set/we shouldn't change
+  redraw();
+}
+
 /**
   Set width of screen area for line numbers.
   Use to also enable/disable line numbers.
@@ -1728,6 +1789,14 @@ void Fl_Text_Display::buffer_modified_cb( int pos, int nInserted, int nDeleted,
   int oldFirstChar = textD->mFirstChar;
   int scrolled, origCursorPos = textD->mCursorPos;
   int wrapModStart = 0, wrapModEnd = 0;
+
+  // Deleting /entire/ buffer (or empty buffer), and no inserts?
+  //    Early exit to avoid complications e.g. during destruction (see issue #89)
+  //
+  if ( pos == 0 && nInserted == 0 && (!buf || nDeleted == buf->length()) ) {
+    textD->empty_display();      // zero internals for completely empty (or null) buffer
+    return;
+  }
 
   IS_UTF8_ALIGNED2(buf, pos)
   IS_UTF8_ALIGNED2(buf, oldFirstChar)
