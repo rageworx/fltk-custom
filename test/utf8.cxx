@@ -174,11 +174,11 @@ static void font_cb(Fl_Widget *, long)
       char buf[16];
       if (j < size_count && i == size_array[j])
       {
-        sprintf(buf, "@b%d", i);
+        snprintf(buf, 16, "@b%d", i);
         j++;
       }
       else
-        sprintf(buf, "%d", i);
+        snprintf(buf, 16, "%d", i);
       sizeobj->add(buf);
     }
     sizeobj->value(pickedsize);
@@ -193,7 +193,7 @@ static void font_cb(Fl_Widget *, long)
       if (size_array[i] <= pickedsize) w = i;
 
       char buf[16];
-      sprintf(buf, "@b%d", size_array[i]);
+      snprintf(buf, 16, "@b%d", size_array[i]);
       sizeobj->add(buf);
     }
     sizeobj->value(w + 1);
@@ -304,7 +304,7 @@ static void own_face_cb(Fl_Widget *, void *)
       // Show font in its own face
       // this is neat, but really slow on some systems:
       // uses each font to display its own name
-      sprintf (buffer, "@F%d@.%s", font_idx, name);
+      snprintf (buffer, sizeof(buffer), "@F%d@.%s", font_idx, name);
     }
     fontobj->add(buffer);
   }
@@ -566,12 +566,19 @@ public:
 
 int main(int argc, char** argv)
 {
-  const char *latin1 = // "ABCabcàèéïâîöüã123"
-    "\x41\x42\x43\x61\x62\x63\xe0\xe8\xe9\xef\xe2\xee\xf6\xfc\xe3\x31\x32\x33";
-
-  char *utf8 = (char*) malloc(strlen(latin1) * 5 + 1);
+  const char *latin1 = // "ABCabcàèéïßîöüã123"
+  "\x41\x42\x43\x61\x62\x63\xe0\xe8\xe9\xef\xdf\xee\xf6\xfc\xe3\x31\x32\x33";
+  const char *emoji = // grinning face with smiling eyes, thumbs up
+  "\360\237\230\204\360\237\221\215end";
+  // NOTE: FLTK does not currently support modifiers like skin tones
+  //       or ZWJs (zero width joiners)
+  char *utf8 = (char*) malloc((strlen(latin1)+4) * 5 + 1);
   int l = fl_utf8froma(utf8, (unsigned int)strlen(latin1) * 5 + 1,
                        latin1, (unsigned int)strlen(latin1));
+  utf8[l] = '\0';
+  strcat(utf8, emoji);
+  l = (int)strlen(utf8);
+
   make_font_chooser();
   extra_font = FL_TIMES_BOLD_ITALIC;
 
@@ -590,7 +597,6 @@ int main(int argc, char** argv)
   main_win->begin();
 
   Fl_Input i1(5, 5, 190, 25);
-  utf8[l] = '\0';
   i1.value(utf8);
   Fl_Scroll scroll(200,0,5 * 75,400);
 
@@ -616,7 +622,7 @@ int main(int argc, char** argv)
       i++;
     }
     buf[o] = '\0';
-    sprintf(bu, "0x%06lX", y * 16);
+    snprintf(bu, sizeof(bu), "0x%06lX", y * 16);
     Fl_Input *b = new Fl_Input(200,(y-off)*25,80,25);
     b->textfont(FL_COURIER);
     b->value(fl_strdup(bu));

@@ -36,6 +36,7 @@ class Fl_Window;
 @class FLWindow;
 @class NSOpenGLContext;
 @class NSOpenGLPixelFormat;
+@class NSView;
 #else
 class CALayer;
 class NSCursor;
@@ -43,6 +44,7 @@ class NSImage;
 class FLWindow;
 class NSOpenGLContext;
 class NSOpenGLPixelFormat;
+class NSView;
 #endif // __OBJC__
 
 /**
@@ -143,18 +145,6 @@ public:
   virtual void wait_for_expose();
   void draw_titlebar_to_context(CGContextRef gc, int w, int h);
   virtual int scroll(int src_x, int src_y, int src_w, int src_h, int dest_x, int dest_y, void (*draw_area)(void*, int,int,int,int), void* data);
-
-  // these functions are OpenGL-related and use objective-c
-  // they are put here to avoid libfltk_gl dependency in Fl_cocoa.mm
-  static NSOpenGLContext* create_GLcontext_for_window(NSOpenGLPixelFormat *pixelformat, NSOpenGLContext *shared_ctx, Fl_Window *window);
-  static NSOpenGLPixelFormat *mode_to_NSOpenGLPixelFormat(int mode, const int*); // uses Objective-c
-  static void GLcontext_update(NSOpenGLContext*); // uses Objective-c
-  static void GLcontext_release(NSOpenGLContext*); // uses Objective-c
-  static void flush_context(NSOpenGLContext*); // uses Objective-c
-  static void GLcontext_makecurrent(NSOpenGLContext*); // uses Objective-c
-  static void GL_cleardrawable(void); // uses Objective-c
-  static void gl_start(NSOpenGLContext*); // uses Objective-c
-  static void remove_gl_context_opacity(NSOpenGLContext*); // uses Objective-c
 
   //icons
   virtual void icons(const Fl_RGB_Image *icons[], int count);

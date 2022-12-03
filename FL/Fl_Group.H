@@ -1,7 +1,7 @@
 //
 // Group header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2021 by Bill Spitzak and others.
+// Copyright 1998-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -38,6 +38,14 @@ class Fl_Rect;
   this group, and to other groups. The only modifier grabbed is shift
   (for shift-tab), so that ctrl-tab, alt-up, and such are free
   for the app to use as shortcuts.
+
+  To remove a widget from the group and destroy it, in 1.3.x (and up)
+  you can simply use:
+  \code
+  delete some_widget;
+  \endcode
+  ..and this will trigger proper scheduling of the widget's removal
+  from its parent group.
 */
 class FL_EXPORT Fl_Group : public Fl_Widget {
 
@@ -66,6 +74,9 @@ protected:
   void update_child(Fl_Widget& widget) const;
   Fl_Rect *bounds();
   int  *sizes(); // FLTK 1.3 compatibility
+  virtual int on_insert(Fl_Widget*, int);
+  virtual int on_move(int, int);
+  virtual void on_remove(int);
 
 public:
 
@@ -143,6 +154,14 @@ public:
     children. Widgets that are horizontally or vertically inside the
     dimensions of the box are scaled to the new size. Widgets outside the
     box are moved.
+
+    \note The resizable of a group \b must be one of
+      - NULL
+      - the group itself
+      - a direct child of the group.
+    \note If you set any other widget that is not a direct child of the group as
+      its resizable then the behavior is undefined. This is \b not checked by
+      Fl_Group for historical reasons.
 
     In these examples the gray area is the resizable:
 

@@ -124,6 +124,7 @@ public:
     WRAP_AT_BOUNDS  /**< wrap text so that it fits into the widget width */
   };
 
+  friend int fl_text_drag_prepare(int pos, int key, Fl_Text_Display* d);
   friend void fl_text_drag_me(int pos, Fl_Text_Display* d);
 
   typedef void (*Unfinished_Style_Cb)(int, void *);
@@ -480,8 +481,6 @@ public:
   const char* linenumber_format() const;
 
 protected:
-  void empty_display();
-
   // Most (all?) of this stuff should only be called from resize() or
   // draw().
   // Anything with "vline" indicates thats it deals with currently

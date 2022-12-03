@@ -40,7 +40,7 @@
 #  include "flstring.h"
 #  include "drivers/X11/Fl_X11_Screen_Driver.H"
 #  include "drivers/X11/Fl_X11_Window_Driver.H"
-#  include "drivers/X11/Fl_X11_System_Driver.H"
+#  include "drivers/Unix/Fl_Unix_System_Driver.H"
 #if FLTK_USE_CAIRO
 #  include "drivers/Cairo/Fl_Display_Cairo_Graphics_Driver.H"
 #else
@@ -129,19 +129,18 @@ static void do_queued_events() {
 // This is never called with time_to_wait < 0.0:
 // It should return negative on error, 0 if nothing happens before
 // timeout, and >0 if any callbacks were done.
-int Fl_X11_System_Driver::poll_or_select_with_delay(double time_to_wait) {
-
+int Fl_X11_Screen_Driver::poll_or_select_with_delay(double time_to_wait) {
   // OpenGL and other broken libraries call XEventsQueued
   // unnecessarily and thus cause the file descriptor to not be ready,
   // so we must check for already-read events:
   if (fl_display && XQLength(fl_display)) {do_queued_events(); return 1;}
-  return Fl_Unix_System_Driver::poll_or_select_with_delay(time_to_wait);
+  return Fl_Unix_Screen_Driver::poll_or_select_with_delay(time_to_wait);
 }
 
-// just like Fl_X11_System_Driver::poll_or_select_with_delay(0.0) except no callbacks are done:
-int Fl_X11_System_Driver::poll_or_select() {
+// just like Fl_X11_Screen_Driver::poll_or_select_with_delay(0.0) except no callbacks are done:
+int Fl_X11_Screen_Driver::poll_or_select() {
   if (XQLength(fl_display)) return 1;
-  return Fl_Unix_System_Driver::poll_or_select();
+  return Fl_Unix_Screen_Driver::poll_or_select();
 }
 
 // replace \r\n by \n
@@ -317,7 +316,7 @@ extern "C" {
 
   static int xerror_handler(Display* d, XErrorEvent* e) {
     char buf1[128], buf2[128];
-    sprintf(buf1, "XRequest.%d", e->request_code);
+    snprintf(buf1, 128, "XRequest.%d", e->request_code);
     XGetErrorDatabaseText(d,"",buf1,buf1,buf2,128);
     XGetErrorText(d, e->error_code, buf1, 128);
     Fl::warning("%s: %s 0x%lx", buf2, buf1, e->resourceid);
@@ -1551,7 +1550,7 @@ int fl_handle(const XEvent& thisevent)
         XGetWindowProperty(fl_display, fl_dnd_source_window, fl_XdndTypeList,
                            0, 0x8000000L, False, XA_ATOM, &actual, &format,
                            &count, &remaining, &cm_buffer);
-        if (actual != XA_ATOM || format != 32 || count<4 || !cm_buffer) {
+        if (actual != XA_ATOM || format != 32 || (count<4 && count!=1) || !cm_buffer) {
           if ( cm_buffer ) { XFree(cm_buffer); cm_buffer = 0; }
           goto FAILED;
         }
@@ -2258,6 +2257,7 @@ void Fl_X11_Window_Driver::activate_window() {
 
 /* Change an existing window to fullscreen */
 void Fl_X11_Window_Driver::fullscreen_on() {
+  pWindow->_set_fullscreen();
   if (Fl_X11_Screen_Driver::ewmh_supported()) {
     int top, bottom, left, right;
 
@@ -2277,7 +2277,6 @@ void Fl_X11_Window_Driver::fullscreen_on() {
                   top, bottom, left, right);
     send_wm_state_event(fl_xid(pWindow), 1, fl_NET_WM_STATE_FULLSCREEN);
   } else {
-    pWindow->_set_fullscreen();
     hide();
     show();
     /* We want to grab the window, not a widget, so we cannot use Fl::grab */
@@ -2287,10 +2286,10 @@ void Fl_X11_Window_Driver::fullscreen_on() {
 }
 
 void Fl_X11_Window_Driver::fullscreen_off(int X, int Y, int W, int H) {
+  pWindow->_clear_fullscreen();
   if (Fl_X11_Screen_Driver::ewmh_supported()) {
     send_wm_state_event(fl_xid(pWindow), 0, fl_NET_WM_STATE_FULLSCREEN);
   } else {
-    pWindow->_clear_fullscreen();
     /* The grab will be lost when the window is destroyed */
     hide();
     resize(X,Y,W,H);
@@ -2562,7 +2561,8 @@ void Fl_X::make_xid(Fl_Window* win, XVisualInfo *visual, Colormap colormap)
       Fl_Window::show_iconic_ = 0;
       showit = 0;
     }
-    if (Fl_X11_Window_Driver::driver(win)->icon_->legacy_icon) {
+    if (Fl_X11_Window_Driver::driver(win)->icon_ &&
+        Fl_X11_Window_Driver::driver(win)->icon_->legacy_icon) {
       hints->icon_pixmap = (Pixmap)Fl_X11_Window_Driver::driver(win)->icon_->legacy_icon;
       hints->flags       |= IconPixmapHint;
     }
@@ -2761,7 +2761,7 @@ void Fl_X11_Window_Driver::set_icons() {
   unsigned long *net_wm_icons;
   size_t net_wm_icons_size;
 
-  if (icon_->count) {
+  if (icon_ && icon_->count) {
     icons_to_property((const Fl_RGB_Image **)icon_->icons, icon_->count,
                       &net_wm_icons, &net_wm_icons_size);
   } else {
@@ -2772,7 +2772,7 @@ void Fl_X11_Window_Driver::set_icons() {
   XChangeProperty (fl_display, fl_xid(pWindow), fl_NET_WM_ICON, XA_CARDINAL, 32,
       PropModeReplace, (unsigned char*) net_wm_icons, net_wm_icons_size);
 
-  if (icon_->count) {
+  if (icon_ && icon_->count) {
     delete [] net_wm_icons;
     net_wm_icons = 0L;
     net_wm_icons_size = 0;

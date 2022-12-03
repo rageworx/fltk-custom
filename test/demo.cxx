@@ -190,15 +190,21 @@ void create_the_forms() {
   choice->add("none");
   choice->add("gtk+");
   choice->add("gleam");
+  choice->add("oxy");
   choice->add("plastic");
+#ifdef FLTK_EXT_VERSION
   choice->add("flat");
+#endif /// of FLTK_EXT_VERSION
   choice->callback((Fl_Callback *)doscheme);
   Fl::scheme(NULL);
-  if (!Fl::scheme()) choice->value(0);
-  else if (!strcmp(Fl::scheme(), "gtk+")) choice->value(1);
-  else if (!strcmp(Fl::scheme(), "gleam")) choice->value(2);
-  else if (!strcmp(Fl::scheme(), "plastic")) choice->value(3);
-  else if (!strcmp(Fl::scheme(), "flat")) choice->value(4);
+  if (!Fl::scheme())                         choice->value(0);
+  else if (!strcmp(Fl::scheme(), "gtk+"))    choice->value(1);
+  else if (!strcmp(Fl::scheme(), "gleam"))   choice->value(2);
+  else if (!strcmp(Fl::scheme(), "oxy"))     choice->value(3);
+  else if (!strcmp(Fl::scheme(), "plastic")) choice->value(4);
+#ifdef FLTK_EXT_VERSION
+  else if (!strcmp(Fl::scheme(), "flat"))    choice->value(5);
+#endif /// of FLTK_EXT_VERSION
   else choice->value(0);
 
   exit_button = new Fl_Button(280, 405, 60, 25, "Exit");
@@ -409,17 +415,17 @@ void dobut(Fl_Widget *, long arg) {
 
   if (params[0]) {
     // we assume that we have only one argument which is a filename in 'data_path'
-    sprintf(command, "open '%s/%s%s' --args '%s/%s'", path, cmdbuf, suffix, data_path, params);
+    snprintf(command, sizeof(command), "open '%s/%s%s' --args '%s/%s'", path, cmdbuf, suffix, data_path, params);
   } else {
-    sprintf(command, "open '%s/%s%s'", path, cmdbuf, suffix);
+    snprintf(command, sizeof(command), "open '%s/%s%s'", path, cmdbuf, suffix);
   }
 
 #else // other platforms
 
   if (params[0])
-    sprintf(command, "%s/%s%s %s", path, cmdbuf, suffix, params);
+    snprintf(command, sizeof(command), "%s/%s%s %s", path, cmdbuf, suffix, params);
   else
-    sprintf(command, "%s/%s%s", path, cmdbuf, suffix);
+    snprintf(command, sizeof(command), "%s/%s%s", path, cmdbuf, suffix);
 
 #endif
 

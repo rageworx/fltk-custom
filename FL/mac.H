@@ -78,6 +78,21 @@ typedef class FLWindow *Window; // pointer to the FLWindow objective-c class
 #ifndef MAC_OS_X_VERSION_10_14
 #define MAC_OS_X_VERSION_10_14 101400
 #endif
+#ifndef MAC_OS_X_VERSION_10_15
+#define MAC_OS_X_VERSION_10_15 101500
+#endif
+#ifndef MAC_OS_X_VERSION_10_16
+#define MAC_OS_X_VERSION_10_16 101600
+#endif
+#ifndef MAC_OS_VERSION_11_0
+#define MAC_OS_VERSION_11_0 110000
+#endif
+#ifndef MAC_OS_VERSION_12_0
+#define MAC_OS_VERSION_12_0 120000
+#endif
+#ifndef MAC_OS_VERSION_13_0
+#define MAC_OS_VERSION_13_0 130000
+#endif
 
 
 #ifndef NSINTEGER_DEFINED // appears with 10.5 in NSObjCRuntime.h
@@ -138,6 +153,7 @@ extern CGContextRef fl_mac_gc();
 extern FLWindow *fl_mac_xid(const Fl_Window *win);
 /** Returns the Fl_Window corresponding to the given macOS-specific window reference */
 extern Fl_Window *fl_mac_find(FLWindow *);
+class Fl_Gl_Window;
 
 /** The version number of the running Mac OS X (e.g., 100604 for 10.6.4, 101300 for 10.13).
  FLTK initializes this global variable before main() begins running. If

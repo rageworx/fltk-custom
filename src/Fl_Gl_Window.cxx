@@ -343,6 +343,8 @@ void Fl_Gl_Window::draw_overlay() {}
  \see \ref opengl_with_fltk_widgets
  */
 void Fl_Gl_Window::draw_begin() {
+  if (mode() & FL_OPENGL3) pGlWindowDriver->switch_to_GL1();
+  damage(FL_DAMAGE_ALL); // always redraw all GL widgets above the GL scene
   Fl_Surface_Device::push_current( Fl_OpenGL_Display_Device::display_device() );
   Fl_OpenGL_Graphics_Driver *drv = (Fl_OpenGL_Graphics_Driver*)Fl_Surface_Device::surface()->driver();
   drv->pixels_per_unit_ = pixels_per_unit();
@@ -391,6 +393,7 @@ void Fl_Gl_Window::draw_end() {
   glPopAttrib(); // GL_ENABLE_BIT
 
   Fl_Surface_Device::pop_current();
+  if (mode() & FL_OPENGL3) pGlWindowDriver->switch_back();
 }
 
 /** Draws the Fl_Gl_Window.
@@ -523,7 +526,7 @@ char Fl_Gl_Window_Driver::swap_type() {return UNDEFINED;}
 void* Fl_Gl_Window_Driver::GetProcAddress(const char *procName) {
 #if defined(HAVE_GLXGETPROCADDRESSARB)
   return (void*)glXGetProcAddressARB((const GLubyte *)procName);
-  
+
 #elif (HAVE_DLSYM && HAVE_DLFCN_H)
 #  ifdef RTLD_DEFAULT
       void *rtld_default = RTLD_DEFAULT;

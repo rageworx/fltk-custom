@@ -41,7 +41,9 @@ class Fl_WinAPI_Gl_Window_Driver : public Fl_Gl_Window_Driver {
   virtual void invalidate() {}
   virtual int flush_begin(char& valid_f);
   virtual Fl_Gl_Choice *find(int m, const int *alistp);
-  virtual GLContext create_gl_context(Fl_Window* window, const Fl_Gl_Choice* g, int layer = 0);
+  virtual GLContext create_gl_context(Fl_Window* window, const Fl_Gl_Choice* g);
+  GLContext do_create_gl_context(Fl_Window* window, const Fl_Gl_Choice* g,
+                                 int layer);
   virtual void set_gl_context(Fl_Window* w, GLContext context);
   virtual void delete_gl_context(GLContext);
   virtual void make_overlay_current();
@@ -51,6 +53,8 @@ class Fl_WinAPI_Gl_Window_Driver : public Fl_Gl_Window_Driver {
   virtual void gl_bitmap_font(Fl_Font_Descriptor *fl_fontsize);
   virtual void get_list(Fl_Font_Descriptor *fd, int r);
   virtual int genlistsize();
+  virtual void switch_to_GL1();
+  virtual void switch_back();
 #if HAVE_GL_OVERLAY
   virtual void gl_hide_before(void *& overlay);
   virtual int can_do_overlay();

@@ -27,7 +27,7 @@
 #  include "../../flstring.h"
 #  include "Fl_Wayland_Screen_Driver.H"
 #  include "Fl_Wayland_Window_Driver.H"
-#  include "Fl_Wayland_System_Driver.H"
+#  include "../Unix/Fl_Unix_System_Driver.H"
 #  include "Fl_Wayland_Graphics_Driver.H"
 #  include <errno.h>
 
@@ -88,6 +88,7 @@ static void data_source_handle_send(void *data, struct wl_data_source *source, c
 }
 
 static Fl_Window *fl_dnd_target_window = 0;
+static wl_surface *fl_dnd_target_surface = 0;
 static bool doing_dnd = false; // true when DnD is in action
 static wl_surface *dnd_icon = NULL; // non null when DnD uses text as cursor
 static wl_cursor* save_cursor = NULL; // non null when DnD uses "dnd-copy" cursor
@@ -114,7 +115,7 @@ static void data_source_handle_cancelled(void *data, struct wl_data_source *sour
       save_cursor = NULL;
     }
     if (fl_dnd_target_window) {
-      Fl::handle(FL_DND_LEAVE, fl_dnd_target_window);
+      Fl::handle(FL_RELEASE, fl_dnd_target_window);
       fl_dnd_target_window = 0;
     }
     Fl::pushed(0);
@@ -123,6 +124,10 @@ static void data_source_handle_cancelled(void *data, struct wl_data_source *sour
 
 
 static void data_source_handle_target(void *data, struct wl_data_source *source, const char *mime_type) {
+  if (!Fl::pushed()) {
+    data_source_handle_cancelled(data, source);
+    return;
+  }
   if (mime_type != NULL) {
     //printf("Destination would accept MIME type if dropped: %s\n", mime_type);
   } else {
@@ -399,11 +404,17 @@ static void data_device_handle_enter(void *data, struct wl_data_device *data_dev
   Fl_Window *win = Fl_Wayland_Screen_Driver::surface_to_window(surface);
 //printf("Drag entered our surface %p(win=%p) at %dx%d\n", surface, win, wl_fixed_to_int(x), wl_fixed_to_int(y));
   if (win) {
+    fl_dnd_target_surface = surface;
     float f = Fl::screen_scale(win->screen_num());
-    fl_dnd_target_window = win;
     Fl::e_x = wl_fixed_to_int(x) / f;
-    Fl::e_x_root = Fl::e_x + fl_dnd_target_window->x();
     Fl::e_y = wl_fixed_to_int(y) / f;
+    while (win->parent()) {
+      Fl::e_x += win->x();
+      Fl::e_y += win->y();
+      win = win->window();
+    }
+    fl_dnd_target_window = win;
+    Fl::e_x_root = Fl::e_x + fl_dnd_target_window->x();
     Fl::e_y_root = Fl::e_y + fl_dnd_target_window->y();
     Fl::handle(FL_DND_ENTER, fl_dnd_target_window);
     current_drag_offer = offer;
@@ -421,13 +432,20 @@ static void data_device_handle_motion(void *data, struct wl_data_device *data_de
   int ret = 0;
   if (fl_dnd_target_window) {
     float f = Fl::screen_scale(fl_dnd_target_window->screen_num());
+    Fl_Window *win = Fl_Wayland_Screen_Driver::surface_to_window(fl_dnd_target_surface);
     Fl::e_x = wl_fixed_to_int(x) / f;
-    Fl::e_x_root = Fl::e_x + fl_dnd_target_window->x();
     Fl::e_y = wl_fixed_to_int(y) / f;
+    while (win->parent()) {
+      Fl::e_x += win->x();
+      Fl::e_y += win->y();
+      win = win->window();
+    }
+    Fl::e_x_root = Fl::e_x + fl_dnd_target_window->x();
     Fl::e_y_root = Fl::e_y + fl_dnd_target_window->y();
     ret = Fl::handle(FL_DND_DRAG, fl_dnd_target_window);
+    if (Fl::belowmouse()) Fl::belowmouse()->take_focus();
   }
-  uint32_t supported_actions =  ret ? WL_DATA_DEVICE_MANAGER_DND_ACTION_COPY : WL_DATA_DEVICE_MANAGER_DND_ACTION_NONE;
+  uint32_t supported_actions =  ret && (Fl::pushed() || !doing_dnd) ? WL_DATA_DEVICE_MANAGER_DND_ACTION_COPY : WL_DATA_DEVICE_MANAGER_DND_ACTION_NONE;
   uint32_t preferred_action = supported_actions;
   wl_data_offer_set_actions(current_drag_offer, supported_actions, preferred_action);
   wl_display_roundtrip(Fl_Wayland_Screen_Driver::wl_display);
@@ -436,11 +454,13 @@ static void data_device_handle_motion(void *data, struct wl_data_device *data_de
 
 static void data_device_handle_leave(void *data, struct wl_data_device *data_device) {
 //printf("Drag left our surface\n");
+if (current_drag_offer)  Fl::handle(FL_DND_LEAVE, fl_dnd_target_window);
 }
 
 
 static void data_device_handle_drop(void *data, struct wl_data_device *data_device) {
   if (!current_drag_offer) return;
+  Fl::handle(FL_ENTER, fl_dnd_target_window); // useful to set the belowmouse widget
   int ret = Fl::handle(FL_DND_RELEASE, fl_dnd_target_window);
 //printf("data_device_handle_drop ret=%d doing_dnd=%d\n", ret, doing_dnd);
 

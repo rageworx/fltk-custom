@@ -1,7 +1,7 @@
 //
 // Standard dialog functions for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2021 by Bill Spitzak and others.
+// Copyright 1998-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -67,10 +67,6 @@ Fl_Color fl_message_button_label_color_[3] = {FL_BLACK,FL_BLACK,FL_BLACK};
 Fl_Color fl_message_input_color_ = FL_WHITE;
 Fl_Color fl_message_input_text_color_ = FL_BLACK;
 Fl_Font fl_message_input_text_font_ = FL_HELVETICA;
-static int enableHotspot = 1;
-static int form_x = 0;
-static int form_y = 0;
-static int form_position = 0; // 0 = not set, 1 = absolute, 2 = centered
 
 // pointers you can use to change FLTK to another language:
 const char *fl_no = "No";         ///< string pointer used in common dialogs, you can change it to another language
@@ -148,9 +144,27 @@ void _fl_ask_applycolor( Fl_Message* msg )
 #endif /// of FLTK_EXT_VERSION
 
 /**
-  Emits a system beep message.
+  Emits a system beep.
 
-  \param[in] type The beep type from the \ref Fl_Beep enumeration.
+  This function is platform specific. Depending on the input \p type a different
+  sound may be played or the system speaker may beep with a different volume.
+
+  On X the system speaker is used which may not work at all on newer systems
+  that don't have a speaker. Since 1.4.0 \c FL_BEEP_DEFAULT and other types
+  honor the system or user settings whereas \c FL_BEEP_ERROR uses 100% volume.
+  This may be changed in a future version.
+
+  On Wayland an ASCII \p BEL (0x07) is output to stderr.
+
+  On Windows the \c MessageBeep() function is used to play different sounds
+  depending on the \p type argument.
+
+  On macOS the system beep function \c NSBeep() is used for \c FL_BEEP_DEFAULT
+  and \c FL_BEEP_ERROR. Other types are ignored.
+
+  On other platforms the behavior is undefined and may change in the future.
+
+  \param[in] type The beep type from the \ref Fl_Beep enumeration (optional)
 
   \code #include <FL/fl_ask.H> \endcode
 */

@@ -1,6 +1,7 @@
 /*
  * Copyright © 2017-2018 Red Hat Inc.
  * Copyright © 2018 Jonas Ådahl
+ * Copyright © 2019 Christian Rauch
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -347,6 +348,16 @@ libdecor_frame_translate_coordinate(struct libdecor_frame *frame,
 				    int *frame_y);
 
 /**
+ * Set the min content size.
+ *
+ * This translates roughly to xdg_toplevel_set_min_size().
+ */
+void
+libdecor_frame_set_min_content_size(struct libdecor_frame *frame,
+				    int content_width,
+				    int content_height);
+
+/**
  * Set the max content size.
  *
  * This translates roughly to xdg_toplevel_set_max_size().
@@ -357,14 +368,20 @@ libdecor_frame_set_max_content_size(struct libdecor_frame *frame,
 				    int content_height);
 
 /**
- * Set the min content size.
- *
- * This translates roughly to xdg_toplevel_set_min_size().
+ * Get the min content size.
  */
 void
-libdecor_frame_set_min_content_size(struct libdecor_frame *frame,
-				    int content_width,
-				    int content_height);
+libdecor_frame_get_min_content_size(const struct libdecor_frame *frame,
+				    int *content_width,
+				    int *content_height);
+
+/**
+ * Get the max content size.
+ */
+void
+libdecor_frame_get_max_content_size(const struct libdecor_frame *frame,
+				    int *content_width,
+				    int *content_height);
 
 /**
  * Initiate an interactive resize.

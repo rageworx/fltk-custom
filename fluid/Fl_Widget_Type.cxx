@@ -26,6 +26,7 @@
 #include "Fluid_Image.h"
 #include "alignment_panel.h"
 #include "widget_panel.h"
+#include "undo.h"
 
 #include <FL/Fl.H>
 #include <FL/Fl_Group.H>
@@ -294,7 +295,7 @@ Fl_Type *sort(Fl_Type *parent) {
 ////////////////////////////////////////////////////////////////
 // The control panels!
 
-static Fl_Window *the_panel;
+Fl_Window *the_panel;
 
 // All the callbacks use the argument to indicate whether to load or store.
 // This avoids the need for pointers to all the widgets, and keeps the
@@ -666,19 +667,26 @@ void x_cb(Fluid_Coord_Input *i, void *v) {
       x_input->activate();
     } else x_input->deactivate();
   } else {
+    undo_checkpoint();
     widget_i = 0;
     int mod = 0;
+    int v = 0;
     for (Fl_Type *o = Fl_Type::first; o; o = o->next) {
       if (o->selected && o->is_widget()) {
         Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
         i->variables(widget_vars, o);
-        w->resize((int)i->value(), w->y(), w->w(), w->h());
+        v = i->value();
+        w->resize(v, w->y(), w->w(), w->h());
         if (w->window()) w->window()->redraw();
         widget_i++;
         mod = 1;
       }
     }
-    if (mod) set_modflag(1);
+    if (mod) {
+      set_modflag(1);
+      i->value(v);    // change the displayed value to the result of the last
+                      // calculation. Keep the formula if it was not used.
+    }
   }
 }
 
@@ -690,19 +698,25 @@ void y_cb(Fluid_Coord_Input *i, void *v) {
       y_input->activate();
     } else y_input->deactivate();
   } else {
+    undo_checkpoint();
     widget_i = 0;
     int mod = 0;
+    int v = 0;
     for (Fl_Type *o = Fl_Type::first; o; o = o->next) {
       if (o->selected && o->is_widget()) {
         Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
         i->variables(widget_vars, o);
-        w->resize(w->x(), (int)i->value(), w->w(), w->h());
+        v = i->value();
+        w->resize(w->x(), v, w->w(), w->h());
         if (w->window()) w->window()->redraw();
         widget_i++;
         mod = 1;
       }
     }
-    if (mod) set_modflag(1);
+    if (mod) {
+      set_modflag(1);
+      i->value(v);
+    }
   }
 }
 
@@ -714,19 +728,25 @@ void w_cb(Fluid_Coord_Input *i, void *v) {
       w_input->activate();
     } else w_input->deactivate();
   } else {
+    undo_checkpoint();
     widget_i = 0;
     int mod = 0;
+    int v = 0;
     for (Fl_Type *o = Fl_Type::first; o; o = o->next) {
       if (o->selected && o->is_widget()) {
         Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
         i->variables(widget_vars, o);
-        w->resize(w->x(), w->y(), (int)i->value(), w->h());
+        v = i->value();
+        w->resize(w->x(), w->y(), v, w->h());
         if (w->window()) w->window()->redraw();
         widget_i++;
         mod = 1;
       }
     }
-    if (mod) set_modflag(1);
+    if (mod) {
+      set_modflag(1);
+      i->value(v);
+    }
   }
 }
 
@@ -738,23 +758,29 @@ void h_cb(Fluid_Coord_Input *i, void *v) {
       h_input->activate();
     } else h_input->deactivate();
   } else {
+    undo_checkpoint();
     widget_i = 0;
     int mod = 0;
+    int v = 0;
     for (Fl_Type *o = Fl_Type::first; o; o = o->next) {
       if (o->selected && o->is_widget()) {
         Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
         i->variables(widget_vars, o);
-        w->resize(w->x(), w->y(), w->w(), (int)i->value());
+        v = i->value();
+        w->resize(w->x(), w->y(), w->w(), v);
         if (w->window()) w->window()->redraw();
         widget_i++;
         mod = 1;
       }
     }
-    if (mod) set_modflag(1);
+    if (mod) {
+      set_modflag(1);
+      i->value(v);
+    }
   }
 }
 
-void wc_relative_cb(Fl_Light_Button *i, void *v) {
+void wc_relative_cb(Fl_Choice *i, void *v) {
   if (v == LOAD) {
     if (!strcmp(current_widget->type_name(), "widget_class")) {
       i->show();
@@ -846,6 +872,22 @@ Fl_Menu_Item boxmenu[] = {
 {"GLEAM_THIN_DOWN_BOX",0,0,(void *)FL_GLEAM_THIN_DOWN_BOX},
 {"GLEAM_ROUND_UP_BOX",0,0,(void *)FL_GLEAM_ROUND_UP_BOX},
 {"GLEAM_ROUND_DOWN_BOX",0,0,(void *)FL_GLEAM_ROUND_DOWN_BOX},
+{"OXY_UP_BOX",0,0,(void *)FL_OXY_UP_BOX},
+{"OXY_DOWN_BOX",0,0,(void *)FL_OXY_DOWN_BOX},
+{"OXY_THIN_UP_BOX",0,0,(void *)FL_OXY_THIN_UP_BOX},
+{"OXY_THIN_DOWN_BOX",0,0,(void *)FL_OXY_THIN_DOWN_BOX},
+{"OXY_ROUND_UP_BOX",0,0,(void *)FL_OXY_ROUND_UP_BOX},
+{"OXY_ROUND_DOWN_BOX",0,0,(void *)FL_OXY_ROUND_DOWN_BOX},
+{"OXY_BUTTON_UP_BOX",0,0,(void *)FL_OXY_BUTTON_UP_BOX},
+{"OXY_BUTTON_DOWN_BOX",0,0,(void *)FL_OXY_BUTTON_DOWN_BOX},
+#ifdef FLTK_EXT_VERSION
+{"FLAT_UP_BOX",0,0,(void *)FL_FLAT_UP_BOX},
+{"FLAT_DOWN_BOX",0,0,(void *)FL_FLAT_DOWN_BOX},
+{"FLAT_THIN_UP_BOX",0,0,(void *)FL_FLAT_THIN_UP_BOX},
+{"FLAT_THIN_DOWN_BOX",0,0,(void *)FL_FLAT_THIN_DOWN_BOX},
+{"FLAT_ROUND_UP_BOX",0,0,(void *)FL_FLAT_ROUND_UP_BOX},
+{"FLAT_ROUND_DOWN_BOX",0,0,(void *)FL_FLAT_ROUND_DOWN_BOX},
+#endif /// of FLTK_EXT_VERSION
 {0},
 {"frames",0,0,0,FL_SUBMENU},
 {"UP_FRAME",0,0,(void *)FL_UP_FRAME},
@@ -866,6 +908,14 @@ Fl_Menu_Item boxmenu[] = {
 {"GTK_THIN_DOWN_FRAME",0,0,(void *)FL_GTK_THIN_DOWN_FRAME},
 {"GLEAM_UP_FRAME",0,0,(void *)FL_GLEAM_UP_FRAME},
 {"GLEAM_DOWN_FRAME",0,0,(void *)FL_GLEAM_DOWN_FRAME},
+{"OXY_UP_FRAME",0,0,(void *)FL_OXY_UP_FRAME},
+{"OXY_DOWN_FRAME",0,0,(void *)FL_OXY_DOWN_FRAME},
+{"OXY_THIN_UP_FRAME",0,0,(void *)FL_OXY_THIN_UP_FRAME},
+{"OXY_THIN_DOWN_FRAME",0,0,(void *)FL_OXY_THIN_DOWN_FRAME},
+#ifdef FLTK_EXT_VERSION
+{"FLAT_UP_FRAME",0,0,(void *)FL_FLAT_UP_FRAME},
+{"FLAT_DOWN_FRAME",0,0,(void *)FL_FLAT_DOWN_FRAME},
+#endif /// of FLTK_EXT_VERSION
 {0},
 {0}};
 
@@ -1614,8 +1664,7 @@ void textcolor_cb(Fl_Button* i, void* v) {
 
 void min_w_cb(Fl_Value_Input* i, void* v) {
   if (v == LOAD) {
-    if (!current_widget->is_window()) {i->parent()->hide(); return;}
-    i->parent()->show();
+    if (!current_widget->is_window()) return;
     i->value(((Fl_Window_Type*)current_widget)->sr_min_w);
   } else {
     int mod = 0;
@@ -1717,10 +1766,6 @@ void set_max_size_cb(Fl_Button*, void* v) {
 
 void slider_size_cb(Fl_Value_Input* i, void* v) {
   if (v == LOAD) {
-    if (current_widget->is_window())
-      i->parent()->hide();
-    else
-      i->parent()->show();
     if (current_widget->is_valuator()<2) {i->deactivate(); return;}
     i->activate();
     i->value(((Fl_Slider*)(current_widget->o))->slider_size());
@@ -1876,6 +1921,271 @@ void value_cb(Fl_Value_Input* i, void* v) {
   }
 }
 
+// The following three callbacks cooperate, showing only one of the groups of
+// widgets that use the same space in the dialog.
+
+void values_group_cb(Fl_Group* g, void* v) {
+  if (v == LOAD) {
+    if (current_widget->is_flex()) {
+      g->hide();
+    } else if (current_widget->is_window()) {
+      g->hide();
+    } else {
+      g->show();
+    }
+    propagate_load(g, v);
+  }
+}
+
+void flex_margin_group_cb(Fl_Group* g, void* v) {
+  if (v == LOAD) {
+    if (current_widget->is_flex()) {
+      g->show();
+    } else {
+      g->hide();
+    }
+    propagate_load(g, v);
+  }
+}
+
+void size_range_group_cb(Fl_Group* g, void* v) {
+  if (v == LOAD) {
+    if (current_widget->is_window()) {
+      g->show();
+    } else {
+      g->hide();
+    }
+    propagate_load(g, v);
+  }
+}
+
+
+static void flex_margin_cb(Fl_Value_Input* i, void* v,
+                           void (*load_margin)(Fl_Flex*,Fl_Value_Input*),
+                           int (*update_margin)(Fl_Flex*,int)) {
+  if (v == LOAD) {
+    if (current_widget->is_flex()) {
+      load_margin((Fl_Flex*)current_widget->o, i);
+    }
+  } else {
+    int mod = 0;
+    int new_value = (int)i->value();
+    for (Fl_Type *o = Fl_Type::first; o; o = o->next) {
+      if (o->selected && o->is_flex()) {
+        Fl_Flex_Type* q = (Fl_Flex_Type*)o;
+        Fl_Flex* w = (Fl_Flex*)q->o;
+        if (update_margin(w, new_value)) {
+          w->layout();
+          mod = 1;
+        }
+      }
+    }
+    if (mod) set_modflag(1);
+  }
+}
+
+static void load_left_margin(Fl_Flex *w, Fl_Value_Input* i)
+{
+  int v;
+  w->margins(&v, NULL, NULL, NULL);
+  i->value((double)v);
+}
+
+static int update_left_margin(Fl_Flex *w, int new_value)
+{
+  int l, t, r, b;
+  w->margins(&l, &t, &r, &b);
+  if (new_value!=l) {
+    w->margin(new_value, t, r, b);
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+void flex_margin_left_cb(Fl_Value_Input* i, void* v) {
+  flex_margin_cb(i, v, load_left_margin, update_left_margin);
+}
+
+static void load_top_margin(Fl_Flex *w, Fl_Value_Input* i)
+{
+  int v;
+  w->margins(NULL, &v, NULL, NULL);
+  i->value((double)v);
+}
+
+static int update_top_margin(Fl_Flex *w, int new_value)
+{
+  int l, t, r, b;
+  w->margins(&l, &t, &r, &b);
+  if (new_value!=t) {
+    w->margin(l, new_value, r, b);
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+void flex_margin_top_cb(Fl_Value_Input* i, void* v) {
+  flex_margin_cb(i, v, load_top_margin, update_top_margin);
+}
+
+static void load_right_margin(Fl_Flex *w, Fl_Value_Input* i)
+{
+  int v;
+  w->margins(NULL, NULL, &v, NULL);
+  i->value((double)v);
+}
+
+static int update_right_margin(Fl_Flex *w, int new_value)
+{
+  int l, t, r, b;
+  w->margins(&l, &t, &r, &b);
+  if (new_value!=r) {
+    w->margin(l, t, new_value, b);
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+void flex_margin_right_cb(Fl_Value_Input* i, void* v) {
+  flex_margin_cb(i, v, load_right_margin, update_right_margin);
+}
+
+static void load_bottom_margin(Fl_Flex *w, Fl_Value_Input* i)
+{
+  int v;
+  w->margins(NULL, NULL, NULL, &v);
+  i->value((double)v);
+}
+
+static int update_bottom_margin(Fl_Flex *w, int new_value)
+{
+  int l, t, r, b;
+  w->margins(&l, &t, &r, &b);
+  if (new_value!=b) {
+    w->margin(l, t, r, new_value);
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+void flex_margin_bottom_cb(Fl_Value_Input* i, void* v) {
+  flex_margin_cb(i, v, load_bottom_margin, update_bottom_margin);
+}
+
+static void load_gap(Fl_Flex *w, Fl_Value_Input* i)
+{
+  int v = w->gap();
+  i->value((double)v);
+}
+
+static int update_gap(Fl_Flex *w, int new_value)
+{
+  int g = w->gap();
+  if (new_value!=g) {
+    w->gap(new_value);
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+void flex_margin_gap_cb(Fl_Value_Input* i, void* v) {
+  flex_margin_cb(i, v, load_gap, update_gap);
+}
+
+void position_group_cb(Fl_Group* g, void* v) {
+  if (v == LOAD) {
+    if (Fl_Flex_Type::parent_is_flex(current_widget)) {
+      g->hide();
+    } else {
+      g->show();
+    }
+  }
+  propagate_load(g, v);
+}
+
+void flex_size_group_cb(Fl_Group* g, void* v) {
+  if (v == LOAD) {
+    if (Fl_Flex_Type::parent_is_flex(current_widget)) {
+      g->show();
+    } else {
+      g->hide();
+    }
+  }
+  propagate_load(g, v);
+}
+
+void flex_size_cb(Fl_Value_Input* i, void* v) {
+  if (v == LOAD) {
+    if (Fl_Flex_Type::parent_is_flex(current_widget)) {
+      i->value(Fl_Flex_Type::size(current_widget));
+    }
+  } else {
+    int mod = 0;
+    int new_size = (int)i->value();
+    for (Fl_Type *o = Fl_Type::first; o; o = o->next) {
+      if (o->selected && o->is_widget() && Fl_Flex_Type::parent_is_flex(o)) {
+        Fl_Widget* w = (Fl_Widget*)((Fl_Widget_Type*)o)->o;
+        Fl_Flex* f = (Fl_Flex*)((Fl_Flex_Type*)o->parent)->o;
+        int was_fixed = f->set_size(w);
+        if (new_size==0) {
+          if (was_fixed) {
+            f->set_size(w, 0);
+            f->layout();
+            widget_flex_fixed->value(0);
+            mod = 1;
+          }
+        } else {
+          int old_size = Fl_Flex_Type::size(o);
+          if (old_size!=new_size || !was_fixed) {
+            f->set_size(w, new_size);
+            f->layout();
+            widget_flex_fixed->value(1);
+            mod = 1;
+          }
+        }
+      }
+    }
+    if (mod) set_modflag(1);
+  }
+}
+
+void flex_fixed_cb(Fl_Check_Button* i, void* v) {
+  if (v == LOAD) {
+    if (Fl_Flex_Type::parent_is_flex(current_widget)) {
+      i->value(Fl_Flex_Type::is_fixed(current_widget));
+    }
+  } else {
+    int mod = 0;
+    int new_fixed = (int)i->value();
+    for (Fl_Type *o = Fl_Type::first; o; o = o->next) {
+      if (o->selected && o->is_widget() && Fl_Flex_Type::parent_is_flex(o)) {
+        Fl_Widget* w = (Fl_Widget*)((Fl_Widget_Type*)o)->o;
+        Fl_Flex* f = (Fl_Flex*)((Fl_Flex_Type*)o->parent)->o;
+        int was_fixed = f->set_size(w);
+        if (new_fixed==0) {
+          if (was_fixed) {
+            f->set_size(w, 0);
+            f->layout();
+            mod = 1;
+          }
+        } else {
+          if (!was_fixed) {
+            f->set_size(w, Fl_Flex_Type::size(o));
+            f->layout();
+            mod = 1;
+          }
+        }
+      }
+    }
+    if (mod) set_modflag(1);
+  }
+}
+
 ////////////////////////////////////////////////////////////////
 
 // subtypes:
@@ -1918,6 +2228,8 @@ void subtype_cb(Fl_Choice* i, void* v) {
         if (q->subtypes()==m) {
           if (q->is_spinner())
             ((Fl_Spinner*)q->o)->type(n);
+          else if (q->is_flex())
+            ((Fl_Flex_Type*)q)->change_subtype_to(n);
           else
             q->o->type(n);
           q->redraw();
@@ -2331,18 +2643,18 @@ void Fl_Widget_Type::write_code1() {
   }
   if (label() && *label()) {
     write_c(", ");
-    switch (i18n_type) {
+    switch (P.i18n_type) {
     case 0 : /* None */
         write_cstring(label());
         break;
     case 1 : /* GNU gettext */
-        write_c("%s(", i18n_function);
+        write_c("%s(", P.i18n_function.value());
         write_cstring(label());
         write_c(")");
         break;
     case 2 : /* POSIX catgets */
-        write_c("catgets(%s,%s,%d,", i18n_file[0] ? i18n_file : "_catalog",
-                i18n_set, msgnum());
+        write_c("catgets(%s,%s,%d,", P.i18n_file[0] ? P.i18n_file.value() : "_catalog",
+                P.i18n_set.value(), msgnum());
         write_cstring(label());
         write_c(")");
         break;
@@ -2404,18 +2716,18 @@ void Fl_Widget_Type::write_widget_code() {
 
   if (tooltip() && *tooltip()) {
     write_c("%s%s->tooltip(",indent(), var);
-    switch (i18n_type) {
+    switch (P.i18n_type) {
     case 0 : /* None */
         write_cstring(tooltip());
         break;
     case 1 : /* GNU gettext */
-        write_c("%s(", i18n_function);
+        write_c("%s(", P.i18n_function.value());
         write_cstring(tooltip());
         write_c(")");
         break;
     case 2 : /* POSIX catgets */
-        write_c("catgets(%s,%s,%d,", i18n_file[0] ? i18n_file : "_catalog",
-                i18n_set, msgnum() + 1);
+        write_c("catgets(%s,%s,%d,", P.i18n_file[0] ? P.i18n_file.value() : "_catalog",
+                P.i18n_set.value(), msgnum() + 1);
         write_cstring(tooltip());
         write_c(")");
         break;
@@ -2437,7 +2749,7 @@ void Fl_Widget_Type::write_widget_code() {
   else if (is_value_input()) shortcut = ((Fl_Value_Input*)o)->shortcut();
   else if (is_text_display()) shortcut = ((Fl_Text_Display*)o)->shortcut();
   if (shortcut) {
-    if (use_FL_COMMAND && (shortcut & (FL_CTRL|FL_META))) {
+    if (P.use_FL_COMMAND && (shortcut & (FL_CTRL|FL_META))) {
       write_c("%s%s->shortcut(FL_COMMAND|0x%x);\n", indent(), var, shortcut & ~(FL_CTRL|FL_META));
     } else {
       write_c("%s%s->shortcut(0x%x);\n", indent(), var, shortcut);
@@ -3046,11 +3358,4 @@ void Fl_Widget_Type::copy_properties() {
     w->deactivate();
   if (resizable() && w->parent())
     w->parent()->resizable(o);
-}
-
-void Fl_Pack_Type::copy_properties()
-{
-  Fl_Group_Type::copy_properties();
-  Fl_Pack *d = (Fl_Pack*)live_widget, *s =(Fl_Pack*)o;
-  d->spacing(s->spacing());
 }

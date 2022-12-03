@@ -27,6 +27,7 @@ class DemoTable : public Fl_Table_Row
 private:
     Fl_Color cell_bgcolor;                              // color of cell's bg color
     Fl_Color cell_fgcolor;                              // color of cell's fg color
+    bool show_callbacks;                                // set to show callback msgs
 
 protected:
     void draw_cell(TableContext context,                // table cell drawing
@@ -39,6 +40,7 @@ public:
     {
         cell_bgcolor = FL_WHITE;
         cell_fgcolor = FL_BLACK;
+        show_callbacks = false;
         callback(&event_callback, (void*)this);
         end();
     }
@@ -47,6 +49,7 @@ public:
     Fl_Color GetCellBGColor() const { return(cell_bgcolor); }
     void SetCellFGColor(Fl_Color val) { cell_fgcolor = val; }
     void SetCellBGColor(Fl_Color val) { cell_bgcolor = val; }
+    void ShowCallbacks(bool val)      { show_callbacks = val; }
 };
 
 // Handle drawing all cells in table
@@ -54,7 +57,7 @@ void DemoTable::draw_cell(TableContext context,
                           int R, int C, int X, int Y, int W, int H)
 {
     static char s[40];
-    sprintf(s, "%d/%d", R, C);          // text for each cell
+    snprintf(s, 40, "%d/%d", R, C);          // text for each cell
 
     switch ( context )
     {
@@ -126,8 +129,9 @@ void DemoTable::event_callback2()
         C = callback_col();
     TableContext context = callback_context();
     const char *name = label() ? label() : "?";
-    G_tty->printf("'%s' callback: Row=%d Col=%d Context=%d Event=%d InteractiveResize? %d\n",
-                  name, R, C, (int)context, (int)Fl::event(), (int)is_interactive_resize());
+    if ( show_callbacks )
+      G_tty->printf("'%s' callback: Row=%d Col=%d Context=%d Event=%d InteractiveResize? %d\n",
+                    name, R, C, (int)context, (int)Fl::event(), (int)is_interactive_resize());
 }
 
 // GLOBAL TABLE WIDGET
@@ -271,7 +275,7 @@ void setcellbgcolor_cb(Fl_Widget *w, void *data)
 char *itoa(int val)
 {
     static char s[80];
-    sprintf(s, "%d", val);
+    snprintf(s, 80, "%d", val);
     return(s);
 }
 
@@ -367,6 +371,9 @@ int main(int argc, char **argv)
     G_table->col_header_height(25);
     G_table->col_resize(1);
     G_table->col_width_all(80);
+
+    // After initialization, show table's callbacks
+    G_table->ShowCallbacks(true);
 
     // Add children to window
     win.begin();

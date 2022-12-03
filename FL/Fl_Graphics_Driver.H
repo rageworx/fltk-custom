@@ -76,9 +76,6 @@ typedef struct _PangoFontDescription PangoFontDescription;
  */
 class FL_EXPORT Fl_Graphics_Driver {
   friend class Fl_Surface_Device;
-  friend class Fl_Display_Device;
-  friend class Fl_Screen_Driver;
-  friend class Fl_Window_Driver;
   friend class Fl_Pixmap;
   friend class Fl_Bitmap;
   friend class Fl_RGB_Image;
@@ -90,7 +87,6 @@ class FL_EXPORT Fl_Graphics_Driver {
   friend void fl_copy_offscreen(int x, int y, int w, int h, Fl_Offscreen pixmap, int srcx, int srcy);
   friend int fl_convert_pixmap(const char*const* cdata, uchar* out, Fl_Color bg);
   friend FL_EXPORT void gl_start();
-  friend FL_EXPORT void gl_finish();
   /* ============== Implementation note about image drawing =========================
    A graphics driver can implement up to 6 virtual member functions to draw images:
    virtual void draw_pixmap(Fl_Pixmap *pxm,int XP, int YP, int WP, int HP, int cx, int cy)
@@ -166,7 +162,7 @@ protected:
   matrix m; ///< current transformation matrix
   int n; ///< For internal use by FLTK
   int gap_; ///< For internal use by FLTK
-  int what; ///< For internal use by FLTK
+  enum SHAPE {NONE=0, LINE, LOOP, POLYGON, POINTS} what;
   int rstackptr; ///< For internal use by FLTK
   static const int region_stack_max = FL_REGION_STACK_SIZE - 1; ///< For internal use by FLTK
   Fl_Region rstack[FL_REGION_STACK_SIZE]; ///< For internal use by FLTK
@@ -174,12 +170,6 @@ protected:
   int p_size;
   typedef struct { float x; float y; } XPOINT;
   XPOINT *xpoint;
-#ifndef FL_DOXYGEN
-  enum {LINE, LOOP, POLYGON, POINT_};
-  inline int vertex_no() { return n; }
-  inline int vertex_kind() {return what;}
-#endif
-  matrix *fl_matrix; /**< Points to the current coordinate transformation matrix */
   virtual void global_gc();
   virtual void cache(Fl_Pixmap *img);
   virtual void cache(Fl_Bitmap *img);
@@ -244,6 +234,8 @@ public:
   // support of "complex shapes"
   void push_matrix();
   void pop_matrix();
+  void load_identity();
+  void load_matrix(double a, double b, double c, double d, double x, double y);
   void mult_matrix(double a, double b, double c, double d, double x, double y);
   void rotate(double d);
   void translate(double x,double y);
@@ -265,6 +257,9 @@ public:
   virtual void rect(int x, int y, int w, int h);
   virtual void focus_rect(int x, int y, int w, int h);
   virtual void rectf(int x, int y, int w, int h);
+  virtual void _rbox(int fill, int x, int y, int w, int h, int r);
+  virtual void rounded_rect(int x, int y, int w, int h, int r);
+  virtual void rounded_rectf(int x, int y, int w, int h, int r);
   // the default implementation is most likely enough
   virtual void colored_rectf(int x, int y, int w, int h, uchar r, uchar g, uchar b);
   virtual void line(int x, int y, int x1, int y1);
@@ -314,6 +309,8 @@ public:
   virtual void fixloop();
   virtual void end_polygon();
   virtual void end_complex_polygon();
+  // default implementation is most probably enough
+  virtual bool can_fill_non_convex_polygon() { return true; }
   virtual void gap();
   virtual void circle(double x, double y, double r);
   virtual void arc(double x, double y, double r, double start, double end);

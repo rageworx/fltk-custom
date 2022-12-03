@@ -23,6 +23,9 @@
 #include "Fl_Wayland_Window_Driver.H"
 #include "Fl_Wayland_Graphics_Driver.H"
 #include "Fl_Wayland_Gl_Window_Driver.H"
+#ifdef FLTK_USE_X11
+#  include "../X11/Fl_X11_Gl_Window_Driver.H"
+#endif
 #include <wayland-egl.h>
 #include <EGL/egl.h>
 #include <FL/gl.h>
@@ -33,7 +36,7 @@
 eglQueryContext() reports that EGL_RENDER_BUFFER equals EGL_BACK_BUFFER.
 This experiment suggests that the platform only supports double-buffer drawing.
 Consequently, FL_DOUBLE is enforced in all Fl_Gl_Window::mode_ values under Wayland.
- 
+
 * Commented out code marked with CONTROL_LEAKING_SUB_GL_WINDOWS aims to prevent
  sub GL windows from leaking out from their parent by making leaking parts fully transparent.
  This code is commented out because it requires the FL_ALPHA flag to be on
@@ -70,6 +73,15 @@ Fl_Wayland_Gl_Window_Driver::Fl_Wayland_Gl_Window_Driver(Fl_Gl_Window *win) : Fl
   egl_window = NULL;
   egl_surface = NULL;
   egl_swap_in_progress = false;
+}
+
+
+Fl_Gl_Window_Driver *Fl_Gl_Window_Driver::newGlWindowDriver(Fl_Gl_Window *w)
+{
+#ifdef FLTK_USE_X11
+  if (!Fl_Wayland_Screen_Driver::wl_display) return new Fl_X11_Gl_Window_Driver(w);
+#endif
+  return new Fl_Wayland_Gl_Window_Driver(w);
 }
 
 
@@ -176,7 +188,8 @@ Fl_Gl_Choice *Fl_Wayland_Gl_Window_Driver::find(int m, const int *alistp)
 }
 
 
-GLContext Fl_Wayland_Gl_Window_Driver::create_gl_context(Fl_Window* window, const Fl_Gl_Choice* g, int layer) {
+GLContext Fl_Wayland_Gl_Window_Driver::create_gl_context(Fl_Window* window,
+                                                         const Fl_Gl_Choice* g) {
   GLContext shared_ctx = 0;
   if (context_list && nContext) shared_ctx = context_list[0];
 
@@ -301,7 +314,7 @@ void Fl_Wayland_Gl_Window_Driver::make_current_before() {
 
 float Fl_Wayland_Gl_Window_Driver::pixels_per_unit()
 {
-  int ns = Fl_Window_Driver::driver(pWindow)->screen_num();
+  int ns = pWindow->screen_num();
   int wld_scale = pWindow->shown() ? fl_wl_xid(pWindow)->scale : 1;
   return wld_scale * Fl::screen_driver()->scale(ns);
 }

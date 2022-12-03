@@ -18,7 +18,7 @@
 #include <FL/Fl_Native_File_Chooser.H>
 #include "Fl_Native_File_Chooser_Kdialog.H"
 #include "Fl_Window_Driver.H"
-#include "drivers/Unix/Fl_Unix_System_Driver.H"
+#include "drivers/Unix/Fl_Unix_Screen_Driver.H"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -111,14 +111,20 @@ int Fl_Kdialog_Native_File_Chooser_Driver::show() {
   const char *preset = ".";
   if (_preset_file) preset = _preset_file;
   else if (_directory) preset = _directory;
-  char *command = new char[strlen(option) + strlen(preset) + (_title?strlen(_title)+11:0) +
-                           (_parsedfilt?strlen(_parsedfilt):0) + 50];
+  const int com_size = strlen(option) + strlen(preset) +
+    (_title?strlen(_title)+11:0) + (_parsedfilt?strlen(_parsedfilt):0) + 50;
+  char *command = new char[com_size];
   strcpy(command, "kdialog ");
   if (_title) {
-    sprintf(command+strlen(command), " --title '%s'", _title);
+    snprintf(command+strlen(command), com_size - strlen(command),
+             " --title '%s'", _title);
   }
-  sprintf(command+strlen(command), " %s %s ", option, preset);
-  if (_parsedfilt) sprintf(command+strlen(command), " \"%s\" ", _parsedfilt);
+  snprintf(command+strlen(command), com_size - strlen(command),
+           " %s %s ", option, preset);
+  if (_parsedfilt) {
+    snprintf(command+strlen(command), com_size - strlen(command),
+             " \"%s\" ", _parsedfilt);
+  }
   strcat(command, "2> /dev/null"); // get rid of stderr output
 //puts(command);
   FILE *pipe = popen(command, "r");
@@ -130,14 +136,14 @@ int Fl_Kdialog_Native_File_Chooser_Driver::show() {
     Fl_Event_Dispatch old_dispatch = Fl::event_dispatch();
     // prevent FLTK from processing any event
     Fl::event_dispatch(fnfc_dispatch);
-    void *control = ((Fl_Unix_System_Driver*)Fl::system_driver())->control_maximize_button(NULL);
+    void *control = ((Fl_Unix_Screen_Driver*)Fl::screen_driver())->control_maximize_button(NULL);
     // run event loop until pipe finishes
     while (data.fd >= 0) Fl::wait();
     Fl::remove_fd(fileno(pipe));
     pclose(pipe);
     // return to previous event processing by FLTK
     Fl::event_dispatch(old_dispatch);
-    if (control) ((Fl_Unix_System_Driver*)Fl::system_driver())->control_maximize_button(control);
+    if (control) ((Fl_Unix_Screen_Driver*)Fl::screen_driver())->control_maximize_button(control);
     if (data.all_files) {
       // process text received from pipe
       if (data.all_files[strlen(data.all_files)-1] == '\n') data.all_files[strlen(data.all_files)-1] = 0;

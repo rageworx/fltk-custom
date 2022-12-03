@@ -188,6 +188,24 @@ const char *Fl_Mac_App_Menu::quit = "Quit %@";
     mac_key = NSBackspaceCharacter;
   } else if (key == FL_Delete) {
     mac_key = NSDeleteCharacter;
+  } else if (key == FL_Up) {
+    mac_key = NSUpArrowFunctionKey;
+  } else if (key == FL_Down) {
+    mac_key = NSDownArrowFunctionKey;
+  } else if (key == FL_Left) {
+    mac_key = NSLeftArrowFunctionKey;
+  } else if (key == FL_Right) {
+    mac_key = NSRightArrowFunctionKey;
+  } else if (key == FL_Page_Up) {
+    mac_key = NSPageUpFunctionKey;
+  } else if (key == FL_Page_Down) {
+    mac_key = NSPageDownFunctionKey;
+  } else if (key == FL_KP_Enter) {
+    mac_key = 0x2324;  // "⌤" U+2324
+  } else if (key == FL_Home) {
+    mac_key = NSHomeFunctionKey;
+  } else if (key == FL_End) {
+    mac_key = NSEndFunctionKey;
   }
   [self setKeyEquivalent:[NSString stringWithCharacters:&mac_key length:1]];
   [self setKeyEquivalentModifierMask:mod];

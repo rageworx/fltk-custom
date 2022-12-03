@@ -231,33 +231,129 @@ int Fl::event_inside(const Fl_Widget *o) /*const*/ {
 }
 
 //
-// cross-platform timer support
+// Cross-platform timer support
 //
+// User (doxygen) documentation is in this file but the implementation
+// of all functions is in class Fl_Timeout in Fl_Timeout.cxx.
 
-void Fl::add_timeout(double time, Fl_Timeout_Handler cb, void *argp) {
-  Fl_Timeout::add_timeout(time, cb, argp);
-}
+/**
+  Adds a one-shot timeout callback.
 
-void Fl::repeat_timeout(double time, Fl_Timeout_Handler cb, void *argp) {
-  Fl_Timeout::repeat_timeout(time, cb, argp);
+  The callback function \p cb will be called by Fl::wait() at \p time seconds
+  after this function is called.
+  The callback function must have the signature \ref Fl_Timeout_Handler.
+  The optional \p data argument is passed to the callback (default: NULL).
+
+  The timer is removed from the timer queue before the callback function is
+  called. It is safe to reschedule the timeout inside the callback function.
+
+  You can have multiple timeout callbacks, even the same timeout callback
+  with different timeout values and/or different \p data values. They are
+  all considered different timer objects.
+
+  To remove a timeout while it is active (pending) use Fl::remove_timeout().
+
+  If you need more accurate, repeated timeouts, use Fl::repeat_timeout() to
+  reschedule the subsequent timeouts. Please see Fl::repeat_timeout() for
+  an example.
+
+  \param[in]  time    delta time in seconds until the timer expires
+  \param[in]  cb      callback function
+  \param[in]  data    optional user data (default: \p NULL)
+
+  \see Fl_Timeout_Handler
+  \see Fl::repeat_timeout(double time, Fl_Timeout_Handler cb, void *data)
+  \see Fl::remove_timeout(Fl_Timeout_Handler cb, void *data)
+  \see Fl::has_timeout(Fl_Timeout_Handler cb, void *data)
+
+*/
+void Fl::add_timeout(double time, Fl_Timeout_Handler cb, void *data) {
+  Fl_Timeout::add_timeout(time, cb, data);
 }
 
 /**
- Returns true if the timeout exists and has not been called yet.
- */
-int Fl::has_timeout(Fl_Timeout_Handler cb, void *argp) {
-  return Fl_Timeout::has_timeout(cb, argp);
+  Repeats a timeout callback from the expiration of the previous timeout,
+  allowing for more accurate timing.
+
+  You should call this method only inside a timeout callback of the same or
+  a logically related timer from whose expiration time the new timeout shall
+  be scheduled. Otherwise the timing accuracy can't be improved and the
+  exact behavior is undefined.
+
+  If you call this outside a timeout callback the behavior is the same as
+  Fl::add_timeout().
+
+  Example: The following code will print "TICK" each second on stdout with
+  a fair degree of accuracy:
+
+  \code
+    #include <FL/Fl.H>
+    #include <FL/Fl_Window.H>
+    #include <stdio.h>
+
+    void callback(void *) {
+      printf("TICK\n");
+      Fl::repeat_timeout(1.0, callback); // retrigger timeout
+    }
+
+    int main() {
+      Fl_Window win(100, 100);
+      win.show();
+      Fl::add_timeout(1.0, callback); // set up first timeout
+      return Fl::run();
+    }
+  \endcode
+
+  \param[in]  time    delta time in seconds until the timer expires
+  \param[in]  cb      callback function
+  \param[in]  data    optional user data (default: \p NULL)
+*/
+void Fl::repeat_timeout(double time, Fl_Timeout_Handler cb, void *data) {
+  Fl_Timeout::repeat_timeout(time, cb, data);
 }
 
 /**
- Removes a timeout callback. It is harmless to remove a timeout
- callback that no longer exists.
+  Returns true if the timeout exists and has not been called yet.
 
- \note  This version removes all matching timeouts, not just the first one.
-        This may change in the future.
- */
-void Fl::remove_timeout(Fl_Timeout_Handler cb, void *argp) {
-  Fl_Timeout::remove_timeout(cb, argp);
+  Both arguments \p cb and \p data must match with at least one timer
+  in the queue of active timers to return true (1).
+
+  \note It is a known inconsistency that Fl::has_timeout() does not use
+    the \p data argument as a wildcard (match all) if it is zero (NULL)
+    which Fl::remove_timeout() does.
+    This is so for backwards compatibility with FLTK 1.3.x.
+    Therefore using 0 (zero, NULL) as the timeout \p data value is discouraged
+    unless you're sure that you don't need to use
+    <kbd>Fl::has_timeout(callback, (void *)0);</kbd> or
+    <kbd>Fl::remove_timeout(callback, (void *)0);</kbd>.
+
+  \param[in]  cb    Timer callback
+  \param[in]  data  User data
+
+  \returns      whether the timer was found in the queue
+  \retval   0   not found
+  \retval   1   found
+*/
+int Fl::has_timeout(Fl_Timeout_Handler cb, void *data) {
+  return Fl_Timeout::has_timeout(cb, data);
+}
+
+/**
+  Removes a timeout callback from the timer queue.
+
+  This method removes all matching timeouts, not just the first one.
+  This may change in the future.
+
+  If the \p data argument is \p NULL (the default!) only the callback
+  \p cb must match, i.e. all timer entries with this callback are removed.
+
+  It is harmless to remove a timeout callback that no longer exists.
+
+  \param[in]  cb    Timer callback to be removed (must match)
+  \param[in]  data  Wildcard if NULL (default), must match otherwise
+*/
+void Fl::remove_timeout(Fl_Timeout_Handler cb, void *data) {
+  Fl_Timeout::remove_timeout(cb, data);
 }
 
 
@@ -1915,11 +2011,11 @@ int Fl::dnd()
 }
 
 int Fl::event_key(int k) {
-  return system_driver()->event_key(k);
+  return screen_driver()->event_key(k);
 }
 
 int Fl::get_key(int k) {
-  return system_driver()->get_key(k);
+  return screen_driver()->get_key(k);
 }
 
 void Fl::get_mouse(int &x, int &y) {
@@ -2015,14 +2111,19 @@ void fl_close_display()
   Fl::screen_driver()->close_display();
 }
 
-/** Prevent the FLTK library from using its wayland backend.
- Call this early in your main(), before fl_open_display() runs, or any window is created, or the screen is accessed.
- This function has no effect on non-Wayland platforms.
+#ifdef FL_DOXYGEN
+/** Prevent the FLTK library from using its Wayland backend and forces it to use its X11 backend.
+ Put this declaration somewhere in your code outside the body of any function  :
+ \code
+ FL_EXPORT bool fl_disable_wayland = true;
+ \endcode
+ This declaration makes sure source code developed for FLTK 1.3, including X11-specific code,
+ will build and run with FLTK 1.4 and its Wayland platform with this single source code level change.
+ This declaration has no effect on non-Wayland platforms.
+ Don't put this declaration if you want the Wayland backend to be used when it's available.
  */
-void fl_disable_wayland()
-{
-  Fl::system_driver()->disable_wayland();
-}
+FL_EXPORT bool fl_disable_wayland = true;
+#endif // FL_DOXYGEN
 
 FL_EXPORT Window fl_xid_(const Fl_Window *w) {
   Fl_X *temp = Fl_X::i(w);
@@ -2061,13 +2162,13 @@ int Fl::get_font_sizes(Fl_Font fnum, int*& sizep) {
   return Fl_Graphics_Driver::default_driver().get_font_sizes(fnum, sizep);
 }
 
-/** Current value of the GUI scaling factor for screen number \p n */
+/** Current value of the GUI scaling factor for screen number \p n (n ∈ [0 , Fl::screen_count()-1]) */
 float Fl::screen_scale(int n) {
   if (!Fl::screen_scaling_supported() || n < 0 || n >= Fl::screen_count()) return 1.;
   return Fl::screen_driver()->scale(n);
 }
 
-/** Sets the value of the GUI scaling factor for screen number \p n.
+/** Sets the value of the GUI scaling factor for screen number \p n (n ∈ [0 , Fl::screen_count()-1]).
  Also sets the scale factor value of all windows mapped to screen number \p n, if any.
  */
 void Fl::screen_scale(int n, float factor) {

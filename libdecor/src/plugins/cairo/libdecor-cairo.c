@@ -1,5 +1,6 @@
 /*
  * Copyright © 2018 Jonas Ådahl
+ * Copyright © 2019 Christian Rauch
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -44,13 +45,7 @@
 #include <cairo/cairo.h>
 #include <pango/pangocairo.h>
 
-#ifndef APPLY_FLTK_CHANGES
-#define APPLY_FLTK_CHANGES 1
-#endif
-
-/* Note for FLTK: This header file changes location, while its content stays unchanged,
- between the master and gtk_cairo_single branches */
-#include "libdecor-cairo-blur.h"
+#include "common/libdecor-cairo-blur.h"
 
 static const size_t SHADOW_MARGIN = 24;	/* graspable part of the border */
 static const size_t TITLE_HEIGHT = 24;
@@ -1007,13 +1002,11 @@ ensure_border_surfaces(struct libdecor_frame_cairo *frame_cairo)
 	frame_cairo->shadow.opaque = false;
 	ensure_component(frame_cairo, &frame_cairo->shadow);
 
-#if 1 // ! APPLY_FLTK_CHANGES // activate this to get feedback about its impact
 	libdecor_frame_get_min_content_size(&frame_cairo->frame,
 					    &min_width, &min_height);
-	libdecor_frame_set_min_content_size(&frame_cairo->frame, 
-		MAX(min_width, (int)MAX(56, 4 * BUTTON_WIDTH)), 
+	libdecor_frame_set_min_content_size(&frame_cairo->frame,
+		MAX(min_width, (int)MAX(56, 4 * BUTTON_WIDTH)),
 		MAX(min_height, (int)MAX(56, TITLE_HEIGHT + 1)));
-#endif
 }
 
 static void
@@ -1335,8 +1328,7 @@ draw_component_content(struct libdecor_frame_cairo *frame_cairo,
 			cairo_rel_line_to(cr, small - 1, 0);
 			cairo_rel_line_to(cr, 0, small - 1);
 			cairo_line_to(cr, x + small - 1, y + small - 1);
-		}
-		else {
+		} else {
 			cairo_rectangle(cr, x, y, SYM_DIM - 1, SYM_DIM - 1);
 		}
 		cairo_stroke(cr);
@@ -1670,32 +1662,6 @@ draw_decoration(struct libdecor_frame_cairo *frame_cairo)
 	}
 }
 
-static void
-set_window_geometry(struct libdecor_frame_cairo *frame_cairo)
-{
-	struct libdecor_frame *frame = &frame_cairo->frame;
-	int x = 0, y = 0, width = 0, height = 0;
-
-	switch (frame_cairo->decoration_type) {
-	case DECORATION_TYPE_NONE:
-		x = 0;
-		y = 0;
-		width = libdecor_frame_get_content_width(frame);
-		height = libdecor_frame_get_content_height(frame);
-		break;
-	case DECORATION_TYPE_ALL:
-	case DECORATION_TYPE_TILED:
-	case DECORATION_TYPE_MAXIMIZED:
-		x = 0;
-		y = -(int)TITLE_HEIGHT;
-		width = libdecor_frame_get_content_width(frame);
-		height = libdecor_frame_get_content_height(frame) + TITLE_HEIGHT;
-		break;
-	}
-
-	libdecor_frame_set_window_geometry(frame, x, y, width, height);
-}
-
 static enum decoration_type
 window_state_to_decoration_type(enum libdecor_window_state window_state)
 {
@@ -1753,7 +1719,6 @@ libdecor_plugin_cairo_frame_commit(struct libdecor_plugin *plugin,
 	frame_cairo->window_state = new_window_state;
 
 	draw_decoration(frame_cairo);
-	set_window_geometry(frame_cairo);
 }
 
 static void
@@ -1789,24 +1754,6 @@ libdecor_plugin_cairo_frame_property_changed(struct libdecor_plugin *plugin,
 		draw_decoration(frame_cairo);
 		libdecor_frame_toplevel_commit(frame);
 	}
-}
-
-static void
-libdecor_plugin_cairo_frame_translate_coordinate(struct libdecor_plugin *plugin,
-						 struct libdecor_frame *frame,
-						 int content_x,
-						 int content_y,
-						 int *frame_x,
-						 int *frame_y)
-{
-	struct libdecor_frame_cairo *frame_cairo =
-		(struct libdecor_frame_cairo *) frame;
-
-	*frame_x = content_x;
-	*frame_y = content_y;
-
-	if (frame_cairo->title_bar.is_showing)
-		*frame_y += TITLE_HEIGHT;
 }
 
 static bool
@@ -1876,63 +1823,38 @@ libdecor_plugin_cairo_frame_popup_ungrab(struct libdecor_plugin *plugin,
 }
 
 static bool
-libdecor_plugin_cairo_configuration_get_content_size(
-		struct libdecor_plugin *plugin,
-		struct libdecor_configuration *configuration,
-		struct libdecor_frame *frame,
-		int *content_width,
-		int *content_height)
+libdecor_plugin_cairo_frame_get_border_size(struct libdecor_plugin *plugin,
+					    struct libdecor_frame *frame,
+					    struct libdecor_configuration *configuration,
+					    int *left,
+					    int *right,
+					    int *top,
+					    int *bottom)
 {
-	int win_width, win_height;
-	if (!libdecor_configuration_get_window_size(configuration,
-						    &win_width,
-						    &win_height))
-		return false;
+	enum libdecor_window_state window_state;
 
-	enum libdecor_window_state state;
-	if (!libdecor_configuration_get_window_state(configuration, &state)) {
-		return false;
+	if (configuration) {
+		if (!libdecor_configuration_get_window_state(
+			    configuration, &window_state))
+			return false;
+	} else {
+		window_state = libdecor_frame_get_window_state(frame);
 	}
 
-	switch (window_state_to_decoration_type(state)) {
-	case DECORATION_TYPE_NONE:
-		*content_width = win_width;
-		*content_height = win_height;
-		break;
-	case DECORATION_TYPE_ALL:
-	case DECORATION_TYPE_TILED:
-	case DECORATION_TYPE_MAXIMIZED:
-		*content_width = win_width;
-		*content_height = win_height - TITLE_HEIGHT;
-		break;
-	}
+	if (left)
+		*left = 0;
+	if (right)
+		*right = 0;
+	if (bottom)
+		*bottom = 0;
+	if (top) {
+		enum decoration_type type = window_state_to_decoration_type(window_state);
 
-	return true;
-}
-
-static bool
-libdecor_plugin_cairo_frame_get_window_size_for(
-		struct libdecor_plugin *plugin,
-		struct libdecor_frame *frame,
-		struct libdecor_state *state,
-		int *window_width,
-		int *window_height)
-{
-	enum libdecor_window_state window_state =
-		libdecor_state_get_window_state(state);
-
-	switch (window_state_to_decoration_type(window_state)) {
-	case DECORATION_TYPE_NONE:
-		*window_width = libdecor_state_get_content_width(state);
-		*window_height = libdecor_state_get_content_height(state);
-		break;
-	case DECORATION_TYPE_ALL:
-	case DECORATION_TYPE_TILED:
-	case DECORATION_TYPE_MAXIMIZED:
-		*window_width = libdecor_state_get_content_width(state);
-		*window_height =
-			libdecor_state_get_content_height(state) + TITLE_HEIGHT;
-		break;
+		if (((struct libdecor_frame_cairo *)frame)->title_bar.is_showing &&
+		    (type != DECORATION_TYPE_NONE))
+			*top = TITLE_HEIGHT;
+		else
+			*top = 0;
 	}
 
 	return true;
@@ -1947,15 +1869,9 @@ static struct libdecor_plugin_interface cairo_plugin_iface = {
 	.frame_free = libdecor_plugin_cairo_frame_free,
 	.frame_commit = libdecor_plugin_cairo_frame_commit,
 	.frame_property_changed = libdecor_plugin_cairo_frame_property_changed,
-	.frame_translate_coordinate =
-		libdecor_plugin_cairo_frame_translate_coordinate,
 	.frame_popup_grab = libdecor_plugin_cairo_frame_popup_grab,
 	.frame_popup_ungrab = libdecor_plugin_cairo_frame_popup_ungrab,
-
-	.configuration_get_content_size =
-			libdecor_plugin_cairo_configuration_get_content_size,
-	.frame_get_window_size_for =
-			libdecor_plugin_cairo_frame_get_window_size_for,
+	.frame_get_border_size = libdecor_plugin_cairo_frame_get_border_size,
 };
 
 static void
@@ -2448,6 +2364,7 @@ pointer_button(void *data,
 		}
 		else if (state == WL_POINTER_BUTTON_STATE_RELEASED &&
 			 frame_cairo->grab) {
+			libdecor_frame_ref(&frame_cairo->frame);
 			if (frame_cairo->grab == frame_cairo->focus) {
 				switch (frame_cairo->active->type) {
 				case BUTTON_MIN:
@@ -2468,6 +2385,7 @@ pointer_button(void *data,
 			}
 			frame_cairo->grab = NULL;
 			sync_active_component(frame_cairo, seat);
+			libdecor_frame_unref(&frame_cairo->frame);
 		}
 	}
 	else if (button == BTN_RIGHT &&

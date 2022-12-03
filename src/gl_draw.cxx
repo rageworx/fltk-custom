@@ -40,7 +40,9 @@
 #include <FL/math.h> // for ceil()
 #include "Fl_Gl_Window_Driver.H"
 #include <FL/Fl_Image_Surface.H>
-#include <FL/glu.h>  // for gluUnProject()
+#if HAVE_GL_GLU_H
+#  include <FL/glu.h>  // for gluUnProject()
+#endif
 #include <FL/glut.H> // for glutStrokeString() and glutStrokeLength()
 #include <stdlib.h>
 
@@ -223,6 +225,14 @@ void gl_rect(int x, int y, int w, int h) {
   glEnd();
 }
 
+/**
+  Fills the given rectangle with the current color.
+  \see gl_rect(int x, int y, int w, int h)
+  */
+void gl_rectf(int x,int y,int w,int h) {
+  glRecti(x,y,x+w,y+h);
+}
+
 void gl_draw_image(const uchar* b, int x, int y, int w, int h, int d, int ld) {
   if (!ld) ld = w*d;
   GLint row_length;
@@ -319,11 +329,6 @@ int gl_texture_fifo::already_known(const char *str, int n)
 
 static gl_texture_fifo *gl_fifo = NULL; // points to the texture pile class instance
 
-void gl_texture_reset()
-{
-  if (gl_fifo) gl_texture_pile_height(gl_texture_pile_height());
-}
-
 
 // Cross-platform implementation of the texture mechanism for text rendering
 // using textures with the alpha channel only.
@@ -383,7 +388,7 @@ void gl_texture_fifo::display_texture(int rank)
   glMatrixMode (GL_PROJECTION);
   glPopMatrix();
   glMatrixMode (matrixMode);
-
+#if HAVE_GL_GLU_H
   //set the raster position to end of string
   pos[0] += width;
   GLdouble modelmat[16];
@@ -400,6 +405,7 @@ void gl_texture_fifo::display_texture(int rank)
     objY *= gl_start_scale;
   }
   glRasterPos2d(objX, objY);
+#endif // HAVE_GL_GLU_H
 } // display_texture
 
 
@@ -464,6 +470,15 @@ int gl_texture_pile_height(void)
   if (! gl_fifo) gl_fifo = new gl_texture_fifo();
   return gl_fifo->size();
 }
+
+/** To call after GL operations that may invalidate textures used to draw text in GL scenes
+ (e.g., switch between FL_DOUBLE / FL_SINGLE modes).
+ */
+void gl_texture_reset()
+{
+  if (gl_fifo) gl_texture_pile_height(gl_texture_pile_height());
+}
+
 
 /**
  Changes the maximum height of the pile of pre-computed string textures
@@ -622,6 +637,7 @@ void Fl_Gl_Window_Driver::draw_string_legacy_glut(const char* str, int n)
   glMatrixMode (GL_PROJECTION);
   glPopMatrix();
   glMatrixMode (matrixMode);
+#if HAVE_GL_GLU_H
   //set the raster position to end of string
   pos[0] += width;
   GLdouble modelmat[16];
@@ -637,6 +653,7 @@ void Fl_Gl_Window_Driver::draw_string_legacy_glut(const char* str, int n)
     objY *= gl_start_scale;
   }
   glRasterPos2d(objX, objY);
+#endif // HAVE_GL_GLU_H
 }
 
 /**

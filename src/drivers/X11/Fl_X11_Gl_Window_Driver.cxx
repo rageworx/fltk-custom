@@ -19,7 +19,6 @@
 #include <FL/platform.H>
 #include "../../Fl_Gl_Choice.H"
 #include "../../Fl_Screen_Driver.H"
-#include "../../Fl_Window_Driver.H"
 #include "Fl_X11_Gl_Window_Driver.H"
 #  include <GL/glx.h>
 #  if ! defined(GLX_VERSION_1_3)
@@ -44,6 +43,13 @@ public:
     best_fb = NULL;
   }
 };
+
+#ifndef FLTK_USE_WAYLAND
+Fl_Gl_Window_Driver *Fl_Gl_Window_Driver::newGlWindowDriver(Fl_Gl_Window *w)
+{
+  return new Fl_X11_Gl_Window_Driver(w);
+}
+#endif
 
 void Fl_X11_Gl_Window_Driver::draw_string_legacy(const char* str, int n) {
   draw_string_legacy_get_list(str, n);
@@ -254,8 +260,9 @@ static int ctxErrorHandler( Display *, XErrorEvent * )
   return 0;
 }
 
-GLContext Fl_X11_Gl_Window_Driver::create_gl_context(Fl_Window* window, const Fl_Gl_Choice* g, int layer) {
-  (void)window; (void)layer;
+GLContext Fl_X11_Gl_Window_Driver::create_gl_context(Fl_Window* window,
+                                                     const Fl_Gl_Choice* g) {
+  (void)window;
   GLContext shared_ctx = 0;
   if (context_list && nContext) shared_ctx = context_list[0];
 
@@ -278,7 +285,7 @@ GLContext Fl_X11_Gl_Window_Driver::create_gl_context(Fl_Window* window, const Fl
       GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
       GLX_CONTEXT_MINOR_VERSION_ARB, 2,
       //GLX_CONTEXT_FLAGS_ARB        , GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-      //GLX_CONTEXT_PROFILE_MASK_ARB , GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+      GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
       None
     };
     ctxErrorOccurred = false;
@@ -286,6 +293,12 @@ GLContext Fl_X11_Gl_Window_Driver::create_gl_context(Fl_Window* window, const Fl
     ctx = glXCreateContextAttribsARB(fl_display, ((Fl_X11_Gl_Choice*)g)->best_fb, shared_ctx, true, context_attribs);
     XSync(fl_display, false); // Sync to ensure any errors generated are processed.
     if (ctxErrorOccurred) ctx = 0;
+    if (!ctx) { // if did not work, try again asking for core profile
+      ctxErrorOccurred = false;
+      context_attribs[5] = GLX_CONTEXT_CORE_PROFILE_BIT_ARB;
+      ctx = glXCreateContextAttribsARB(fl_display, ((Fl_X11_Gl_Choice*)g)->best_fb, shared_ctx, true, context_attribs);
+      if (ctxErrorOccurred) ctx = 0;
+    }
     XSetErrorHandler(oldHandler);
   }
   if (!ctx) { // use OpenGL 1-style context creation
@@ -297,6 +310,7 @@ GLContext Fl_X11_Gl_Window_Driver::create_gl_context(Fl_Window* window, const Fl
   return ctx;
 }
 
+/* This is no longer used
 GLContext Fl_X11_Gl_Window_Driver::create_gl_context(XVisualInfo *vis) {
   GLContext shared_ctx = 0;
   if (context_list && nContext) shared_ctx = context_list[0];
@@ -304,7 +318,7 @@ GLContext Fl_X11_Gl_Window_Driver::create_gl_context(XVisualInfo *vis) {
   if (context)
     add_context(context);
   return context;
-}
+}*/
 
 void Fl_X11_Gl_Window_Driver::set_gl_context(Fl_Window* w, GLContext context) {
   if (context != cached_context || w != cached_window) {
@@ -341,7 +355,7 @@ void Fl_X11_Gl_Window_Driver::before_show(int&) {
 
 float Fl_X11_Gl_Window_Driver::pixels_per_unit()
 {
-  int ns = Fl_Window_Driver::driver(pWindow)->screen_num();
+  int ns = pWindow->screen_num();
   return Fl::screen_driver()->scale(ns);
 }
 

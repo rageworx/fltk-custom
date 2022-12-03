@@ -25,6 +25,10 @@
 #include "../GDI/Fl_Font.H"
 extern void fl_save_dc(HWND, HDC);
 
+#ifndef GL_CURRENT_PROGRAM
+#  define GL_CURRENT_PROGRAM 0x8B8D // from glew.h
+#endif
+
 // STR #3119: select pixel format with composition support
 // ... and no more than 32 color bits (8 bits/color)
 // Ref: PixelFormatDescriptor Object
@@ -47,6 +51,12 @@ public:
     pixelformat = 0;
   }
 };
+
+
+Fl_Gl_Window_Driver *Fl_Gl_Window_Driver::newGlWindowDriver(Fl_Gl_Window *w)
+{
+  return new Fl_WinAPI_Gl_Window_Driver(w);
+}
 
 
 Fl_Gl_Choice *Fl_WinAPI_Gl_Window_Driver::find(int m, const int *alistp)
@@ -124,7 +134,8 @@ Fl_Gl_Choice *Fl_WinAPI_Gl_Window_Driver::find(int m, const int *alistp)
 }
 
 
-GLContext Fl_WinAPI_Gl_Window_Driver::create_gl_context(Fl_Window* window, const Fl_Gl_Choice* g, int layer)
+GLContext Fl_WinAPI_Gl_Window_Driver::do_create_gl_context(Fl_Window* window,
+                      const Fl_Gl_Choice* g, int layer)
 {
   Fl_X* i = Fl_X::i(window);
   HDC hdc = Fl_WinAPI_Window_Driver::driver(window)->private_dc;
@@ -145,6 +156,11 @@ GLContext Fl_WinAPI_Gl_Window_Driver::create_gl_context(Fl_Window* window, const
   return context;
 }
 
+
+GLContext Fl_WinAPI_Gl_Window_Driver::create_gl_context(Fl_Window* window, const Fl_Gl_Choice* g)
+{
+  return do_create_gl_context(window, g, 0);
+}
 
 void Fl_WinAPI_Gl_Window_Driver::set_gl_context(Fl_Window* w, GLContext context) {
   if (context != cached_context || w != cached_window) {
@@ -204,7 +220,7 @@ void Fl_WinAPI_Gl_Window_Driver::gl_hide_before(void *& overlay) {
 void Fl_WinAPI_Gl_Window_Driver::make_overlay(void*&overlay) {
   if (overlay) return;
 
-  GLContext context = create_gl_context(pWindow, g(), 1);
+  GLContext context = do_create_gl_context(pWindow, g(), 1);
   if (!context) {overlay = pWindow; return;} // fake the overlay
 
   HDC hdc = Fl_WinAPI_Window_Driver::driver(pWindow)->private_dc;
@@ -365,6 +381,22 @@ void Fl_WinAPI_Gl_Window_Driver::get_list(Fl_Font_Descriptor *fd, int r) {
   HFONT oldFid = (HFONT)SelectObject((HDC)fl_graphics_driver->gc(), gl_fd->fid);
   wglUseFontBitmapsW((HDC)fl_graphics_driver->gc(), ii, 0x400, gl_fd->listbase+ii);
   SelectObject((HDC)fl_graphics_driver->gc(), oldFid);
+}
+
+
+typedef void (WINAPI *glUseProgram_type)(GLint);
+static glUseProgram_type glUseProgram_f = NULL;
+
+void Fl_WinAPI_Gl_Window_Driver::switch_to_GL1() {
+  if (!glUseProgram_f) {
+    glUseProgram_f = (glUseProgram_type)GetProcAddress("glUseProgram");
+  }
+  glGetIntegerv(GL_CURRENT_PROGRAM, &current_prog);
+  if (current_prog) glUseProgram_f(0);
+}
+
+void Fl_WinAPI_Gl_Window_Driver::switch_back() {
+  if (current_prog) glUseProgram_f((GLuint)current_prog);
 }
 
 

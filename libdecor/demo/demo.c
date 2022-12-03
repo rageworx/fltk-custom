@@ -2,6 +2,7 @@
  * Copyright © 2011 Benjamin Franzke
  * Copyright © 2010 Intel Corporation
  * Copyright © 2018 Jonas Ådahl
+ * Copyright © 2019 Christian Rauch
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -166,6 +167,27 @@ static void
 redraw(struct window *window);
 
 static void
+constrain_content_size(const struct libdecor_frame *frame,
+		       int *width,
+		       int *height)
+{
+	int min_width, min_height, max_width, max_height;
+
+	libdecor_frame_get_min_content_size(frame, &min_width, &min_height);
+	libdecor_frame_get_max_content_size(frame, &max_width, &max_height);
+
+	if (min_width > 0)
+		*width = MAX(min_width, *width);
+	if (max_width > 0)
+		*width = MIN(*width, max_width);
+
+	if (min_height > 0)
+		*height = MAX(min_height, *height);
+	if (max_height > 0)
+		*height = MIN(*height, max_height);
+}
+
+static void
 resize(struct window *window, int width, int height)
 {
 	struct libdecor_state *state;
@@ -175,8 +197,10 @@ resize(struct window *window, int width, int height)
 		return;
 	}
 
+	constrain_content_size(window->frame, &width, &height);
+
 	/* commit changes to decorations */
-	state = libdecor_state_new( width, height);
+	state = libdecor_state_new(width, height);
 	libdecor_frame_commit(window->frame, state, NULL);
 	libdecor_state_free(state);
 	/* force redraw of content and commit */
@@ -656,8 +680,7 @@ keyboard_key(void *data,
 				printf("set fixed-size\n");
 				libdecor_frame_unset_capabilities(window->frame,
 							LIBDECOR_ACTION_RESIZE);
-			}
-			else {
+			} else {
 				printf("set resizeable\n");
 				libdecor_frame_set_capabilities(window->frame,
 							LIBDECOR_ACTION_RESIZE);
@@ -1095,6 +1118,13 @@ handle_configure(struct libdecor_frame *frame,
 	enum libdecor_window_state window_state;
 	struct libdecor_state *state;
 
+	/* Update window state first for the correct calculations */
+	if (!libdecor_configuration_get_window_state(configuration,
+						     &window_state))
+		window_state = LIBDECOR_WINDOW_STATE_NONE;
+
+	window->window_state = window_state;
+
 	if (!libdecor_configuration_get_content_size(configuration, frame,
 						     &width, &height)) {
 		width = window->content_width;
@@ -1106,12 +1136,6 @@ handle_configure(struct libdecor_frame *frame,
 
 	window->configured_width = width;
 	window->configured_height = height;
-
-	if (!libdecor_configuration_get_window_state(configuration,
-						     &window_state))
-		window_state = LIBDECOR_WINDOW_STATE_NONE;
-
-	window->window_state = window_state;
 
 	state = libdecor_state_new(width, height);
 	libdecor_frame_commit(frame, state, configuration);

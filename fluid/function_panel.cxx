@@ -856,6 +856,20 @@ Fl_Window* make_widgetbin() {
         o->when(FL_WHEN_RELEASE);
         o->image(pixmap[19]);
       } // Widget_Bin_Button* o
+      { Widget_Bin_Button* o = new Widget_Bin_Button(139, 46, 24, 24);
+        o->tooltip("Flex");
+        o->box(FL_THIN_UP_BOX);
+        o->color(FL_BACKGROUND_COLOR);
+        o->selection_color(FL_BACKGROUND_COLOR);
+        o->labeltype(FL_NORMAL_LABEL);
+        o->labelfont(0);
+        o->labelsize(14);
+        o->labelcolor(FL_FOREGROUND_COLOR);
+        o->callback((Fl_Callback*)type_make_cb, (void*)("Fl_Flex"));
+        o->align(Fl_Align(FL_ALIGN_CENTER));
+        o->when(FL_WHEN_RELEASE);
+        o->image(pixmap[56]);
+      } // Widget_Bin_Button* o
       { Widget_Bin_Button* o = new Widget_Bin_Button(89, 71, 24, 24);
         o->tooltip("Tile");
         o->box(FL_THIN_UP_BOX);
@@ -1470,6 +1484,10 @@ CodeViewer *sv_source=(CodeViewer *)0;
 
 CodeViewer *sv_header=(CodeViewer *)0;
 
+TextViewer *sv_strings=(TextViewer *)0;
+
+TextViewer *sv_project=(TextViewer *)0;
+
 Fl_Light_Button *sv_autorefresh=(Fl_Light_Button *)0;
 
 Fl_Light_Button *sv_autoposition=(Fl_Light_Button *)0;
@@ -1522,6 +1540,48 @@ Fl_Double_Window* make_sourceview() {
           o->linenumber_width(60);
           o->linenumber_size(o->Fl_Text_Display::textsize());
         } // CodeViewer* sv_header
+        o->end();
+      } // Fl_Group* o
+      { Fl_Group* o = new Fl_Group(10, 35, 500, 415, "Strings");
+        o->labelsize(13);
+        o->hide();
+        { TextViewer* o = sv_strings = new TextViewer(20, 50, 480, 390);
+          sv_strings->box(FL_DOWN_FRAME);
+          sv_strings->color(FL_BACKGROUND2_COLOR);
+          sv_strings->selection_color(FL_SELECTION_COLOR);
+          sv_strings->labeltype(FL_NORMAL_LABEL);
+          sv_strings->labelfont(0);
+          sv_strings->labelsize(14);
+          sv_strings->labelcolor(FL_FOREGROUND_COLOR);
+          sv_strings->textfont(4);
+          sv_strings->textsize(11);
+          sv_strings->align(Fl_Align(FL_ALIGN_TOP));
+          sv_strings->when(FL_WHEN_RELEASE);
+          Fl_Group::current()->resizable(sv_strings);
+          o->linenumber_width(60);
+          o->linenumber_size(o->Fl_Text_Display::textsize());
+        } // TextViewer* sv_strings
+        o->end();
+      } // Fl_Group* o
+      { Fl_Group* o = new Fl_Group(10, 35, 500, 415, "Project");
+        o->labelsize(13);
+        o->hide();
+        { TextViewer* o = sv_project = new TextViewer(20, 50, 480, 390);
+          sv_project->box(FL_DOWN_FRAME);
+          sv_project->color(FL_BACKGROUND2_COLOR);
+          sv_project->selection_color(FL_SELECTION_COLOR);
+          sv_project->labeltype(FL_NORMAL_LABEL);
+          sv_project->labelfont(0);
+          sv_project->labelsize(14);
+          sv_project->labelcolor(FL_FOREGROUND_COLOR);
+          sv_project->textfont(4);
+          sv_project->textsize(11);
+          sv_project->align(Fl_Align(FL_ALIGN_TOP));
+          sv_project->when(FL_WHEN_RELEASE);
+          Fl_Group::current()->resizable(sv_project);
+          o->linenumber_width(60);
+          o->linenumber_size(o->Fl_Text_Display::textsize());
+        } // TextViewer* sv_project
         o->end();
       } // Fl_Group* o
       sv_tab->end();

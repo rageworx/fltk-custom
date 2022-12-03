@@ -20,6 +20,7 @@
 
 #include "Fl_Window_Type.h"
 
+#include "Fl_Group_Type.h"
 #include "fluid.h"
 #include "widget_browser.h"
 #include "undo.h"
@@ -42,11 +43,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-int include_H_from_C = 1;
-int use_FL_COMMAND = 0;
-int utf8_in_src = 0;
-int avoid_early_includes = 0;
-
 extern Fl_Preferences   fluid_prefs;
 
 inline int fl_min(int a, int b) { return (a < b ? a : b); }
@@ -54,10 +50,15 @@ inline int fl_min(int a, int b) { return (a < b ? a : b); }
 // Update the XYWH values in the widget panel...
 static void update_xywh() {
   if (current_widget && current_widget->is_widget()) {
-    widget_x_input->value(((Fl_Widget_Type *)current_widget)->o->x());
-    widget_y_input->value(((Fl_Widget_Type *)current_widget)->o->y());
-    widget_w_input->value(((Fl_Widget_Type *)current_widget)->o->w());
-    widget_h_input->value(((Fl_Widget_Type *)current_widget)->o->h());
+    Fl_Widget *o = ((Fl_Widget_Type *)current_widget)->o;
+    widget_x_input->value(o->x());
+    widget_y_input->value(o->y());
+    widget_w_input->value(o->w());
+    widget_h_input->value(o->h());
+    if (Fl_Flex_Type::parent_is_flex(current_widget)) {
+      widget_flex_size->value(Fl_Flex_Type::size(current_widget));
+      widget_flex_fixed->value(Fl_Flex_Type::is_fixed(current_widget));
+    }
   }
 }
 
@@ -116,7 +117,7 @@ void default_widget_size_cb(Fl_Round_Button *b, long size) {
 void i18n_type_cb(Fl_Choice *c, void *) {
   undo_checkpoint();
 
-  switch (i18n_type = c->value()) {
+  switch (P.i18n_type = c->value()) {
   case 0 : /* None */
       i18n_include_input->hide();
       i18n_conditional_input->hide();
@@ -127,13 +128,13 @@ void i18n_type_cb(Fl_Choice *c, void *) {
       break;
   case 1 : /* GNU gettext */
       i18n_include_input->value("<libintl.h>");
-      i18n_include = i18n_include_input->value();
+      P.i18n_include = i18n_include_input->value();
       i18n_conditional_input->value("");
-      i18n_conditional = i18n_conditional_input->value();
+      P.i18n_conditional = i18n_conditional_input->value();
       i18n_function_input->value("gettext");
-      i18n_function = i18n_function_input->value();
+      P.i18n_function = i18n_function_input->value();
       i18n_static_function_input->value("gettext_noop");
-      i18n_static_function = i18n_static_function_input->value();
+      P.i18n_static_function = i18n_static_function_input->value();
       i18n_include_input->show();
       i18n_conditional_input->show();
       i18n_file_input->hide();
@@ -143,13 +144,13 @@ void i18n_type_cb(Fl_Choice *c, void *) {
       break;
   case 2 : /* POSIX cat */
       i18n_include_input->value("<nl_types.h>");
-      i18n_include = i18n_include_input->value();
+      P.i18n_include = i18n_include_input->value();
       i18n_conditional_input->value("");
-      i18n_conditional = i18n_conditional_input->value();
+      P.i18n_conditional = i18n_conditional_input->value();
       i18n_file_input->value("");
-      i18n_file = i18n_file_input->value();
+      P.i18n_file = i18n_file_input->value();
       i18n_set_input->value("1");
-      i18n_set = i18n_set_input->value();
+      P.i18n_set = i18n_set_input->value();
       i18n_include_input->show();
       i18n_conditional_input->show();
       i18n_file_input->show();
@@ -166,15 +167,15 @@ void i18n_text_cb(Fl_Input *i, void *) {
   undo_checkpoint();
 
   if (i == i18n_function_input)
-    i18n_function = i->value();
+    P.i18n_function = i->value();
   else if (i == i18n_static_function_input)
-    i18n_static_function = i->value();
+    P.i18n_static_function = i->value();
   else if (i == i18n_file_input)
-    i18n_file = i->value();
+    P.i18n_file = i->value();
   else if (i == i18n_include_input)
-    i18n_include = i->value();
+    P.i18n_include = i->value();
   else if (i == i18n_conditional_input)
-    i18n_conditional = i->value();
+    P.i18n_conditional = i->value();
 
   set_modflag(1);
 }
@@ -183,27 +184,27 @@ void i18n_int_cb(Fl_Int_Input *i, void *) {
   undo_checkpoint();
 
   if (i == i18n_set_input)
-    i18n_set = i->value();
+    P.i18n_set = i->value();
 
   set_modflag(1);
 }
 
 void show_project_cb(Fl_Widget *, void *) {
   if(project_window==0) make_project_window();
-  include_H_from_C_button->value(include_H_from_C);
-  use_FL_COMMAND_button->value(use_FL_COMMAND);
-  utf8_in_src_button->value(utf8_in_src);
-  avoid_early_includes_button->value(avoid_early_includes);
-  header_file_input->value(header_file_name);
-  code_file_input->value(code_file_name);
-  i18n_type_chooser->value(i18n_type);
-  i18n_function_input->value(i18n_function);
-  i18n_static_function_input->value(i18n_static_function);
-  i18n_file_input->value(i18n_file);
-  i18n_set_input->value(i18n_set);
-  i18n_include_input->value(i18n_include);
-  i18n_conditional_input->value(i18n_conditional);
-  switch (i18n_type) {
+  include_H_from_C_button->value(P.include_H_from_C);
+  use_FL_COMMAND_button->value(P.use_FL_COMMAND);
+  utf8_in_src_button->value(P.utf8_in_src);
+  avoid_early_includes_button->value(P.avoid_early_includes);
+  header_file_input->value(P.header_file_name);
+  code_file_input->value(P.code_file_name);
+  i18n_type_chooser->value(P.i18n_type);
+  i18n_function_input->value(P.i18n_function);
+  i18n_static_function_input->value(P.i18n_static_function);
+  i18n_file_input->value(P.i18n_file);
+  i18n_set_input->value(P.i18n_set);
+  i18n_include_input->value(P.i18n_include);
+  i18n_conditional_input->value(P.i18n_conditional);
+  switch (P.i18n_type) {
   case 0 : /* None */
       i18n_include_input->hide();
       i18n_conditional_input->hide();
@@ -261,41 +262,41 @@ void show_global_settings_cb(Fl_Widget *, void *) {
 }
 
 void header_input_cb(Fl_Input* i, void*) {
-  if (header_file_name && strcmp(header_file_name, i->value()))
+  if (strcmp(P.header_file_name, i->value()))
     set_modflag(1);
-  header_file_name = i->value();
+  P.header_file_name = i->value();
 }
 void code_input_cb(Fl_Input* i, void*) {
-  if (code_file_name && strcmp(code_file_name, i->value()))
+  if (strcmp(P.code_file_name, i->value()))
     set_modflag(1);
-  code_file_name = i->value();
+  P.code_file_name = i->value();
 }
 
 void include_H_from_C_button_cb(Fl_Check_Button* b, void*) {
-  if (include_H_from_C != b->value()) {
+  if (P.include_H_from_C != b->value()) {
     set_modflag(1);
-    include_H_from_C = b->value();
+    P.include_H_from_C = b->value();
   }
 }
 
 void use_FL_COMMAND_button_cb(Fl_Check_Button* b, void*) {
-  if (use_FL_COMMAND != b->value()) {
+  if (P.use_FL_COMMAND != b->value()) {
     set_modflag(1);
-    use_FL_COMMAND = b->value();
+    P.use_FL_COMMAND = b->value();
   }
 }
 
 void utf8_in_src_cb(Fl_Check_Button *b, void*) {
-  if (utf8_in_src != b->value()) {
+  if (P.utf8_in_src != b->value()) {
     set_modflag(1);
-    utf8_in_src = b->value();
+    P.utf8_in_src = b->value();
   }
 }
 
 void avoid_early_includes_cb(Fl_Check_Button *b, void*) {
-  if (avoid_early_includes != b->value()) {
+  if (P.avoid_early_includes != b->value()) {
     set_modflag(1);
-    avoid_early_includes = b->value();
+    P.avoid_early_includes = b->value();
   }
 }
 
@@ -798,7 +799,28 @@ void Fl_Window_Type::draw_overlay() {
       Fl_Widget_Type* myo = (Fl_Widget_Type*)q;
       int x,y,r,t;
       newposition(myo,x,y,r,t);
-      if (!show_guides || !drag || numselected != 1) fl_rect(x,y,r-x,t-y);
+      if (!show_guides || !drag || numselected != 1) {
+        if (Fl_Flex_Type::parent_is_flex(q) && !Fl_Flex_Type::is_fixed(q)) {
+          if (((Fl_Flex*)((Fl_Flex_Type*)q->parent)->o)->horizontal()) {
+            int yh = y + (t-y)/2;
+            fl_begin_loop();
+            fl_vertex(x+2, yh); fl_vertex(x+12, yh+5); fl_vertex(x+12, yh-5);
+            fl_end_loop();
+            fl_begin_loop();
+            fl_vertex(r-3, yh); fl_vertex(r-13, yh+5); fl_vertex(r-13, yh-5);
+            fl_end_loop();
+          } else {
+            int xh = x + (r-x)/2;
+            fl_begin_loop();
+            fl_vertex(xh, y+2); fl_vertex(xh+5, y+12); fl_vertex(xh-5, y+12);
+            fl_end_loop();
+            fl_begin_loop();
+            fl_vertex(xh, t-3); fl_vertex(xh+5, t-13); fl_vertex(xh-5, t-13);
+            fl_end_loop();
+          }
+        }
+        fl_rect(x,y,r-x,t-y);
+      }
       if (x < mysx) mysx = x;
       if (y < mysy) mysy = y;
       if (r > mysr) mysr = r;
@@ -1188,13 +1210,28 @@ void Fl_Window_Type::moveallchildren()
   for (i=next; i && i->level>level;) {
     if (i->selected && i->is_widget() && !i->is_menu_item()) {
       Fl_Widget_Type* myo = (Fl_Widget_Type*)i;
-      int x,y,r,t;
+      int x,y,r,t,ow=myo->o->w(),oh=myo->o->h();
       newposition(myo,x,y,r,t);
       myo->o->resize(x,y,r-x,t-y);
+      if (Fl_Flex_Type::parent_is_flex(myo)) {
+        Fl_Flex_Type* ft = (Fl_Flex_Type*)myo->parent;
+        Fl_Flex* f = (Fl_Flex*)ft->o;
+        if (f->horizontal()) {
+          if (myo->o->w()!=ow) {
+            f->set_size(myo->o, myo->o->w());
+            f->layout();
+          }
+        } else {
+          if (myo->o->h()!=oh) {
+            f->set_size(myo->o, myo->o->h());
+            f->layout();
+          }
+        }
+      }
       // move all the children, whether selected or not:
       Fl_Type* p;
       for (p = myo->next; p && p->level>myo->level; p = p->next)
-        if (p->is_widget() && !p->is_menu_item()) {
+        if (p->is_widget() && !p->is_menu_item() && !myo->is_flex()) {
           Fl_Widget_Type* myo2 = (Fl_Widget_Type*)p;
           int X,Y,R,T;
           newposition(myo2,X,Y,R,T);
@@ -1566,12 +1603,17 @@ Fl_Type *Fl_Widget_Class_Type::make(Strategy strategy) {
 
 void Fl_Widget_Class_Type::write_properties() {
   Fl_Window_Type::write_properties();
-  if (wc_relative) write_string("position_relative");
+  if (wc_relative==1)
+    write_string("position_relative");
+  else if (wc_relative==2)
+    write_string("position_relative_rescale");
 }
 
 void Fl_Widget_Class_Type::read_property(const char *c) {
   if (!strcmp(c,"position_relative")) {
     wc_relative = 1;
+  } else if (!strcmp(c,"position_relative_rescale")) {
+      wc_relative = 2;
   } else {
     Fl_Window_Type::read_property(c);
   }
@@ -1642,8 +1684,10 @@ void Fl_Widget_Class_Type::write_code1() {
     write_h("%s%s(int X, int Y, int W, int H, const char *L = 0);\n",
             indent(1), trimclassname(name()));
     write_c("%s::%s(int X, int Y, int W, int H, const char *L) :\n", name(), trimclassname(name()));
-    if (wc_relative)
+    if (wc_relative==1)
       write_c("%s%s(0, 0, W, H, L)\n{\n", indent(1), c);
+    else if (wc_relative==2)
+      write_c("%s%s(0, 0, %d, %d, L)\n{\n", indent(1), c, o->w(), o->h());
     else
       write_c("%s%s(X, Y, W, H, L)\n{\n", indent(1), c);
   }
@@ -1656,7 +1700,10 @@ void Fl_Widget_Class_Type::write_code1() {
 
 void Fl_Widget_Class_Type::write_code2() {
   write_extra_code();
-  if (wc_relative) write_c("%sposition(X, Y);\n", indent());
+  if (wc_relative==1)
+    write_c("%sposition(X, Y);\n", indent());
+  else if (wc_relative==2)
+    write_c("%sresize(X, Y, W, H);\n", indent());
   if (modal) write_c("%sset_modal();\n", indent());
   else if (non_modal) write_c("%sset_non_modal();\n", indent());
   if (!((Fl_Window*)o)->border()) write_c("%sclear_border();\n", indent());

@@ -1,6 +1,7 @@
 /*
  * Copyright © 2017-2018 Red Hat Inc.
  * Copyright © 2018 Jonas Ådahl
+ * Copyright © 2019 Christian Rauch
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -79,6 +80,9 @@ struct libdecor_plugin_description {
 
 	/* Vfunc used for constructing a plugin instance. */
 	libdecor_plugin_constructor constructor;
+
+	/* NULL terminated list of incompatible symbols. */
+	char *conflicting_symbols[1024];
 };
 
 struct libdecor_plugin_interface {
@@ -97,12 +101,6 @@ struct libdecor_plugin_interface {
 			      struct libdecor_configuration *configuration);
 	void (*frame_property_changed)(struct libdecor_plugin *plugin,
 				       struct libdecor_frame *frame);
-	void (* frame_translate_coordinate)(struct libdecor_plugin *plugin,
-					    struct libdecor_frame *frame,
-					    int content_x,
-					    int content_y,
-					    int *window_x,
-					    int *window_y);
 	void (* frame_popup_grab)(struct libdecor_plugin *plugin,
 				  struct libdecor_frame *frame,
 				  const char *seat_name);
@@ -110,17 +108,13 @@ struct libdecor_plugin_interface {
 				    struct libdecor_frame *frame,
 				    const char *seat_name);
 
-	bool (* frame_get_window_size_for)(struct libdecor_plugin *plugin,
-					   struct libdecor_frame *frame,
-					   struct libdecor_state *state,
-					   int *window_width,
-					   int *window_height);
-
-	bool (* configuration_get_content_size)(struct libdecor_plugin *plugin,
-						struct libdecor_configuration *configuration,
-						struct libdecor_frame *frame,
-						int *content_width,
-						int *content_height);
+	bool (* frame_get_border_size)(struct libdecor_plugin *plugin,
+				       struct libdecor_frame *frame,
+				       struct libdecor_configuration *configuration,
+				       int *left,
+				       int *right,
+				       int *top,
+				       int *bottom);
 
 	/* Reserved */
 	void (* reserved0)(void);
@@ -147,11 +141,6 @@ libdecor_frame_get_content_height(struct libdecor_frame *frame);
 enum libdecor_window_state
 libdecor_frame_get_window_state(struct libdecor_frame *frame);
 
-void
-libdecor_frame_set_window_geometry(struct libdecor_frame *frame,
-				   int32_t x, int32_t y,
-				   int32_t width, int32_t height);
-
 enum libdecor_capabilities
 libdecor_frame_get_capabilities(const struct libdecor_frame *frame);
 
@@ -175,18 +164,13 @@ libdecor_notify_plugin_error(struct libdecor *context,
 			     ...);
 
 int
-libdecor_state_get_content_width (struct libdecor_state *state);
+libdecor_state_get_content_width(struct libdecor_state *state);
 
 int
-libdecor_state_get_content_height (struct libdecor_state *state);
+libdecor_state_get_content_height(struct libdecor_state *state);
 
 enum libdecor_window_state
 libdecor_state_get_window_state(struct libdecor_state *state);
-
-bool
-libdecor_configuration_get_window_size(struct libdecor_configuration *configuration,
-				       int *width,
-				       int *height);
 
 int
 libdecor_plugin_init(struct libdecor_plugin *plugin,
@@ -195,21 +179,5 @@ libdecor_plugin_init(struct libdecor_plugin *plugin,
 
 void
 libdecor_plugin_release(struct libdecor_plugin *plugin);
-
-/*
- * Get the min content size as set before with libdecor_frame_set_min_content_size().
- */
-void
-libdecor_frame_get_min_content_size(struct libdecor_frame *frame,
-				    int *pcontent_width,
-				    int *pcontent_height);
-
-/*
- * Get the max content size as set before with libdecor_frame_set_max_content_size().
- */
-void
-libdecor_frame_get_max_content_size(struct libdecor_frame *frame,
-				    int *pcontent_width,
-				    int *pcontent_height);
 
 #endif /* LIBDECOR_PLUGIN_H */

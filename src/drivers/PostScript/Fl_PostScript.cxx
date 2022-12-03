@@ -149,6 +149,7 @@ Fl_PostScript_Graphics_Driver::Fl_PostScript_Graphics_Driver(void)
   scale_x = scale_y = 1.;
   bg_r = bg_g = bg_b = 255;
   clip_ = NULL;
+  what = NONE;
 }
 
 /** \brief The destructor. */
@@ -1240,11 +1241,11 @@ void Fl_PostScript_Graphics_Driver::rtl_draw(const char* str, int n, int x, int 
 }
 
 void Fl_PostScript_Graphics_Driver::concat(){
-  clocale_printf("[%g %g %g %g %g %g] CT\n", fl_matrix->a , fl_matrix->b , fl_matrix->c , fl_matrix->d , fl_matrix->x , fl_matrix->y);
+  clocale_printf("[%g %g %g %g %g %g] CT\n", m.a , m.b , m.c , m.d , m.x , m.y);
 }
 
 void Fl_PostScript_Graphics_Driver::reconcat(){
-  clocale_printf("[%g %g %g %g %g %g] RCT\n" , fl_matrix->a , fl_matrix->b , fl_matrix->c , fl_matrix->d , fl_matrix->x , fl_matrix->y);
+  clocale_printf("[%g %g %g %g %g %g] RCT\n" , m.a , m.b , m.c , m.d , m.x , m.y);
 }
 
 /////////////////  transformed (double) drawings ////////////////////////////////
@@ -1256,7 +1257,7 @@ void Fl_PostScript_Graphics_Driver::begin_points(){
 
   fprintf(output, "BP\n");
   gap_=1;
-  shape_=POINTS;
+  what=POINTS;
 }
 
 void Fl_PostScript_Graphics_Driver::begin_line(){
@@ -1264,7 +1265,7 @@ void Fl_PostScript_Graphics_Driver::begin_line(){
   concat();
   fprintf(output, "BP\n");
   gap_=1;
-  shape_=LINE;
+  what=LINE;
 }
 
 void Fl_PostScript_Graphics_Driver::begin_loop(){
@@ -1272,7 +1273,7 @@ void Fl_PostScript_Graphics_Driver::begin_loop(){
   concat();
   fprintf(output, "BP\n");
   gap_=1;
-  shape_=LOOP;
+  what=LOOP;
 }
 
 void Fl_PostScript_Graphics_Driver::begin_polygon(){
@@ -1280,11 +1281,11 @@ void Fl_PostScript_Graphics_Driver::begin_polygon(){
   concat();
   fprintf(output, "BP\n");
   gap_=1;
-  shape_=POLYGON;
+  what=POLYGON;
 }
 
 void Fl_PostScript_Graphics_Driver::vertex(double x, double y){
-  if(shape_==POINTS){
+  if(what==POINTS){
     clocale_printf("%g %g MT\n", x , y);
     gap_=1;
     return;
@@ -1297,7 +1298,7 @@ void Fl_PostScript_Graphics_Driver::vertex(double x, double y){
 }
 
 void Fl_PostScript_Graphics_Driver::curve(double x, double y, double x1, double y1, double x2, double y2, double x3, double y3){
-  if(shape_==NONE) return;
+  if(what==NONE) return;
   if(gap_)
     clocale_printf("%g %g MT\n", x , y);
   else
@@ -1309,7 +1310,7 @@ void Fl_PostScript_Graphics_Driver::curve(double x, double y, double x1, double 
 
 
 void Fl_PostScript_Graphics_Driver::circle(double x, double y, double r){
-  if(shape_==NONE){
+  if(what==NONE){
     fprintf(output, "GS\n");
     concat();
     //    fprintf(output, "BP\n");
@@ -1324,7 +1325,7 @@ void Fl_PostScript_Graphics_Driver::circle(double x, double y, double r){
 }
 
 void Fl_PostScript_Graphics_Driver::arc(double x, double y, double r, double start, double a){
-  if(shape_==NONE) return;
+  if(what==NONE) return;
   gap_=0;
   if(start>a)
     clocale_printf("%g %g %g %g %g arc\n", x , y , r , -start, -a);
@@ -1369,7 +1370,7 @@ void Fl_PostScript_Graphics_Driver::end_points(){
   reconcat();
   fprintf(output, "ELP\n"); //??
   fprintf(output, "GR\n");
-  shape_=NONE;
+  what=NONE;
 }
 
 void Fl_PostScript_Graphics_Driver::end_line(){
@@ -1377,14 +1378,14 @@ void Fl_PostScript_Graphics_Driver::end_line(){
   reconcat();
   fprintf(output, "ELP\n");
   fprintf(output, "GR\n");
-  shape_=NONE;
+  what=NONE;
 }
 void Fl_PostScript_Graphics_Driver::end_loop(){
   gap_=1;
   reconcat();
   fprintf(output, "ECP\n");
   fprintf(output, "GR\n");
-  shape_=NONE;
+  what=NONE;
 }
 
 void Fl_PostScript_Graphics_Driver::end_polygon(){
@@ -1393,7 +1394,7 @@ void Fl_PostScript_Graphics_Driver::end_polygon(){
   reconcat();
   fprintf(output, "EFP\n");
   fprintf(output, "GR\n");
-  shape_=NONE;
+  what=NONE;
 }
 
 void Fl_PostScript_Graphics_Driver::transformed_vertex(double x, double y){
@@ -1503,7 +1504,7 @@ int Fl_PostScript_Graphics_Driver::start_postscript(int pagecount,
   if (!cairo_) return 1;
   nPages=0;
   char feature[250];
-  sprintf(feature, "%%%%BeginFeature: *PageSize %s\n<</PageSize[%d %d]>>setpagedevice\n%%%%EndFeature",
+  snprintf(feature, 250, "%%%%BeginFeature: *PageSize %s\n<</PageSize[%d %d]>>setpagedevice\n%%%%EndFeature",
           Fl_Paged_Device::page_formats[format].name, Fl_Paged_Device::page_formats[format].width, Fl_Paged_Device::page_formats[format].height);
   cairo_ps_surface_dsc_comment(cairo_get_target(cairo_), feature);
   return 0;
@@ -1635,7 +1636,7 @@ int Fl_PostScript_File_Device::begin_page (void)
 #if USE_PANGO
   cairo_ps_surface_dsc_begin_page_setup(cairo_get_target(ps->cr()));
   char feature[200];
-  sprintf(feature, "%%%%PageOrientation: %s", ps->pw_ > ps->ph_ ? "Landscape" : "Portrait");
+  snprintf(feature, 200, "%%%%PageOrientation: %s", ps->pw_ > ps->ph_ ? "Landscape" : "Portrait");
   cairo_ps_surface_dsc_comment(cairo_get_target(ps->cr()), feature);
   if (ps->pw_ > ps->ph_) {
     cairo_translate(ps->cr(), 0, ps->pw_);

@@ -38,6 +38,7 @@ extern void align_cb(Fl_Button*, void*);
 extern void align_text_image_cb(Fl_Choice*, void*);
 extern void align_position_cb(Fl_Choice*, void*);
 #include <FL/Fl_Box.H>
+extern void position_group_cb(Fl_Group*, void*);
 extern void x_cb(Fluid_Coord_Input*, void*);
 extern Fluid_Coord_Input *widget_x_input;
 extern void y_cb(Fluid_Coord_Input*, void*);
@@ -46,14 +47,27 @@ extern void w_cb(Fluid_Coord_Input*, void*);
 extern Fluid_Coord_Input *widget_w_input;
 extern void h_cb(Fluid_Coord_Input*, void*);
 extern Fluid_Coord_Input *widget_h_input;
-#include <FL/Fl_Light_Button.H>
-extern void wc_relative_cb(Fl_Light_Button*, void*);
+extern void wc_relative_cb(Fl_Choice*, void*);
+extern void flex_size_group_cb(Fl_Group*, void*);
 #include <FL/Fl_Value_Input.H>
+extern void flex_size_cb(Fl_Value_Input*, void*);
+extern Fl_Value_Input *widget_flex_size;
+#include <FL/Fl_Check_Button.H>
+extern void flex_fixed_cb(Fl_Check_Button*, void*);
+extern Fl_Check_Button *widget_flex_fixed;
+extern void values_group_cb(Fl_Group*, void*);
 extern void slider_size_cb(Fl_Value_Input*, void*);
 extern void min_cb(Fl_Value_Input*, void*);
 extern void max_cb(Fl_Value_Input*, void*);
 extern void step_cb(Fl_Value_Input*, void*);
 extern void value_cb(Fl_Value_Input*, void*);
+extern void flex_margin_group_cb(Fl_Group*, void*);
+extern void flex_margin_left_cb(Fl_Value_Input*, void*);
+extern void flex_margin_top_cb(Fl_Value_Input*, void*);
+extern void flex_margin_right_cb(Fl_Value_Input*, void*);
+extern void flex_margin_bottom_cb(Fl_Value_Input*, void*);
+extern void flex_margin_gap_cb(Fl_Value_Input*, void*);
+extern void size_range_group_cb(Fl_Group*, void*);
 extern void min_w_cb(Fl_Value_Input*, void*);
 extern void min_h_cb(Fl_Value_Input*, void*);
 extern void set_min_size_cb(Fl_Button*, void*);
@@ -63,6 +77,7 @@ extern void set_max_size_cb(Fl_Button*, void*);
 #include "Shortcut_Button.h"
 extern void shortcut_in_cb(Shortcut_Button*, void*);
 extern void xclass_cb(Fl_Input*, void*);
+#include <FL/Fl_Light_Button.H>
 extern void border_cb(Fl_Light_Button*, void*);
 extern void modal_cb(Fl_Light_Button*, void*);
 extern void non_modal_cb(Fl_Light_Button*, void*);
@@ -111,6 +126,7 @@ extern void cancel_cb(Fl_Button*, void*);
 Fl_Double_Window* make_widget_panel();
 extern Fl_Menu_Item menu_[];
 extern Fl_Menu_Item menu_1[];
+extern Fl_Menu_Item menu_Children[];
 extern Fl_Menu_Item menu_2[];
 extern Fl_Menu_Item menu_3[];
 #endif

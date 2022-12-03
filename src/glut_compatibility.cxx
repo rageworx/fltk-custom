@@ -54,6 +54,9 @@ void Fl_Glut_Window::draw() {
   indraw = 1;
   if (!valid()) {reshape(pixel_w(),pixel_h()); valid(1);}
   display();
+  if (children()) {
+    Fl_Gl_Window::draw(); // Draw FLTK child widgets
+  }
   indraw = 0;
 }
 

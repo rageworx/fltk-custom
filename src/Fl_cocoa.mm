@@ -684,9 +684,10 @@ void Fl_Cocoa_Screen_Driver::breakMacEventLoop()
   if (!CGRectEqualToRect(srect, current_clip)) { // if new clip differs from current clip
     delete r;
     FLWindow *xid = fl_xid(w);
-    NSView *view = [xid contentView];
-    if (CGRectEqualToRect(srect, full)) r = NULL;
-    else {
+    FLView *view = (FLView*)[xid contentView];
+    if (CGRectEqualToRect(srect, full)) {
+      r = NULL;
+    } else {
       r = new CGRect(srect);
       if (r->size.width == 0 && r->size.height == 0) r->origin.x = r->origin.y = 0;
     }
@@ -698,7 +699,7 @@ void Fl_Cocoa_Screen_Driver::breakMacEventLoop()
       [xid orderWindow:NSWindowAbove relativeTo:parent_num];
     }
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14
-    if (!views_use_CA || ((FLView*)view)->aux_bitmap)
+    if (!views_use_CA || view->aux_bitmap)
 #endif
       [view display]; // subwindow needs redrawn
   }
@@ -975,7 +976,7 @@ static void cocoaMouseHandler(NSEvent *theEvent)
   fl_lock_function();
 
   Fl_Window *window = (Fl_Window*)[(FLWindow*)[theEvent window] getFl_Window];
-  if ( !window->shown() ) {
+  if (!window || !window->shown() ) {
     fl_unlock_function();
     return;
   }
@@ -1213,7 +1214,7 @@ static FLWindowDelegate *flwindowdelegate_instance = nil;
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14
   FLView *view = (FLView*)[nsw contentView];
   if (views_use_CA && [view did_view_resolution_change]) {
-    if (window->as_gl_window() && Fl::use_high_res_GL()) [view setNeedsDisplay:YES]; // necessary with  macOS ??10.14.2; harmless before
+    if (window->as_gl_window() && Fl::use_high_res_GL()) [view setNeedsDisplay:YES]; // necessary with  macOS ≥ 10.14.2; harmless before
   }
 #endif
   if (window == starting_moved_window) {
@@ -1388,7 +1389,7 @@ static FLWindowDelegate *flwindowdelegate_instance = nil;
       w = Fl::next_window(w);
     }
     if (w) {
-      [Fl_X::i(w)->xid makeKeyWindow];
+      [fl_mac_xid(w) makeKeyWindow];
     }
   }
   fl_unlock_function();
@@ -1490,7 +1491,7 @@ static FLWindowDelegate *flwindowdelegate_instance = nil;
       else {
         CFArrayRef inputSources;
         CFDictionaryRef filter;
-        // FLΤ? previously used TISCreateASCIICapableInputSourceList(),
+        // FLΤΚ previously used TISCreateASCIICapableInputSourceList(),
         // which mostly hits the mark. But it excludes things like Greek
         // and Cyrillic keyboards. So let's be more explicit.
         filter = CFDictionaryCreate(NULL, (const void **)kTISPropertyInputSourceType,
@@ -1562,7 +1563,7 @@ static FLWindowDelegate *flwindowdelegate_instance = nil;
   fl_lock_function();
   for (Fl_X *x = Fl_X::first;x;x = x->next) {
     Fl_Window *w = x->w;
-    if ( !w->parent() && ![x->xid isMiniaturized]) {
+    if ( !w->parent() && ![(FLWindow*)x->xid isMiniaturized]) {
       Fl::handle(FL_SHOW, w);
       }
   }
@@ -1572,7 +1573,7 @@ static FLWindowDelegate *flwindowdelegate_instance = nil;
 {
   if (fl_mac_os_version < 101300) {
   // without the next two statements, the opening of the 1st window is delayed by several seconds
-  // under 10.8 ??Mac OS < 10.13 when a file is dragged on the application icon
+  // under 10.8 ≤ Mac OS < 10.13 when a file is dragged on the application icon
     Fl_Window *firstw = Fl::first_window();
     if (firstw) firstw->wait_for_expose();
   } else if (in_nsapp_run) { // memorize all dropped filenames
@@ -2831,148 +2832,6 @@ static FLTextInputContext* fltextinputcontext_instance = nil;
 @end
 
 
-NSOpenGLPixelFormat* Fl_Cocoa_Window_Driver::mode_to_NSOpenGLPixelFormat(int m, const int *alistp)
-{
-  NSOpenGLPixelFormatAttribute attribs[32];
-  int n = 0;
-  // AGL-style code remains commented out for comparison
-  if (!alistp) {
-    if (m & FL_INDEX) {
-      //list[n++] = AGL_BUFFER_SIZE; list[n++] = 8;
-    } else {
-      //list[n++] = AGL_RGBA;
-      //list[n++] = AGL_GREEN_SIZE;
-      //list[n++] = (m & FL_RGB8) ? 8 : 1;
-      attribs[n++] = NSOpenGLPFAColorSize;
-      attribs[n++] = (NSOpenGLPixelFormatAttribute)((m & FL_RGB8) ? 32 : 1);
-      if (m & FL_ALPHA) {
-        //list[n++] = AGL_ALPHA_SIZE;
-        attribs[n++] = NSOpenGLPFAAlphaSize;
-        attribs[n++] = (NSOpenGLPixelFormatAttribute)((m & FL_RGB8) ? 8 : 1);
-      }
-      if (m & FL_ACCUM) {
-        //list[n++] = AGL_ACCUM_GREEN_SIZE; list[n++] = 1;
-        attribs[n++] = NSOpenGLPFAAccumSize;
-        attribs[n++] = (NSOpenGLPixelFormatAttribute)1;
-        if (m & FL_ALPHA) {
-          //list[n++] = AGL_ACCUM_ALPHA_SIZE; list[n++] = 1;
-        }
-      }
-    }
-    if (m & FL_DOUBLE) {
-      //list[n++] = AGL_DOUBLEBUFFER;
-      attribs[n++] = NSOpenGLPFADoubleBuffer;
-    }
-    if (m & FL_DEPTH) {
-      //list[n++] = AGL_DEPTH_SIZE; list[n++] = 24;
-      attribs[n++] = NSOpenGLPFADepthSize;
-      attribs[n++] = (NSOpenGLPixelFormatAttribute)24;
-    }
-    if (m & FL_STENCIL) {
-      //list[n++] = AGL_STENCIL_SIZE; list[n++] = 1;
-      attribs[n++] = NSOpenGLPFAStencilSize;
-      attribs[n++] = (NSOpenGLPixelFormatAttribute)1;
-    }
-    if (m & FL_STEREO) {
-      //list[n++] = AGL_STEREO;
-      attribs[n++] = NSOpenGLPFAStereo;
-    }
-    if ((m & FL_MULTISAMPLE) && fl_mac_os_version >= 100400) {
-#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
-      attribs[n++] = NSOpenGLPFAMultisample, // 10.4
-#endif
-      attribs[n++] = NSOpenGLPFASampleBuffers; attribs[n++] = (NSOpenGLPixelFormatAttribute)1;
-      attribs[n++] = NSOpenGLPFASamples; attribs[n++] = (NSOpenGLPixelFormatAttribute)4;
-    }
-#if MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7
-#define NSOpenGLPFAOpenGLProfile      (NSOpenGLPixelFormatAttribute)99
-#define kCGLPFAOpenGLProfile          NSOpenGLPFAOpenGLProfile
-#define NSOpenGLProfileVersionLegacy  (NSOpenGLPixelFormatAttribute)0x1000
-#define NSOpenGLProfileVersion3_2Core  (NSOpenGLPixelFormatAttribute)0x3200
-#define kCGLOGLPVersion_Legacy        NSOpenGLProfileVersionLegacy
-#endif
-    if (fl_mac_os_version >= 100700) {
-      attribs[n++] = NSOpenGLPFAOpenGLProfile;
-      attribs[n++] =  (m & FL_OPENGL3) ? NSOpenGLProfileVersion3_2Core : NSOpenGLProfileVersionLegacy;
-    }
-  } else {
-    while (alistp[n] && n < 30) {
-      if (alistp[n] == kCGLPFAOpenGLProfile) {
-        if (fl_mac_os_version < 100700) {
-          if (alistp[n+1] != kCGLOGLPVersion_Legacy) return nil;
-          n += 2;
-          continue;
-        }
-      }
-      attribs[n] = (NSOpenGLPixelFormatAttribute)alistp[n];
-      n++;
-    }
-  }
-  attribs[n] = (NSOpenGLPixelFormatAttribute)0;
-  NSOpenGLPixelFormat *pixform = [[NSOpenGLPixelFormat alloc] initWithAttributes:attribs];
-  /*GLint color,alpha,accum,depth;
-  [pixform getValues:&color forAttribute:NSOpenGLPFAColorSize forVirtualScreen:0];
-  [pixform getValues:&alpha forAttribute:NSOpenGLPFAAlphaSize forVirtualScreen:0];
-  [pixform getValues:&accum forAttribute:NSOpenGLPFAAccumSize forVirtualScreen:0];
-  [pixform getValues:&depth forAttribute:NSOpenGLPFADepthSize forVirtualScreen:0];
-  NSLog(@"color=%d alpha=%d accum=%d depth=%d",color,alpha,accum,depth);*/
-  return pixform;
-}
-
-NSOpenGLContext* Fl_Cocoa_Window_Driver::create_GLcontext_for_window(NSOpenGLPixelFormat *pixelformat,
-                                              NSOpenGLContext *shared_ctx, Fl_Window *window)
-{
-  NSOpenGLContext *context = [[NSOpenGLContext alloc] initWithFormat:pixelformat shareContext:shared_ctx];
-  if (context) {
-    FLView *view = (FLView*)[fl_xid(window) contentView];
-    if (fl_mac_os_version >= 100700) {
-      //replaces  [view setWantsBestResolutionOpenGLSurface:YES]  without compiler warning
-      typedef void (*bestResolutionIMP)(id, SEL, BOOL);
-      static bestResolutionIMP addr = (bestResolutionIMP)[NSView instanceMethodForSelector:@selector(setWantsBestResolutionOpenGLSurface:)];
-      addr(view, @selector(setWantsBestResolutionOpenGLSurface:), Fl::use_high_res_GL() != 0);
-    }
-    [context setView:view];
-    if (Fl_Cocoa_Window_Driver::driver(window)->subRect()) {
-      remove_gl_context_opacity(context);
-    }
-  }
-  return context;
-}
-
-void Fl_Cocoa_Window_Driver::remove_gl_context_opacity(NSOpenGLContext *ctx) {
-  GLint gl_opacity;
-  [ctx getValues:&gl_opacity forParameter:NSOpenGLContextParameterSurfaceOpacity];
-  if (gl_opacity != 0) {
-    gl_opacity = 0;
-    [ctx setValues:&gl_opacity forParameter:NSOpenGLContextParameterSurfaceOpacity];
-  }
-}
-
-void Fl_Cocoa_Window_Driver::GLcontext_update(NSOpenGLContext* ctxt)
-{
-  [ctxt update];
-}
-
-void Fl_Cocoa_Window_Driver::flush_context(NSOpenGLContext* ctxt)
-{
-  [ctxt flushBuffer];
-}
-
-void Fl_Cocoa_Window_Driver::GLcontext_release(NSOpenGLContext* ctxt)
-{
-  [ctxt release];
-}
-
-void Fl_Cocoa_Window_Driver::GL_cleardrawable(void)
-{
-  [[NSOpenGLContext currentContext] clearDrawable];
-}
-
-void Fl_Cocoa_Window_Driver::GLcontext_makecurrent(NSOpenGLContext* ctxt)
-{
-  [ctxt makeCurrentContext];
-}
-
 /*
  * Initialize the given port for redraw and call the window's flush() to actually draw the content
  */
@@ -3335,8 +3194,8 @@ void Fl_Cocoa_Window_Driver::size_range() {
     int bt = get_window_frame_sizes(pWindow);
     NSSize minSize = NSMakeSize(int(minw() * s +.5) , int(minh() * s +.5) + bt);
     NSSize maxSize = NSMakeSize(maxw() ? int(maxw() * s + .5):32000, maxh() ? int(maxh() * s +.5) + bt:32000);
-    [i->xid setMinSize:minSize];
-    [i->xid setMaxSize:maxSize];
+    [(FLWindow*)i->xid setMinSize:minSize];
+    [(FLWindow*)i->xid setMaxSize:maxSize];
   }
 }
 
@@ -3367,17 +3226,17 @@ void Fl_Cocoa_Window_Driver::label(const char *name, const char *mininame) {
 void Fl_Cocoa_Window_Driver::show() {
   Fl_X *top = NULL;
   if (parent()) top = Fl_X::i(pWindow->top_window());
-  if (!shown() && (!parent() || (top && ![top->xid isMiniaturized]))) {
+  if (!shown() && (!parent() || (top && ![(FLWindow*)top->xid isMiniaturized]))) {
     makeWindow();
   } else {
     if ( !parent() ) {
       Fl_X *i = Fl_X::i(pWindow);
-      if ([i->xid isMiniaturized]) {
+      if ([(FLWindow*)i->xid isMiniaturized]) {
         i->w->redraw();
-        [i->xid deminiaturize:nil];
+        [(FLWindow*)i->xid deminiaturize:nil];
       }
       if (!fl_capture) {
-        [i->xid makeKeyAndOrderFront:nil];
+        [(FLWindow*)i->xid makeKeyAndOrderFront:nil];
       }
     }
     else pWindow->set_visible();
@@ -3422,7 +3281,7 @@ void Fl_Cocoa_Window_Driver::resize(int X, int Y, int W, int H) {
     }
     through_resize(0);
   }
-  
+
   // make sure subwindow doesn't leak outside parent
   if (pWindow->parent()) [fl_xid(pWindow) checkSubwindowFrame];
 }
@@ -4192,7 +4051,7 @@ int Fl_Cocoa_Screen_Driver::dnd(int use_selection)
   localPool = [[NSAutoreleasePool alloc] init];
   Fl_Widget *w = Fl::pushed();
   Fl_Window *win = w->top_window();
-  FLView *myview = (FLView*)[Fl_X::i(win)->xid contentView];
+  FLView *myview = (FLView*)[fl_mac_xid(win) contentView];
   NSEvent *theEvent = [NSApp currentEvent];
 
   int width, height;
@@ -4525,9 +4384,6 @@ void Fl_Cocoa_Window_Driver::draw_titlebar_to_context(CGContextRef gc, int w, in
   }
 }
 
-void Fl_Cocoa_Window_Driver::gl_start(NSOpenGLContext *ctxt) {
-  [ctxt update]; // supports window resizing
-}
 
 /* Returns the version of the running Mac OS as an int such as 100802 for 10.8.2,
  and also assigns that value to global fl_mac_os_version.

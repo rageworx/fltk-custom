@@ -66,7 +66,6 @@ Fl_Image *Fl_Bitmap::copy(int W, int H) const {
 
     new_image = new Fl_Bitmap(new_array, W, H);
     new_image->alloc_array = 1;
-
     return new_image;
   }
   if (W <= 0 || H <= 0) return 0;

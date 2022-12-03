@@ -20,10 +20,16 @@
 #include "../../Fl_Gl_Window_Driver.H"
 
 class Fl_Gl_Choice;
+#ifdef __OBJC__
+  @class NSOpenGLContext;
+#else
+  class NSOpenGLContext;
+#endif
 
 class Fl_Cocoa_Gl_Window_Driver : public Fl_Gl_Window_Driver {
+  NSOpenGLContext *gl1ctxt; // GL1 context in addition to GL3 context
   friend Fl_Gl_Window_Driver* Fl_Gl_Window_Driver::newGlWindowDriver(Fl_Gl_Window *);
-  Fl_Cocoa_Gl_Window_Driver(Fl_Gl_Window *win) : Fl_Gl_Window_Driver(win) {}
+  Fl_Cocoa_Gl_Window_Driver(Fl_Gl_Window *win);
   virtual float pixels_per_unit();
   virtual void before_show(int& need_after);
   virtual void after_show();
@@ -33,7 +39,7 @@ class Fl_Cocoa_Gl_Window_Driver : public Fl_Gl_Window_Driver {
   virtual void resize(int is_a_resize, int w, int h);
   virtual char swap_type();
   virtual Fl_Gl_Choice *find(int m, const int *alistp);
-  virtual GLContext create_gl_context(Fl_Window* window, const Fl_Gl_Choice* g, int layer = 0);
+  virtual GLContext create_gl_context(Fl_Window* window, const Fl_Gl_Choice* g);
   virtual void set_gl_context(Fl_Window* w, GLContext context);
   virtual void delete_gl_context(GLContext);
   virtual void make_overlay_current();
@@ -44,6 +50,8 @@ class Fl_Cocoa_Gl_Window_Driver : public Fl_Gl_Window_Driver {
   virtual bool need_scissor() { return true; }
   virtual void* GetProcAddress(const char *procName);
   void apply_scissor();
+  virtual void switch_to_GL1();
+  virtual void switch_back();
 };
 
 

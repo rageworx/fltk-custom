@@ -30,6 +30,7 @@
 #include <math.h>
 #include <stdlib.h>  // abs(int)
 #include <string.h>  // memcpy()
+#include <stdint.h>  // uint32_t
 
 extern unsigned fl_cmap[256]; // defined in fl_color.cxx
 
@@ -79,6 +80,7 @@ Fl_Cairo_Graphics_Driver::Fl_Cairo_Graphics_Driver() : Fl_Graphics_Driver() {
   angle = 0;
   left_margin = top_margin = 0;
   needs_commit_tag_ = NULL;
+  what = NONE;
 }
 
 Fl_Cairo_Graphics_Driver::~Fl_Cairo_Graphics_Driver() {
@@ -122,11 +124,22 @@ void Fl_Cairo_Graphics_Driver::rect(int x, int y, int w, int h) {
   surface_needs_commit();
 }
 
+static bool need_antialias_none(cairo_t *cairo_, int style) {
+  cairo_matrix_t matrix;
+  cairo_get_matrix(cairo_, &matrix);
+  double width = cairo_get_line_width(cairo_) * matrix.xx;
+  bool needit = (style == FL_SOLID && width < 1.5);
+  if (needit) cairo_set_antialias(cairo_, CAIRO_ANTIALIAS_NONE);
+  return needit;
+}
+
 void Fl_Cairo_Graphics_Driver::line(int x1, int y1, int x2, int y2) {
   cairo_new_path(cairo_);
   cairo_move_to(cairo_, x1, y1);
   cairo_line_to(cairo_, x2, y2);
+  bool needit = need_antialias_none(cairo_, linestyle_);
   cairo_stroke(cairo_);
+  if (needit) cairo_set_antialias(cairo_, CAIRO_ANTIALIAS_DEFAULT);
   surface_needs_commit();
 }
 
@@ -135,7 +148,9 @@ void Fl_Cairo_Graphics_Driver::line(int x0, int y0, int x1, int y1, int x2, int 
   cairo_move_to(cairo_, x0, y0);
   cairo_line_to(cairo_, x1, y1);
   cairo_line_to(cairo_, x2, y2);
+  bool needit = need_antialias_none(cairo_, linestyle_);
   cairo_stroke(cairo_);
+  if (needit) cairo_set_antialias(cairo_, CAIRO_ANTIALIAS_DEFAULT);
   surface_needs_commit();
 }
 
@@ -317,6 +332,7 @@ void Fl_Cairo_Graphics_Driver::line_style(int style, int width, char* dashes) {
     }
   }
   cairo_set_dash(cairo_, ddashes, l, 0);
+  cairo_set_antialias(cairo_, l ? CAIRO_ANTIALIAS_NONE : CAIRO_ANTIALIAS_DEFAULT);
   delete[] ddashes;
   check_status();
 }
@@ -361,12 +377,12 @@ Fl_Color Fl_Cairo_Graphics_Driver::color() { return Fl_Graphics_Driver::color();
 
 
 void Fl_Cairo_Graphics_Driver::concat(){
-  cairo_matrix_t mat = {fl_matrix->a , fl_matrix->b , fl_matrix->c , fl_matrix->d , fl_matrix->x , fl_matrix->y};
+  cairo_matrix_t mat = {m.a , m.b , m.c , m.d , m.x , m.y};
   cairo_transform(cairo_, &mat);
 }
 
 void Fl_Cairo_Graphics_Driver::reconcat(){
-  cairo_matrix_t mat = {fl_matrix->a , fl_matrix->b , fl_matrix->c , fl_matrix->d , fl_matrix->x , fl_matrix->y};
+  cairo_matrix_t mat = {m.a , m.b , m.c , m.d , m.x , m.y};
   cairo_status_t stat = cairo_matrix_invert(&mat);
   if (stat != CAIRO_STATUS_SUCCESS) {
     fputs("error in cairo_matrix_invert\n", stderr);
@@ -379,7 +395,7 @@ void Fl_Cairo_Graphics_Driver::begin_points() {
   concat();
   cairo_new_path(cairo_);
   gap_=1;
-  shape_=POINTS;
+  what=POINTS;
 }
 
 void Fl_Cairo_Graphics_Driver::begin_line() {
@@ -387,7 +403,7 @@ void Fl_Cairo_Graphics_Driver::begin_line() {
   concat();
   cairo_new_path(cairo_);
   gap_=1;
-  shape_=LINE;
+  what=LINE;
 }
 
 void Fl_Cairo_Graphics_Driver::begin_loop() {
@@ -395,7 +411,7 @@ void Fl_Cairo_Graphics_Driver::begin_loop() {
   concat();
   cairo_new_path(cairo_);
   gap_=1;
-  shape_=LOOP;
+  what=LOOP;
 }
 
 void Fl_Cairo_Graphics_Driver::begin_polygon() {
@@ -403,11 +419,11 @@ void Fl_Cairo_Graphics_Driver::begin_polygon() {
   concat();
   cairo_new_path(cairo_);
   gap_=1;
-  shape_=POLYGON;
+  what=POLYGON;
 }
 
 void Fl_Cairo_Graphics_Driver::vertex(double x, double y) {
-  if (shape_==POINTS){
+  if (what==POINTS){
     cairo_move_to(cairo_, x, y);
     gap_=1;
     return;
@@ -423,8 +439,8 @@ void Fl_Cairo_Graphics_Driver::vertex(double x, double y) {
 
 void Fl_Cairo_Graphics_Driver::curve(double x, double y, double x1, double y1, double x2, double y2, double x3, double y3)
 {
-  if(shape_==NONE) return;
-  if (shape_ == POINTS) Fl_Graphics_Driver::curve(x, y, x1, y1, x2, y2, x3, y3);
+  if(what==NONE) return;
+  if (what == POINTS) Fl_Graphics_Driver::curve(x, y, x1, y1, x2, y2, x3, y3);
   else {
   if(gap_)
     cairo_move_to(cairo_, x, y);
@@ -437,10 +453,11 @@ void Fl_Cairo_Graphics_Driver::curve(double x, double y, double x1, double y1, d
 }
 
 void Fl_Cairo_Graphics_Driver::circle(double x, double y, double r){
-  if (shape_ == NONE) {
+  if (what == NONE) {
     cairo_save(cairo_);
     concat();
     cairo_arc(cairo_, x, y, r, 0, 2*M_PI);
+    cairo_stroke(cairo_);
     reconcat();
     cairo_restore(cairo_);
   } else {
@@ -450,7 +467,8 @@ void Fl_Cairo_Graphics_Driver::circle(double x, double y, double r){
 }
 
 void Fl_Cairo_Graphics_Driver::arc(double x, double y, double r, double start, double a){
-  if (shape_ == NONE) return;
+  if (what == NONE) return;
+  if (gap_ == 1) cairo_new_sub_path(cairo_);
   gap_ = 0;
   if (start > a)
     cairo_arc(cairo_, x, y, r, -start*M_PI/180, -a*M_PI/180);
@@ -477,12 +495,11 @@ void Fl_Cairo_Graphics_Driver::pie(int x, int y, int w, int h, double a1, double
   cairo_save(cairo_);
   begin_polygon();
   cairo_translate(cairo_, x + w/2.0 -0.5 , y + h/2.0 - 0.5);
-  cairo_scale(cairo_, (w-1)/2.0 , (h-1)/2.0);
+  cairo_scale(cairo_, w/2.0 , h/2.0);
   vertex(0,0);
   arc(0.0,0.0, 1, a2, a1);
   end_polygon();
   cairo_restore(cairo_);
-  surface_needs_commit();
 }
 
 void Fl_Cairo_Graphics_Driver::end_points() {
@@ -494,7 +511,7 @@ void Fl_Cairo_Graphics_Driver::end_line() {
   reconcat();
   cairo_stroke(cairo_);
   cairo_restore(cairo_);
-  shape_ = NONE;
+  what = NONE;
   surface_needs_commit();
 }
 
@@ -504,7 +521,7 @@ void Fl_Cairo_Graphics_Driver::end_loop(){
   cairo_close_path(cairo_);
   cairo_stroke(cairo_);
   cairo_restore(cairo_);
-  shape_ = NONE;
+  what = NONE;
   surface_needs_commit();
 }
 
@@ -514,12 +531,12 @@ void Fl_Cairo_Graphics_Driver::end_polygon() {
   cairo_close_path(cairo_);
   cairo_fill(cairo_);
   cairo_restore(cairo_);
-  shape_ = NONE;
+  what = NONE;
   surface_needs_commit();
 }
 
 void Fl_Cairo_Graphics_Driver::transformed_vertex(double x, double y) {
-  if (shape_ == POINTS) {
+  if (what == POINTS) {
     cairo_move_to(cairo_, x, y);
     point(x, y);
     gap_ = 1;
@@ -745,28 +762,21 @@ void Fl_Cairo_Graphics_Driver::draw_cached_pattern_(Fl_Image *img, cairo_pattern
   int Hs = Fl_Scalable_Graphics_Driver::floor(Y - cy + img->h(), s) - Ys;
   if (Ws == 0 || Hs == 0) return;
   cairo_save(cairo_);
-  if (cx || cy || W < img->w() || H < img->h()) { // clip when necessary
-    cairo_rectangle(cairo_, X-0.5, Y-0.5, W+1, H+1);
-    cairo_clip(cairo_);
-  }
+  cairo_rectangle(cairo_, X - 0.5, Y - 0.5, W + 0.5, H + 0.5);
+  cairo_clip(cairo_);
   // remove any scaling and the current "0.5" translation useful for lines but bad for images
   matrix.xx = matrix.yy = 1;
   matrix.x0 -= 0.5 * s; matrix.y0 -= 0.5 * s;
   cairo_set_matrix(cairo_, &matrix);
   if (img->d() >= 1) cairo_set_source(cairo_, pat);
-  int offset = 0;
-  if (Ws >= img->data_w()*1.09 || Hs >= img->data_h()*1.09) {
-    // When enlarging while drawing, 1 pixel around target area seems unpainted,
-    // so we increase a bit the target area and move it int(s) pixels to left and top.
-    Ws = (img->w()+2)*s, Hs = (img->h()+2)*s;
-    offset = int(s);
-  }
-
-//fprintf(stderr,"WHs=%dx%d dataWH=%dx%d s=%.1f offset=%d\n",Ws,Hs,img->data_w(),img->data_h(),s,offset);
+  cairo_pattern_set_filter(pat, Fl_RGB_Image::scaling_algorithm() == FL_RGB_SCALING_BILINEAR ?
+                           CAIRO_FILTER_GOOD : CAIRO_FILTER_FAST);
+  cairo_pattern_set_extend(pat, CAIRO_EXTEND_PAD);
   cairo_matrix_init_scale(&matrix, double(img->data_w())/Ws, double(img->data_h())/Hs);
-  cairo_matrix_translate(&matrix, -Xs + offset, -Ys + offset);
+  cairo_matrix_translate(&matrix, -Xs , -Ys );
   cairo_pattern_set_matrix(pat, &matrix);
-  cairo_mask(cairo_, pat);
+  if (img->d() >= 1) cairo_paint(cairo_);
+  else cairo_mask(cairo_, pat);
   cairo_restore(cairo_);
   surface_needs_commit();
 }
@@ -818,10 +828,8 @@ void Fl_Cairo_Graphics_Driver::cache(Fl_RGB_Image *rgb) {
           A = *(r+3);
           f = float(A)/0xff;
         }
-        *q =  B * f;
-        *(q+1) =  G * f;
-        *(q+2) =  R * f;
-        *(q+3) =  A;
+        // this produces ARGB data in native endian
+        *(uint32_t *)q = A << 24 | (uchar)(R*f) << 16 | (uchar)(G*f) << 8 | (uchar)(B*f);
         r += rgb->d(); q += 4;
       }
     }
@@ -835,10 +843,9 @@ void Fl_Cairo_Graphics_Driver::cache(Fl_RGB_Image *rgb) {
           A = *(r+1);
           f = float(A)/0xff;
         }
-        *(q) =  G * f;
-        *(q+1) =  G * f;
-        *(q+2) =  G * f;
-        *(q+3) =  A;
+        G = (uchar)(G * f);
+        // this produces ARGB data in native endian
+        *(uint32_t *)q = A << 24 | G << 16 | G << 8 | G;
         r += rgb->d(); q += 4;
       }
     }
@@ -886,24 +893,41 @@ cairo_pattern_t *Fl_Cairo_Graphics_Driver::bitmap_to_pattern(Fl_Bitmap *bm,
   uchar *BGRA = new uchar[stride * bm->data_h()];
   memset(BGRA, 0, stride * bm->data_h());
   for (int j = 0; j < bm->data_h(); j++) {
-    uchar *r = (uchar*)bm->array + j * w_bitmap;
-    unsigned *q = (unsigned*)(BGRA + j * stride);
-    unsigned k = 0, mask32 = 1;
-    uchar p = *r;
-    if (complement) p = ~p;
+    uchar *r = (uchar *)bm->array + j * w_bitmap;
+    uint32_t *q = (uint32_t *)(BGRA + j * stride);
+    int k = 0;
+    uint32_t mask32;
+    uchar p;
     for (int i = 0; i < bm->data_w(); i++) {
-      if (p&1) (*q) |= mask32;
-      k++;
-      if (k % 8 != 0) p >>= 1;
-      else {
-        p = *(++r);
-        if (complement) p = ~p;
+      if (k == 0) {
+#if WORDS_BIGENDIAN
+        mask32 = (uint32_t)(1 << 31);
+#else
+        mask32 = 1;
+#endif
       }
-      if (k % 32 != 0) mask32 <<= 1; else {q++; mask32 = 1;}
+      if ((k & 7) == 0) { // (k & 7) == (k % 8)
+        p = *r++;
+        if (complement)
+          p = ~p;
+      }
+      if (p & 1)
+        (*q) |= mask32;
+      k++;
+      p >>= 1;
+#if WORDS_BIGENDIAN
+      mask32 >>= 1;
+#else
+      mask32 <<= 1;
+#endif
+      if (k == 32) {
+        k = 0;
+        q++;
+      }
     }
   }
   cairo_surface_t *surf = cairo_image_surface_create_for_data(BGRA, CAIRO_FORMAT_A1, bm->data_w(), bm->data_h(), stride);
-  cairo_pattern_t *pattern =  cairo_pattern_create_for_surface(surf);
+  cairo_pattern_t *pattern = cairo_pattern_create_for_surface(surf);
   if (p_surface) *p_surface = surf;
   else cairo_surface_destroy(surf);
   return pattern;
@@ -1025,7 +1049,7 @@ Fl_Font Fl_Cairo_Graphics_Driver::set_fonts(const char* /*pattern_name*/)
       // build the font's FLTK name
       l += strlen(p) + 2;
       char *q = new char[l];
-      sprintf(q, "%s %s", fam_name, p);
+      snprintf(q, l, "%s %s", fam_name, p);
       Fl::set_font((Fl_Font)(count++ + FL_FREE_FONT), q);
     }
     /*g_*/free(faces); // glib source code shows that g_free is equivalent to free
@@ -1098,7 +1122,7 @@ Fl_Cairo_Font_Descriptor::Fl_Cairo_Font_Descriptor(const char* name, Fl_Fontsize
   strcpy(string, name);
   // The factor of 0.75 below gives cairo-produced text the same size as
   // Xft-produced text for the same FLTK font size.
-  sprintf(string + strlen(string), " %d", int(size * 0.75 + 0.5) );
+  snprintf(string + strlen(string), 10, " %d", int(size * 0.75 + 0.5) );
   //A PangoFontDescription describes a font in an implementation-independent manner.
   fontref = pango_font_description_from_string(string);
   delete[] string;
@@ -1176,8 +1200,8 @@ void Fl_Cairo_Graphics_Driver::font(Fl_Font fnum, Fl_Fontsize s) {
 void Fl_Cairo_Graphics_Driver::draw(const char* str, int n, float x, float y) {
   if (!n) return;
   cairo_save(cairo_);
-  // The -0.5 below makes underscores visible in Fl_Text_Display at scale = 1
-  cairo_translate(cairo_, x, y - height() + descent() -0.5);
+  Fl_Cairo_Font_Descriptor *fd = (Fl_Cairo_Font_Descriptor*)font_descriptor();
+  cairo_translate(cairo_, x - 1, y - (fd->line_height - fd->descent) / float(PANGO_SCALE) - 1);
   pango_layout_set_text(pango_layout_, str, n);
   pango_cairo_show_layout(cairo_, pango_layout_); // 1.1O
   cairo_restore(cairo_);
@@ -1255,8 +1279,8 @@ void Fl_Cairo_Graphics_Driver::text_extents(const char* txt, int n, int& dx, int
   pango_layout_get_extents(pango_layout_, &ink_rect, NULL);
   double f = PANGO_SCALE;
   Fl_Cairo_Font_Descriptor *fd = (Fl_Cairo_Font_Descriptor*)font_descriptor();
-  dx = ink_rect.x / f;
-  dy = (ink_rect.y - fd->line_height + fd->descent) / f;
+  dx = ink_rect.x / f - 1;
+  dy = (ink_rect.y - fd->line_height + fd->descent) / f - 1;
   w = ceil(ink_rect.width / f);
   h = ceil(ink_rect.height / f);
 }

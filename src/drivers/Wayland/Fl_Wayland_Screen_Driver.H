@@ -23,7 +23,7 @@
 #ifndef FL_WAYLAND_SCREEN_DRIVER_H
 #define FL_WAYLAND_SCREEN_DRIVER_H
 
-#include "../../Fl_Screen_Driver.H"
+#include "../Unix/Fl_Unix_Screen_Driver.H"
 #include <wayland-client.h>
 
 class Fl_Window;
@@ -42,6 +42,7 @@ struct seat {
   struct wl_surface *pointer_focus;
   int pointer_scale;
   uint32_t serial;
+  uint32_t pointer_enter_serial;
   struct wl_data_device_manager *data_device_manager;
   struct wl_data_device *data_device;
   struct wl_data_source *data_source;
@@ -53,10 +54,9 @@ struct seat {
   struct zwp_text_input_v3 *text_input;
 };
 
-class Fl_Wayland_Screen_Driver : public Fl_Screen_Driver
+class Fl_Wayland_Screen_Driver : public Fl_Unix_Screen_Driver
 {
   friend class Fl_Screen_Driver;
-  friend class Fl_Wayland_Graphics_Driver;
   static int insertion_point_x;
   static int insertion_point_y;
   static int insertion_point_width;
@@ -148,6 +148,7 @@ public:
   virtual int get_mouse(int &x, int &y);
   virtual void open_display_platform();
   virtual void close_display();
+  virtual void display(const char *d);
   // --- compute dimensions of an Fl_Offscreen
   virtual void offscreen_size(Fl_Offscreen o, int &width, int &height);
   virtual int has_marked_text() const;
@@ -174,9 +175,9 @@ public:
   static compositor_name compositor; // identifies the used Wayland compositor
   void set_spot(int font, int height, int x, int y, int w, int h, Fl_Window *win);
   void reset_spot();
-#if FLTK_USE_X11
-  static bool undo_wayland_backend_if_needed(const char *backend = NULL);
-#endif
+  virtual void *control_maximize_button(void *data);
+  int event_key(int k);
+  int get_key(int k);
 };
 
 

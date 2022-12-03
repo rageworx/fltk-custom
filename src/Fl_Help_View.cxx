@@ -5,7 +5,7 @@
 // Image support by Matthias Melcher, Copyright 2000-2009.
 //
 // Buffer management (HV_Edit_Buffer) and more by AlbrechtS and others.
-// Copyright 2011-2019 by Bill Spitzak and others.
+// Copyright 2011-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -51,6 +51,7 @@
 #include <FL/Fl_Shared_Image.H>
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Pixmap.H>
+#include <FL/Fl_Int_Vector.H>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -660,12 +661,13 @@ Fl_Help_View::draw()
   ww = w();
   hh = h();
   i  = 0;
-
-  draw_box(b, x(), y(), ww, hh, bgcolor_);
 #ifdef FLTK_EXT_VERSION
   int hf = 0;
   if (Fl::is_scheme("flat")) hf = 3;
 #endif /// of FLTK_EXT_VERSION
+
+  draw_box(b, x(), y(), ww, hh, bgcolor_);
+
   if ( hscrollbar_.visible() || scrollbar_.visible() ) {
     int scrollsize = scrollbar_size_ ? scrollbar_size_ : Fl::scrollbar_size();
     int hor_vis = hscrollbar_.visible();
@@ -909,9 +911,16 @@ Fl_Help_View::draw()
 
             if (buf.cmp("LI"))
             {
-              // draw bullet (&bull;) Unicode: U+2022, UTF-8 (hex): e2 80 a2
-              unsigned char bullet[4] = { 0xe2, 0x80, 0xa2, 0x00 };
-              hv_draw((char *)bullet, xx - fsize + x() - leftline_, yy + y());
+              if (block->ol) {
+                char buf[10];
+                snprintf(buf, sizeof(buf), "%d. ", block->ol_num);
+                hv_draw(buf, xx - (int)fl_width(buf) + x() - leftline_, yy + y());
+              }
+              else {
+                // draw bullet (&bull;) Unicode: U+2022, UTF-8 (hex): e2 80 a2
+                unsigned char bullet[4] = { 0xe2, 0x80, 0xa2, 0x00 };
+                hv_draw((char *)bullet, xx - fsize + x() - leftline_, yy + y());
+              }
             }
 
             pushfont(font, fsize);
@@ -1199,7 +1208,7 @@ Fl_Help_View::draw()
 
   \todo complex HTML entities for Unicode code points \> 0x80 are currently treated
     like one byte (not character!) and do not (yet) match correctly ("<" matches "&lt;"
-    but "?? doesn't match "&euro;", and "ü" doesn't match "&uuml;")
+    but "€" doesn't match "&euro;", and "ü" doesn't match "&uuml;")
 
   \param[in]  s   search string in UTF-8 encoding
   \param[in]  p   starting position for search (0,...), Default = 0
@@ -1313,6 +1322,9 @@ void Fl_Help_View::format() {
   Fl_Boxtype    b = box() ? box() : FL_DOWN_BOX;
                                 // Box to draw...
   fl_margins    margins;        // Left margin stack...
+  Fl_Int_Vector OL_num;         // if nonnegative, in OL mode and this is the item number
+
+  OL_num.push_back(-1);
 
   DEBUG_FUNCTION(__LINE__,__FUNCTION__);
 
@@ -1548,6 +1560,20 @@ void Fl_Help_View::format() {
           xx         = block->x;
           block->h   += hh;
 
+          if (buf.cmp("OL")) {
+            int ol_num = 1;
+            if (get_attr(attrs, "START", attr, sizeof(attr)) != NULL) {
+              errno = 0;
+              char *endptr = 0;
+              ol_num = strtol(attr, &endptr, 10);
+              if (errno || endptr == attr || ol_num < 0)
+                ol_num = 1;
+            }
+            OL_num.push_back(ol_num);
+          }
+          else if (buf.cmp("UL"))
+            OL_num.push_back(-1);
+
           if (buf.cmp("UL") ||
               buf.cmp("OL") ||
               buf.cmp("DL"))
@@ -1639,6 +1665,16 @@ void Fl_Help_View::format() {
           else
             block = add_block(start, xx, yy, hsize_, 0);
 
+          if (buf.cmp("LI")) {
+            block->ol = 0;
+            if (OL_num.back()>=0) {
+              block->ol = 1;
+              block->ol_num = (int)OL_num.back();
+              int nnum = OL_num.pop_back() + 1;
+              OL_num.push_back(nnum);
+            }
+          }
+
           needspace = 0;
           line      = 0;
 
@@ -1664,6 +1700,11 @@ void Fl_Help_View::format() {
           line       = do_align(block, line, xx, newalign, links);
           xx         = block->x;
           block->end = ptr;
+
+          if (buf.cmp("/OL") ||
+              buf.cmp("/UL")) {
+            OL_num.pop_back();
+          }
 
           if (buf.cmp("/UL") ||
               buf.cmp("/OL") ||

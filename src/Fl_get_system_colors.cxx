@@ -1,7 +1,7 @@
 //
 // System color support for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2018 by Bill Spitzak and others.
+// Copyright 1998-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -149,6 +149,8 @@ static Fl_Pixmap        tile(tile_xpm);
         - "gleam" - This scheme is inspired by the Clearlooks Glossy scheme.
                     (Colin Jones and Edmanuel Torres).
 
+        - "oxy" - Subset of Dmitrij K's oxy scheme (STR 2675, 3477)
+
         - "flat"  - This scheme is inspired by Raphael Kim.
 
     Uppercase scheme names are equivalent, but the stored scheme name will
@@ -169,6 +171,7 @@ int Fl::scheme(const char *s) {
     else if (!fl_ascii_strcasecmp(s, "gtk+")) s = fl_strdup("gtk+");
     else if (!fl_ascii_strcasecmp(s, "plastic")) s = fl_strdup("plastic");
     else if (!fl_ascii_strcasecmp(s, "gleam")) s = fl_strdup("gleam");
+    else if (!fl_ascii_strcasecmp(s, "oxy")) s = fl_strdup("oxy");
 #ifdef FLTK_EXT_VERSION
     else if (!fl_ascii_strcasecmp(s, "flat")) s = fl_strdup("flat");
 #endif /// of FLTK_EXT_VERSION
@@ -191,18 +194,19 @@ int Fl::scheme(const char *s) {
 
 int Fl::reload_scheme() {
   Fl_Window *win;
+
   if (scheme_ && !fl_ascii_strcasecmp(scheme_, "plastic")) {
     // Update the tile image to match the background color...
     uchar r, g, b;
     int nr, ng, nb;
     int i;
-    // static uchar levels[3] = { 0xff, 0xef, 0xe8 };
+//    static uchar levels[3] = { 0xff, 0xef, 0xe8 };
     // OSX 10.3 and higher use a background with less contrast...
     static uchar levels[3] = { 0xff, 0xf8, 0xf4 };
 
     get_color(FL_GRAY, r, g, b);
 
-    //printf("FL_GRAY = 0x%02x 0x%02x 0x%02x\n", r, g, b);
+//    printf("FL_GRAY = 0x%02x 0x%02x 0x%02x\n", r, g, b);
 
     for (i = 0; i < 3; i ++) {
       nr = levels[i] * r / 0xe8;
@@ -214,8 +218,7 @@ int Fl::reload_scheme() {
       nb = levels[i] * b / 0xe8;
       if (nb > 255) nb = 255;
 
-      sprintf(tile_cmap[i], "%c c #%02x%02x%02x", "Oo."[i], nr, ng, nb);
-      // puts(tile_cmap[i]);
+      snprintf(tile_cmap[i], sizeof(tile_cmap[0]), "%c c #%02x%02x%02x", "Oo."[i], nr, ng, nb);
     }
 
     tile.uncache();
@@ -276,8 +279,29 @@ int Fl::reload_scheme() {
     set_boxtype(FL_THIN_DOWN_BOX,   FL_GLEAM_THIN_DOWN_BOX);
     set_boxtype(_FL_ROUND_UP_BOX,   FL_GLEAM_ROUND_UP_BOX);
     set_boxtype(_FL_ROUND_DOWN_BOX, FL_GLEAM_ROUND_DOWN_BOX);
+
     // Use slightly thinner scrollbars...
     Fl::scrollbar_size(15);
+  } else if (scheme_ && !fl_ascii_strcasecmp(scheme_, "oxy")) {
+    // Oxy scheme
+    if (scheme_bg_) {
+      delete scheme_bg_;
+      scheme_bg_ = (Fl_Image *)0;
+    }
+
+    set_boxtype(FL_UP_FRAME,        FL_OXY_UP_FRAME);
+    set_boxtype(FL_DOWN_FRAME,      FL_OXY_DOWN_FRAME);
+    set_boxtype(FL_THIN_UP_FRAME,   FL_OXY_THIN_UP_FRAME);
+    set_boxtype(FL_THIN_DOWN_FRAME, FL_OXY_THIN_DOWN_FRAME);
+
+    set_boxtype(FL_UP_BOX,          FL_OXY_UP_BOX);
+    set_boxtype(FL_DOWN_BOX,        FL_OXY_DOWN_BOX);
+    set_boxtype(FL_THIN_UP_BOX,     FL_OXY_THIN_UP_BOX);
+    set_boxtype(FL_THIN_DOWN_BOX,   FL_OXY_THIN_DOWN_BOX);
+    set_boxtype(_FL_ROUND_UP_BOX,   FL_OXY_ROUND_UP_BOX);
+    set_boxtype(_FL_ROUND_DOWN_BOX, FL_OXY_ROUND_DOWN_BOX);
+
+    // Use slightly thinner scrollbars...
 #ifdef FLTK_EXT_VERSION
   } else if (scheme_ && !fl_ascii_strcasecmp(scheme_, "flat")) {
     // windows flat UI style, by Raphael Kim

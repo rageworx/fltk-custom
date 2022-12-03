@@ -1,7 +1,7 @@
 //
 // Definition of Windows system driver for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2021 by Bill Spitzak and others.
+// Copyright 1998-2022 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -742,7 +742,7 @@ int Fl_WinAPI_System_Driver::file_browser_load_filesystem(Fl_File_Browser *brows
   drives = GetLogicalDrives();
   for (int i = 'A'; i <= 'Z'; i ++, drives >>= 1) {
     if (drives & 1) {
-      sprintf(filename, "%c:/", i);
+      snprintf(filename, lname, "%c:/", i);
       if (i < 'C') // see also: GetDriveType and GetVolumeInformation in Windows
         browser->add(filename, icon);
       else
@@ -794,7 +794,7 @@ void Fl_WinAPI_System_Driver::newUUID(char *uuidBuffer)
           (rpc_res == RPC_S_UUID_NO_ADDRESS)    // probably only locally unique
           ) {
         got_uuid = -1;
-        sprintf(uuidBuffer, "%08lX-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+        snprintf(uuidBuffer, 36+1, "%08lX-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X",
                 pu->Data1, pu->Data2, pu->Data3, pu->Data4[0], pu->Data4[1],
                 pu->Data4[2], pu->Data4[3], pu->Data4[4],
                 pu->Data4[5], pu->Data4[6], pu->Data4[7]);
@@ -833,7 +833,7 @@ void Fl_WinAPI_System_Driver::newUUID(char *uuidBuffer)
     for (int ii = 0; ii < 4; ii++) {
       b[12 + ii] = (unsigned char)name[ii];
     }
-    sprintf(uuidBuffer, "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+    snprintf(uuidBuffer, 36+1, "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
             b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7],
             b[8], b[9], b[10], b[11], b[12], b[13], b[14], b[15]);
   }
@@ -1025,4 +1025,56 @@ void Fl_WinAPI_System_Driver::unlock() {
 
 void Fl_WinAPI_System_Driver::awake(void* msg) {
   PostThreadMessage( main_thread, fl_wake_msg, (WPARAM)msg, 0);
+}
+
+// create anonymous pipe in the form of 2 unix-style file descriptors
+static void pipe_win32(int fds[2]) {
+  HANDLE read_h, write_h;
+  SECURITY_ATTRIBUTES sa;
+  sa.nLength = sizeof(sa);
+  sa.lpSecurityDescriptor = NULL;
+  sa.bInheritHandle = true;
+  if (CreatePipe(&read_h, &write_h, &sa, 0) == 0) {
+    fds[0] = fds[1] = -1; // indicates error
+  } else { // create unix-style file descriptors from handles
+    fds[0] = _open_osfhandle((fl_intptr_t)read_h, _O_RDONLY | _O_BINARY);
+    fds[1] = _open_osfhandle((fl_intptr_t)write_h, _O_WRONLY | _O_BINARY);
+  }
+}
+
+struct gunz_data { // data transmitted to thread
+  const unsigned char *data;
+  unsigned length;
+  int fd;
+};
+
+static void __cdecl write_func(struct gunz_data *pdata) { // will run in child thread
+  //const unsigned char *from = pdata->data;
+  while (pdata->length > 0) {
+    int done = _write(pdata->fd, pdata->data, pdata->length);
+    if (done == -1) break;
+    pdata->length -= done;
+    pdata->data += done;
+  }
+  _close(pdata->fd);
+  free(pdata);
+}
+
+int Fl_WinAPI_System_Driver::close_fd(int fd) {
+  return _close(fd);
+}
+
+void Fl_WinAPI_System_Driver::pipe_support(int &fdread, int &fdwrite, const unsigned char *bytes, size_t length) {
+  int fds[2];
+  pipe_win32(fds); // create anonymous pipe
+  if (fds[0] == -1) return Fl_System_Driver::pipe_support(fdread, fdwrite, NULL, 0);
+  fdread = fds[0];
+  fdwrite = -1;
+  // prepare data transmitted to child thread
+  struct gunz_data *thread_data = (struct gunz_data*)malloc(sizeof(struct gunz_data));
+  thread_data->data = bytes;
+  thread_data->length = (unsigned)length;
+  thread_data->fd = fds[1];
+  // launch child thread that will write byte buffer to pipe's write end
+  _beginthread((void( __cdecl * )( void * ))write_func, 0, thread_data);
 }
