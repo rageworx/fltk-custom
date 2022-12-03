@@ -3,9 +3,14 @@
  \page preface Preface
 
 This manual describes the Fast Light Tool Kit ("FLTK")
-version 1.3.5, a C++ Graphical User Interface
-("GUI") toolkit for UNIX, Microsoft Windows and Apple OS X. Each
-of the chapters in this manual is designed as a tutorial for
+version 1.4.0, a C++ Graphical User Interface
+("GUI") toolkit for UNIX, Microsoft Windows and Apple OS X.
+
+Version 1.4.0 introduces support for a new windowing system
+under LINUX: Wayland. Thus, FLTK applications under LINUX can
+now be built to use either X11 or Wayland as windowing system.
+
+Each of the chapters in this manual is designed as a tutorial for
 using FLTK, while the appendices provide a convenient reference
 for all FLTK widgets, functions, and operating system
 interfaces.
@@ -32,8 +37,7 @@ This manual is organized into the following chapters and appendices:
 \li \ref glut
 \li \ref forms
 \li \ref osissues
-\li \ref migration_1_1
-\li \ref migration_1_3
+\li \ref migration_1_4
 \li \ref development
 \li \ref license
 \li \ref examples
@@ -64,9 +68,10 @@ The X Window System version 11.
 The X Window System interface library.
 
 \par MS Windows, <tt>WIN32</tt>
-The Microsoft Windows Application Programmer's Interface for Windows 2000, 
-Windows XP, Windows Vista, and Windows 7. FLTK uses the preprocessor definition
-<tt>WIN32</tt> for the 32 bit and 64 bit MS Windows API.
+The Microsoft Windows Application Programmer's Interface for Windows 2000,
+Windows XP, Windows Vista, Windows 7 and later Windows versions.
+FLTK uses the preprocessor definition <tt>_WIN32</tt> for the 32 bit
+and 64 bit MS Windows API.
 
 \par OS X, <tt>__APPLE__</tt>
 The Apple desktop operating sytem OS X 10.0 and later. MacOS 8 and 9 support
@@ -75,11 +80,11 @@ was dropped after FLTK 1.0.10. FLTK uses the preprocessor definition
 
 \section preface_copyrights Copyrights and Trademarks
 
-FLTK is Copyright 1998-2016 by Bill Spitzak and others.  Use and
-distribution of FLTK is governed by the GNU Library General Public
+FLTK is \include{doc} copyright.dox
+Use and distribution of FLTK is governed by the GNU Library General Public
 License with 4 exceptions, located in \ref license.
 
-UNIX is a registered trademark of the X Open Group, Inc. 
+UNIX is a registered trademark of the X Open Group, Inc.
 Microsoft and Windows are registered trademarks of Microsoft
 Corporation. OpenGL is a registered trademark of Silicon
 Graphics, Inc. Apple, Macintosh, MacOS, and Mac OS X are

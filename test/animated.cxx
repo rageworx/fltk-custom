@@ -1,26 +1,24 @@
 //
-// "$Id$"
-//
 // Alpha rendering benchmark program for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2015 by Bill Spitzak and others.
+// Copyright 1998-2018 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 
 #include <FL/Fl.H>
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Button.H>
 #include <FL/Fl_Image.H>
-#include <FL/x.H>
+#include <FL/platform.H>
 #include <FL/fl_draw.H>
 
 #include <stdio.h>
@@ -55,9 +53,9 @@ static void make_images() {
     // A fading sphere
     uchar alpha = 255;
     if (i < FRAMES / 2)
-      alpha = (uchar)(255 * (i / ((float) FRAMES / 2)));
+      alpha = uchar(255 * (i / ((float) FRAMES / 2)));
     else
-      alpha = (uchar)(255 * (((FRAMES / 2) - (i - FRAMES / 2)) / ((float) FRAMES / 2)));
+      alpha = uchar(255 * (((FRAMES / 2) - (i - FRAMES / 2)) / ((float) FRAMES / 2)));
 
     const int spherew = 60;
     const int spherex = (DIM - spherew) / 2;
@@ -73,11 +71,11 @@ static void make_images() {
           continue;
 
         const float fill = dist / maxdist;
-        const uchar grey = (uchar)(fill * 255);
+        const uchar grey = uchar(fill * 255);
 
         uchar myalpha = alpha;
         if (fill > 0.9)
-          myalpha = (uchar)(myalpha * (1.0f - fill) * 10);
+          myalpha *= uchar((1.0f - fill) * 10);
 
         data[y * DIM * 4 + x * 4 + 0] = grey;
         data[y * DIM * 4 + x * 4 + 1] = grey;
@@ -87,9 +85,9 @@ static void make_images() {
     }
 
     // A moving blob
-    const float pos = (i / (float) FRAMES) * 2 - 0.5;
+    const float pos = (i / (float) FRAMES) * 2 - 0.5f;
 
-    const int xoffset = (int)(pos * DIM);
+    const int xoffset = int(pos * DIM);
     const int yoffset = 2 * DIM / 3;
     const int w = DIM / 4;
 
@@ -149,7 +147,3 @@ int main(int argc, char **argv) {
 
   return Fl::run();
 }
-
-//
-// End of "$Id$".
-//

@@ -4,8 +4,8 @@
 
 The Fast Light Tool Kit ("FLTK", pronounced
 "fulltick") is a cross-platform C++ GUI toolkit for
-UNIX&reg;/Linux&reg; (X11), Microsoft&reg; Windows&reg;, and
-Apple&reg; OS X&reg;. FLTK provides modern GUI functionality without the
+UNIX&reg;/Linux&reg; (X11 or Wayland), Microsoft&reg; Windows&reg;, and
+Apple&reg; macOS&reg;. FLTK provides modern GUI functionality without the
 bloat and supports 3D graphics via OpenGL&reg; and its built-in
 GLUT emulation. It was originally developed by Mr. Bill Spitzak
 and is currently maintained by a small group of developers
@@ -94,10 +94,10 @@ Here are some of the core features unique to FLTK:
 
 \li The FLUID program (which includes every widget) is 538k.
 
-\li Written directly atop core libraries (Xlib, WIN32 or Cocoa) for
+\li Written directly atop core libraries (Xlib, Wayland, Windows or Cocoa) for
     maximum speed, and carefully optimized for code size and performance.
 
-\li Precise low-level compatibility between the X11, WIN32 and MacOS
+\li Precise low-level compatibility between the X11, Windows and MacOS
     versions - only about 10% of the code is different.
 
 \li Interactive user interface builder program. Output is human-readable
@@ -105,12 +105,12 @@ Here are some of the core features unique to FLTK:
 
 \li Support for overlay hardware, with emulation if none is available.
 
-\li Very small & fast portable 2-D drawing library to hide Xlib, WIN32,
+\li Very small & fast portable 2-D drawing library to hide Xlib, Windows,
     or QuickDraw.
 
 \li OpenGL/Mesa drawing area widget.
 
-\li Support for OpenGL overlay hardware on both X11 and WIN32, with
+\li Support for OpenGL overlay hardware on both X11 and Windows, with
     emulation if none is available.
 
 \li Text widgets with cut & paste, undo, and support
@@ -143,13 +143,16 @@ the toolkit, which was already in use by several people, Bill
 came up with "FLTK", including a bogus excuse that it
 stands for "The Fast Light Toolkit".
 
-\section intro_unix Building and Installing FLTK Under UNIX and Apple OS X
+\section intro_cmake Building and Installing FLTK with CMake
 
-In most cases you can just type "make". This will
-run configure with the default of no options and then compile
-everything.
+Starting with version 1.4, the recommended FLTK building system
+is CMake. See file README.CMake of the FLTK source tree for all information.
+It's also possible to use \p configure and \p make as follows to build and install FLTK.
 
-For OS X, Xcode 3 project files can be found in the 'ide' directory.
+\section intro_unix Building and Installing FLTK Under UNIX and macOS with make
+
+In most cases you can just type "make". This will run configure with
+the default of no options and then compile everything.
 
 FLTK uses GNU autoconf to configure itself for your UNIX
 platform. The main things that the configure script will look
@@ -191,7 +194,7 @@ You can run configure yourself to get the exact setup you need.
 Type  "./configure <options>", where options are:
 
 \par --enable-cygwin
-Enable the Cygwin libraries under WIN32
+Enable the Cygwin libraries under Windows
 
 \par --enable-debug
 Enable debugging code & symbols
@@ -199,20 +202,50 @@ Enable debugging code & symbols
 \par --disable-gl
 Disable OpenGL support
 
+\par --disable-svg
+Disable support of reading and writing of Support Vector Graphics (.svg) files.
+
+\par --disable-print
+Disable print support for an X11 platform
+
 \par --enable-shared
 Enable generation of shared libraries
 
 \par --enable-threads
 Enable multithreading support
 
-\par --enable-xdbe
-Enable the X double-buffer extension
+\par --enable-wayland
+Enable the use of Wayland for all window operations, of Cairo for all graphics
+and of Pango for text drawing (Linux and FreeBSD only). Resulting FLTK apps
+use Wayland if a Wayland compositor is available at run-time, and use
+the equivalent of "--enable-x11 --enable-usecairo" otherwise.
 
-\par --enable-xft
-Enable the Xft library for anti-aliased fonts under X11
+\par --disable-xft
+Disables the Xft library, resulting in non anti-aliased fonts (X11 platform).
+
+\par --enable-usecairo
+All drawing operations use the Cairo library (rather than Xlib) producing
+antialiased graphics (X11 platform, implies --enable-pango).
+
+\par --enable-pango
+Enable the Pango library for drawing any text in any script with any font under X11.
 
 \par --enable-x11
-When targeting cygwin, build with X11 GUI instead of windows GDI
+This is the default under Unix and Linux.
+When targeting cygwin, build with X11 GUI instead of windows GDI.
+Also applicable to macOS platforms supplemented with XQuartz.
+
+\par --enable-wayland
+Enable use of the Wayland system for window handling.
+
+\par --enable-cairo
+Enable support of class Fl_Cairo_Window (all platforms, requires the Cairo library).
+
+\par --enable-cairoext
+Enable the FLTK instrumentation for cairo extended use (requires --enable-cairo).
+
+\par --disable-gdiplus
+Don't use GDI+ when drawing curves and oblique lines (Windows platform).
 
 \par --enable-cp936
 Under X11, enable use of the GB2312 locale
@@ -247,7 +280,7 @@ files to "includedir", and the library files to "libdir".
 
 NOTE: This documentation section is currently under review.
 More up-to-date information for this release may be available
-in the file "README.MSWindows.txt" and you should read
+in the file "README.Windows.txt" and you should read
 that file to determine if there are changes that may be
 applicable to your build environment.
 
@@ -268,37 +301,34 @@ with object files from any of the other environments!
 (They use incompatible C++ conventions internally.)
 
 Free Microsoft Visual C++ 2008 Express and Visual C++ 2010 Express
-or later versions using the supplied workspace and
-project files. Older versions, and the commercial
-versions, can be used as well, if they can open
-the project files.
+or later versions using workspace and project files generated by CMake.
+Older versions and the commercial versions can be used as well, if they
+can open the project files.
 Be sure to get your service packs!
 
-The project files can be found in the "ide/" directory.
-Please read "ide/README.IDE" for more info about this.
+Since FLTK 1.4 the project files MUST be generated with CMake.
+Please read "README.CMake.txt" for more information about this.
 
 
 \subsection intro_cygwin_mingw GNU toolsets (Cygwin or MinGW) hosted on Windows
 
-If using Cygwin with the Cygwin shell, or MinGW with
-the Msys shell, these build environments behave very
-much like a Unix or OS X build and the notes above in
-the section on
-<i>Building and Installing FLTK Under UNIX and Apple OS X</i>
+If using Cygwin with the Cygwin shell, or MinGW with the Msys shell,
+these build environments behave very much like a Unix or macOS build
+and the notes above in the section on
+<i>Building and Installing FLTK Under UNIX and Apple macOS</i>
 apply, in particular the descriptions of using the
 "configure" script and its related options.
 
-In general for a build using these tools, e.g. for
-the Msys shell with MinGW,
-it should suffice to "cd" into the directory where
-you have extracted the fltk tarball and type:
+In general for a build using these tools, e.g. for the Msys shell with
+MinGW, it should suffice to "cd" into the directory where you have
+extracted the FLTK tarball and type:
 
 \code
 ./configure
 make
 \endcode
 
-This will build the fltk libraries and they can then be
+This will build the FLTK libraries and they can then be
 utilised directly from the build location.
 NOTE: this may be simpler than "installing" them in
 many cases as different tool chains on Windows have
@@ -319,7 +349,7 @@ something like "C:\msys\1.0\local\lib", depending
 on where your Msys installation is rooted, which may
 not be useful to other tools.
 
-If you want to install your built fltk libraries in a
+If you want to install your built FLTK libraries in a
 non-standard location you may do:
 
 \code
@@ -328,10 +358,10 @@ make
 \endcode
 
 Where the value passed to "prefix" is the path at which
-you would like fltk to be installed.
+you would like FLTK to be installed.
 
 A subsequent invocation of "make install" will then place
-the fltk libraries and header files into that path.
+the FLTK libraries and header files into that path.
 
 The other options to "configure" may also be used to
 tailor the build to suit your environment.
@@ -354,28 +384,29 @@ header files.
 FLTK is available on the 'net in a bunch of locations:
 
 \par WWW
-http://www.fltk.org/ <br>
-http://www.fltk.org/str.php [for reporting bugs] <br>
-https://www.fltk.org/software.php [source code]<br>
-http://www.fltk.org/newsgroups.php [newsgroup/forums]
+https://www.fltk.org/ <br>
+https://www.fltk.org/bugs.php [for reporting bugs] <br>
+https://www.fltk.org/software.php [download source code]<br>
+https://www.fltk.org/newsgroups.php [newsgroup/forums]
 
 \par NNTP Newsgroups
 https://groups.google.com/forum/#!forum/fltkgeneral [Google Groups interface]
 news://fltk.org:1024/ [NNTP interface]<br>
-http://fltk.org/newsgroups.php [web interface]<br>
+https://www.fltk.org/newsgroups.php [web interface]<br>
 
 \section intro_reporting Reporting Bugs
 
 To report a bug in FLTK, or for feature requests, please use the form at
-<A href="http://www.fltk.org/str.php">http://www.fltk.org/str.php</A>,
+<A href="https://www.fltk.org/bugs.php">https://www.fltk.org/bugs.php</A>,
 and click on "Submit Bug or Feature Request".
 
 You'll be prompted for the FLTK version, operating system & version,
 and compiler that you are using. We will be unable to provide
 any kind of help without that basic information.
 
-For general support and questions, please use the fltk.general newsgroup (see above, "NNTP Newsgroups")
-or the web interface to the newsgroups at <A href="http://fltk.org/newsgroups.php">http://fltk.org/newsgroups.php</A>.
+For general support and questions, please use the fltk.general newsgroup
+(see above, "NNTP Newsgroups") or the web interface to the newsgroups at
+<A href="https://www.fltk.org/newsgroups.php">https://www.fltk.org/newsgroups.php</A>.
 
 \htmlonly
 <hr>

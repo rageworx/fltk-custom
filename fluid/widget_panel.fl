@@ -1,28 +1,29 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0305
+version 1.0400
 header_name {.h}
 code_name {.cxx}
 comment {//
-// "$Id: widget_panel.fl 11952 2016-09-20 12:57:18Z AlbrechtS $"
-//
 // Widget panel for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2016 by Bill Spitzak and others.
+// Copyright 1998-2021 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
 // file is missing or damaged, see the license at:
 //
-//     http://www.fltk.org/COPYING.php
+//     https://www.fltk.org/COPYING.php
 //
-// Please report all bugs and problems on the following page:
+// Please see the following page on how to report bugs and issues:
 //
-//     http://www.fltk.org/str.php
+//     https://www.fltk.org/bugs.php
 //
 } {in_source in_header
 }
 
-decl {extern void comment_cb(Fl_Text_Editor*, void*);} {private global
+decl {\#include "Fl_Widget_Type.h"} {private global
+}
+
+decl {\#include "Shortcut_Button.h"} {public global
 }
 
 Function {make_widget_panel()} {
@@ -30,8 +31,8 @@ Function {make_widget_panel()} {
 } {
   Fl_Window {} {
     comment {Use a Double Window to avoid flickering.} open
-    xywh {468 187 420 400} type Double labelsize 11 align 80 hide resizable hotspot
-    code0 {o->size_range(o->w(), o->h());} size_range {420 400 0 0}
+    xywh {500 209 420 400} type Double labelsize 11 align 80 resizable hotspot
+    code0 {o->size_range(o->w(), o->h());} size_range {420 400 0 0} visible
   } {
     Fl_Tabs {} {
       callback {propagate_load((Fl_Group *)o,v);} open
@@ -91,7 +92,7 @@ Use Ctrl-J for newlines.} xywh {95 40 190 20} labelfont 1 labelsize 11 when 1 te
         }
         Fl_Group {} {
           label {Alignment:}
-          callback propagate_load open
+          callback propagate_load
           xywh {95 115 310 20} labelfont 1 labelsize 11 align 4
         } {
           Fl_Button {} {
@@ -136,12 +137,12 @@ Use Ctrl-J for newlines.} xywh {95 40 190 20} labelfont 1 labelsize 11 when 1 te
           } {
             MenuItem {} {
               label {   Image Alignment   }
-              user_data 0xFFFFFFFF
+              user_data {(fl_intptr_t)0xFFFFFFFF}
               xywh {145 145 100 20} labelfont 2 labelsize 11 deactivate
             }
             MenuItem {} {
               label {image over text}
-              user_data {(fl_intptr_t)FL_ALIGN_IMAGE_OVER_TEXT} selected
+              user_data {(fl_intptr_t)FL_ALIGN_IMAGE_OVER_TEXT}
               xywh {25 25 100 20} labelsize 11
             }
             MenuItem {} {
@@ -171,7 +172,7 @@ Use Ctrl-J for newlines.} xywh {95 40 190 20} labelfont 1 labelsize 11 when 1 te
           } {
             MenuItem {} {
               label {   Inside && Outside   }
-              user_data 0xFFFFFFFF
+              user_data {(fl_intptr_t)0xFFFFFFFF}
               xywh {135 135 100 20} labelfont 2 labelsize 11 deactivate
             }
             MenuItem {} {
@@ -221,7 +222,7 @@ Use Ctrl-J for newlines.} xywh {95 40 190 20} labelfont 1 labelsize 11 when 1 te
             }
             MenuItem {} {
               label {   Outside Alignment   }
-              user_data 0xFFFFFFFF
+              user_data {(fl_intptr_t)0xFFFFFFFF}
               xywh {125 125 100 20} labelfont 2 labelsize 11 deactivate
             }
             MenuItem {} {
@@ -257,33 +258,77 @@ Use Ctrl-J for newlines.} xywh {95 40 190 20} labelfont 1 labelsize 11 when 1 te
         }
         Fl_Group {} {
           label {Position:}
-          callback propagate_load
+          callback position_group_cb open
           xywh {95 150 314 20} labelfont 1 labelsize 11 align 4
         } {
-          Fl_Value_Input widget_x_input {
+          Fl_Input widget_x_input {
             label {X:}
             callback x_cb
-            tooltip {The X position of the widget.} xywh {95 150 55 20} labelsize 11 align 5 maximum 2048 step 1 textsize 11
+            tooltip {The X position of the widget as a number or formula.
+Formulas can be simple math, including the variables
+x, px, sx, cx, and i} xywh {95 150 55 20} labelsize 11 align 5 textsize 11
+            class Fluid_Coord_Input
           }
-          Fl_Value_Input widget_y_input {
+          Fl_Input widget_y_input {
             label {Y:}
             callback y_cb
-            tooltip {The Y position of the widget.} xywh {155 150 55 20} labelsize 11 align 5 maximum 2048 step 1 textsize 11
+            tooltip {The Y position of the widget as a number or formula.
+Formulas can be simple math, including the variables
+y, py, sy, cy, and i} xywh {155 150 55 20} labelsize 11 align 5 textsize 11
+            class Fluid_Coord_Input
           }
-          Fl_Value_Input widget_w_input {
+          Fl_Input widget_w_input {
             label {Width:}
             callback w_cb
-            tooltip {The width of the widget.} xywh {215 150 55 20} labelsize 11 align 5 maximum 2048 step 1 textsize 11
+            tooltip {The width of the widget as a number or formula.
+Formulas can be simple math, including the variables
+w, pw, sw, cw, and i} xywh {215 150 55 20} labelsize 11 align 5 textsize 11
+            class Fluid_Coord_Input
           }
-          Fl_Value_Input widget_h_input {
+          Fl_Input widget_h_input {
             label {Height:}
-            callback h_cb
-            tooltip {The height of the widget.} xywh {275 150 55 20} labelsize 11 align 5 maximum 2048 step 1 textsize 11
+            callback h_cb selected
+            tooltip {The height of the widget as a number or formula.
+Formulas can be simple math, including the variables
+h, ph, sh, ch, and i} xywh {275 150 55 20} labelsize 11 align 5 textsize 11
+            class Fluid_Coord_Input
           }
-          Fl_Light_Button {} {
-            label Relative
-            callback wc_relative_cb
-            tooltip {If set, widgets inside a widget class of type Fl_Group are repositioned relative to the origin at construction time} xywh {335 150 65 20} labelsize 11
+          Fl_Choice {} {
+            label {Children:}
+            callback wc_relative_cb open
+            tooltip {When instantiating a widget class, the children can either be fixed in their original position, automatically be repositioned, or both repsositioned and resized to fit the container.} xywh {335 150 65 20} down_box BORDER_BOX labelsize 11 align 5 textsize 11
+          } {
+            MenuItem {} {
+              label Fixed
+              xywh {0 0 31 20} labelsize 11
+            }
+            MenuItem {} {
+              label Reposition
+              xywh {0 0 31 20} labelsize 11
+            }
+            MenuItem {} {
+              label Resize
+              xywh {0 0 31 20} labelsize 11
+            }
+          }
+          Fl_Box {} {
+            xywh {398 150 1 20} resizable
+          }
+        }
+        Fl_Group {} {
+          label {Flex Parent:}
+          callback flex_size_group_cb open
+          xywh {95 150 314 20} labelfont 1 labelsize 11 align 4 hide
+        } {
+          Fl_Value_Input widget_flex_size {
+            label {Size:}
+            callback flex_size_cb
+            tooltip {Fixed Width or Height for a horizontal or vertical Fl_Flex Parent.} xywh {95 150 55 20} labelsize 11 align 5 textsize 11
+          }
+          Fl_Check_Button widget_flex_fixed {
+            label fixed
+            callback flex_fixed_cb
+            tooltip {If checked, the size of the widget stays fixed.} xywh {155 150 55 20} down_box DOWN_BOX labelsize 11
           }
           Fl_Box {} {
             xywh {398 150 1 20} resizable
@@ -291,13 +336,13 @@ Use Ctrl-J for newlines.} xywh {95 40 190 20} labelfont 1 labelsize 11 when 1 te
         }
         Fl_Group {} {
           label {Values:}
-          callback propagate_load
+          callback values_group_cb open
           xywh {95 185 300 20} labelfont 1 labelsize 11 align 4
         } {
           Fl_Value_Input {} {
             label {Size:}
             callback slider_size_cb
-            tooltip {The size of the slider.} xywh {95 185 55 20} labelsize 11 align 5 step 0.010101 textsize 11
+            tooltip {The size of the slider.} xywh {95 185 55 20} labelsize 11 align 5 textsize 11
           }
           Fl_Value_Input {} {
             label {Minimum:}
@@ -324,8 +369,42 @@ Use Ctrl-J for newlines.} xywh {95 40 190 20} labelfont 1 labelsize 11 when 1 te
           }
         }
         Fl_Group {} {
+          label {Margins:}
+          callback flex_margin_group_cb open
+          xywh {95 185 300 20} labelfont 1 labelsize 11 align 4 hide
+        } {
+          Fl_Value_Input {} {
+            label {Left:}
+            callback flex_margin_left_cb
+            tooltip {Left margin in group.} xywh {95 185 55 20} labelsize 11 align 5 textsize 11
+          }
+          Fl_Value_Input {} {
+            label {Top:}
+            callback flex_margin_top_cb
+            tooltip {Top margin in group.} xywh {155 185 55 20} labelsize 11 align 5 textsize 11
+          }
+          Fl_Value_Input {} {
+            label {Right:}
+            callback flex_margin_right_cb
+            tooltip {Right margin in group.} xywh {215 185 55 20} labelsize 11 align 5 textsize 11
+          }
+          Fl_Value_Input {} {
+            label {Bottom:}
+            callback flex_margin_bottom_cb
+            tooltip {Bottom margin in group.} xywh {275 185 55 20} labelsize 11 align 5 textsize 11
+          }
+          Fl_Value_Input {} {
+            label {Gap:}
+            callback flex_margin_gap_cb
+            tooltip {Gap between children.} xywh {335 185 55 20} labelsize 11 align 5 textsize 11
+          }
+          Fl_Box {} {
+            xywh {395 185 0 20} resizable
+          }
+        }
+        Fl_Group {} {
           label {Size Range:}
-          callback propagate_load
+          callback size_range_group_cb open
           xywh {95 185 300 20} labelfont 1 labelsize 11 align 4 hide
         } {
           Fl_Value_Input {} {
@@ -364,7 +443,8 @@ Use Ctrl-J for newlines.} xywh {95 40 190 20} labelfont 1 labelsize 11 when 1 te
           label {Shortcut:}
           callback shortcut_in_cb
           comment {This is a special button that grabs keystrokes directly}
-          tooltip {The shortcut key for the widget.} xywh {95 210 310 20} box DOWN_BOX color 7 selection_color 7 labelfont 1 labelsize 11 align 4
+          tooltip {The shortcut key for the widget.
+Use 'Backspace' key to clear.} xywh {95 210 310 20} box DOWN_BOX color 7 selection_color 7 labelfont 1 labelsize 11 align 4
           code0 {\#include "Shortcut_Button.h"}
           class Shortcut_Button
         }
@@ -520,7 +600,7 @@ Use Ctrl-J for newlines.} xywh {95 285 310 20} labelfont 1 labelsize 11 textsize
       }
       Fl_Group {} {
         label {C++}
-        callback propagate_load open
+        callback propagate_load
         xywh {10 30 400 330} labelsize 11 when 0 hide
       } {
         Fl_Group {} {
@@ -666,42 +746,39 @@ wCallback->do_callback(wCallback, v);} open
       }
     }
     Fl_Group {} {open
-      xywh {9 370 400 20} labelsize 11
+      xywh {10 370 400 20} labelsize 11
     } {
       Fl_Box {} {
-        xywh {9 370 20 20} labelsize 11 resizable
-      }
-      Fl_Button {} {
-        label {Hide &Overlays}
-        callback overlay_cb
-        tooltip {Hide the widget overlay box.} xywh {240 370 99 20} labelsize 11 labelcolor 1
+        comment {Hidden resizable box}
+        xywh {10 370 75 20} labelsize 11 hide resizable
       }
       Fl_Button {} {
         label Revert
         callback revert_cb
-        xywh {66 370 80 20} labelsize 11 hide
+        comment {Hidden Revert button}
+        xywh {90 370 60 20} labelsize 11 hide
+      }
+      Fl_Button wLiveMode {
+        label {Live &Resize}
+        callback live_mode_cb
+        tooltip {Create a live duplicate of the selected widgets to test resizing and menu behavior.} xywh {155 370 80 20} type Toggle labelsize 11
+      }
+      Fl_Button {} {
+        label {Hide &Overlays}
+        callback overlay_cb
+        tooltip {Hide the widget overlay box.} xywh {240 370 100 20} labelsize 11 labelcolor 1
       }
       Fl_Return_Button {} {
         label Close
         callback ok_cb
-        xywh {344 370 64 20} labelsize 11
+        xywh {345 370 65 20} labelsize 11
       }
       Fl_Button {} {
         label Cancel
         callback cancel_cb
-        xywh {339 370 70 20} labelsize 11 hide
-      }
-      Fl_Button wLiveMode {
-        label {Live &Mode}
-        callback live_mode_cb
-        tooltip {Create a live duplicate of the selected widgets to test resizing and menu behavior.} xywh {151 370 84 20} type Toggle labelsize 11
+        comment {Hidden cancel button}
+        xywh {345 370 65 20} labelsize 11 hide
       }
     }
   }
-}
-
-comment {
-//
-// End of "$Id: widget_panel.fl 11952 2016-09-20 12:57:18Z AlbrechtS $".
-//} {in_source in_header
 }
