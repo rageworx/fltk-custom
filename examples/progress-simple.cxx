@@ -1,42 +1,40 @@
+//
+// Demonstrate using the Fl_Progress widget in an application - erco 05/02/2005
+//
+// Copyright 2005,2012 Greg Ercolano.
+// Copyright 1998-2017 by Bill Spitzak and others.
+//
+// This library is free software. Distribution and use rights are outlined in
+// the file "COPYING" which should have been included with this file.  If this
+// file is missing or damaged, see the license at:
+//
+//     https://www.fltk.org/COPYING.php
+//
+// Please see the following page on how to report bugs and issues:
+//
+//     https://www.fltk.org/bugs.php
+//
+
 #include <stdio.h>
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Button.H>
 #include <FL/Fl_Progress.H>
 
-//
-// "$Id$"
-//
-// Demonstrate using the Fl_Progress widget in an application - erco 05/02/2005
-//
-// Copyright 2005,2012 Greg Ercolano.
-// Copyright 1998-2012 by Bill Spitzak and others.
-//
-// This library is free software. Distribution and use rights are outlined in
-// the file "COPYING" which should have been included with this file.  If this
-// file is missing or damaged, see the license at:
-//
-//     http://www.fltk.org/COPYING.php
-//
-// Please report all bugs and problems on the following page:
-//
-//     http://www.fltk.org/str.php
-//
-
-#ifdef WIN32
+#ifdef _WIN32
 // WINDOWS
 #include <windows.h>
 #define usleep(v) Sleep(v/1000)
-#else /*WIN32*/
+#else /* _WIN32 */
 // UNIX
 #include <unistd.h>                            // usleep
-#endif /*WIN32*/
+#endif /* _WIN32 */
 
 // Button callback
 void butt_cb(Fl_Widget *butt, void *data) {
 
     // Deactivate the button
-    butt->deactivate();                        // prevent button from being pressed again                   
+    butt->deactivate();                        // prevent button from being pressed again
     Fl::check();                               // give fltk some cpu to gray out button
     // Make the progress bar
     Fl_Window *w = (Fl_Window*)data;           // access parent window
@@ -50,7 +48,7 @@ void butt_cb(Fl_Widget *butt, void *data) {
     w->end();                                  // end adding to window
     // Computation loop..
     for ( int t=1; t<=500; t++ ) {
-        progress->value(t/500.0);              // update progress bar with 0.0 ~ 1.0 value
+        progress->value(float(t/500.0));       // update progress bar with 0.0 ~ 1.0 value
         char percent[10];
         sprintf(percent, "%d%%", int((t/500.0)*100.0));
         progress->label(percent);              // update progress bar's label
@@ -72,7 +70,3 @@ int main() {
     win.show();
     return(Fl::run());
 }
-
-//
-// End of "$Id$".
-//

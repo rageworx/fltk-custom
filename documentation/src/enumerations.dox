@@ -1,10 +1,9 @@
 /**
 
- \page	enumerations	FLTK Enumerations
+ \page  enumerations    Constants and Enumerations
 
- \note	This file is not actively maintained any more, but is left
- 	here as a reference, until the doxygen documentation is
-	completed.
+ \note  This file is not actively maintained any more, but is left here
+        as a reference, until the doxygen documentation is completed.
 
  \sa \ref FL/Enumerations.H.
 
@@ -19,22 +18,22 @@ this is often useful to know when programming.
 The FLTK version number is stored in a number of compile-time constants:
 
   - FL_MAJOR_VERSION - The major release number, currently  1
-  - FL_MINOR_VERSION - The minor release number, currently  3
-  - FL_PATCH_VERSION - The patch release number, currently  5
+  - FL_MINOR_VERSION - The minor release number, currently  4
+  - FL_PATCH_VERSION - The patch release number, currently  0
   - FL_VERSION - \b [Deprecated] A combined floating-point version number for
-      the major, minor, and patch release numbers, currently 1.0305
+      the major, minor, and patch release numbers, currently 1.0400
   - FL_API_VERSION - A combined integer version number for the major, minor,
-      and patch release numbers, currently 10305 (use this instead of
+      and patch release numbers, currently 10400 (use this instead of
       FL_VERSION, if possible)
   - FL_ABI_VERSION - A combined integer version number for the application
       binary interface (ABI) major, minor, and patch release numbers,
-      currently 10300 (default)
+      currently 10400 (default)
 
   \note The ABI version (FL_ABI_VERSION) is usually constant throughout one
-	major/minor release version, for instance 10300 if FL_API_VERSION is 10305.
-	Hence the ABI is constant if only the patch version is changed.
-	You can change this with configure or CMake though if you want the
-	latest enhancements (called "ABI features", see CHANGES).
+        major/minor release version, for instance 10300 if FL_API_VERSION is 10304.
+        Hence the ABI is constant if only the patch version is changed.
+        You can change this with configure or CMake though if you want the
+        latest enhancements (called "ABI features", see CHANGES).
 
 \section enumerations_events Events
 
@@ -126,8 +125,8 @@ FL_KEYBOARD and FL_SHORTCUT events:
   - FL_Insert - The insert key.
   - FL_Menu - The menu key.
   - FL_Num_Lock - The num lock key.
-  - FL_KP - One of the keypad numbers; use <tt>FL_KP +  n</tt>
-    for number <tt>n</tt>.
+  - FL_KP - One of the keypad numbers or keys; use <tt>FL_KP + 'n'</tt>
+    for number <tt>n</tt> and, say, <tt>FL_KP + '*'</tt>.
   - FL_KP_Enter - The enter key on the keypad.
   - FL_F - One of the function keys; use <tt>FL_F +  n</tt>
     for function key <tt>n</tt>.
@@ -154,8 +153,10 @@ value:
   - FL_ALT - One of the alt keys is down.
   - FL_NUM_LOCK - The num lock is on.
   - FL_META - One of the meta/Windows keys is down.
-  - FL_COMMAND - An alias for FL_CTRL on WIN32 and X11,
+  - FL_COMMAND - An alias for FL_CTRL on Windows, X11 and Wayland,
     or FL_META on MacOS X.
+  - FL_CONTROL - An alias for FL_META on Windows, X11 and Wayland,
+    or FL_CTRL on MacOS X.
   - FL_SCROLL_LOCK - The scroll lock is on.
   - FL_BUTTON1 - Mouse button 1 is pushed.
   - FL_BUTTON2 - Mouse button 2 is pushed.
@@ -289,7 +290,7 @@ cursors.
   - FL_CURSOR_CROSS - crosshair
   - FL_CURSOR_WAIT - watch or hourglass
   - FL_CURSOR_INSERT - I-beam
-  - FL_CURSOR_HAND - hand (uparrow on MSWindows)
+  - FL_CURSOR_HAND - hand (uparrow on Windows)
   - FL_CURSOR_HELP - question mark
   - FL_CURSOR_MOVE - 4-pointed arrow
   - FL_CURSOR_NS - up/down arrow
