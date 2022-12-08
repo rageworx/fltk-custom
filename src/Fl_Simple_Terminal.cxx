@@ -542,6 +542,7 @@ void Fl_Simple_Terminal::append(const char *s, int len) {
               switch(*sp) {
                 case ';':         // numeric separator
                   ++sp;
+                  if ( tv>0 ) tv = 0; /// fixing strange color.
                   continue;
                 case 'J':         // erase in display
                   switch (vals[0]) {
