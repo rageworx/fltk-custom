@@ -26,6 +26,8 @@ echo "Darwin Kernel version identified ${KVER_0}.${KVER_1}.${KVER_2}, architectu
 # ~ 18.x : Mojave
 #   19.x : Catalina
 #   20.x : Big Sur   ( Supporting arm64 archicture )
+#   21.x : Monterey
+#   22.x : Ventura
 
 if [ ${KVER_0} -gt 19 ];then
     echo "Setting for universal binary for Big Sur"
