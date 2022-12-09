@@ -1,5 +1,5 @@
 //
-// Copyright 2001-2021 by Bill Spitzak and others.
+// Copyright 2001-2022 by Bill Spitzak and others.
 // Original code Copyright Mark Edel.  Permission to distribute under
 // the LGPL for the FLTK library granted by Mark Edel.
 //
@@ -3164,7 +3164,7 @@ void Fl_Text_Display::draw_line_numbers(bool /*clearAll*/) {
 
 #ifndef LINENUM_LEFT_OF_VSCROLL
   int vscroll_w = mVScrollBar->visible() ? mVScrollBar->w() : 0;
-  if (scrollbar_align()&FL_ALIGN_LEFT)
+  if (scrollbar_align() & FL_ALIGN_LEFT)
     xoff += vscroll_w;
 #endif
 
@@ -3173,7 +3173,7 @@ void Fl_Text_Display::draw_line_numbers(bool /*clearAll*/) {
   fl_push_clip(x() + xoff,
                y() + yoff,
                mLineNumWidth,
-               h() - Fl::box_dw(box()) - hscroll_h);
+               h() - Fl::box_dw(box()) );
   {
     // Set background color for line number area -- LZA / STR# 2621
     // Erase background
@@ -3210,6 +3210,13 @@ void Fl_Text_Display::draw_line_numbers(bool /*clearAll*/) {
       Y += lineHeight;
     }
   }
+
+  // fill the void area to the left of the horizontal scrollbar that exists
+  // above or beneath the line number display ( when it's on ) with bgcolor.
+  if ( scrollbar_align() & FL_ALIGN_TOP )
+    fl_rectf( x() + xoff, y() + Fl::box_dy(box()), mLineNumWidth, hscroll_h , bgcolor );
+  else
+    fl_rectf( x() + xoff, y() + h() - hscroll_h - Fl::box_dy(box()), mLineNumWidth, hscroll_h + Fl::box_dy(box()), bgcolor );
   fl_pop_clip();
 }
 
@@ -3914,11 +3921,11 @@ void Fl_Text_Display::draw(void) {
              text_area.w, BOTTOM_MARGIN, bgcolor);
 
     // draw that little box in the corner of the scrollbars
-    // fixed, don't draw color as FL_GRAY <- it's bug.
+    // fixed, don't draw color as FL_GRAY <- is it a bug ? or ??
     if (mVScrollBar->visible() && mHScrollBar->visible())
       fl_rectf(mVScrollBar->x(), mHScrollBar->y(),
                mVScrollBar->w(), mHScrollBar->h(),
-               color() );
+               bgcolor );
   }
   else if (damage() & (FL_DAMAGE_SCROLL | FL_DAMAGE_EXPOSE)) {
     //    printf("blanking previous cursor extrusions at Y: %d\n", mCursorOldY);

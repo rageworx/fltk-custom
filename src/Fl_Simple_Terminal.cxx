@@ -237,6 +237,7 @@ bool Fl_Simple_Terminal::ansi() const {
      "\033[46m"     Bright Cyan     FL_COURIER, 14
      "\033[47m"     Bright White    FL_COURIER, 14
 
+ Other escape codes are currently ignored.
  Here's example code demonstrating the use of ANSI codes to select
  the built-in colors, and how it looks in the terminal:
 
@@ -531,18 +532,19 @@ void Fl_Simple_Terminal::append(const char *s, int len) {
             continue;
           case '[': {            // "\033[.."
             ++sp;
-            int vals[4], tv=0, seqdone=0;
+            // so that \033[;37m handled as \033[0;37m
+            int vals[4] = { 0, 0, 0, 0 };
+            int tv=0, seqdone=0;
             while ( *sp && !seqdone && isdigit(*sp) ) { // "\033[#;#.."
               char *newsp;
               long a = strtol(sp, &newsp, 10);
               sp = newsp;
-              vals[tv++] = (a<0) ? 0 : a;       // prevent negative values
-              if ( tv >= 4 )      // too many #'s specified? abort sequence
-                { seqdone = 1; sp = esc+1; continue; }
+              vals[tv] = (a<0) ? 0 : a;       // prevent negative values
               switch(*sp) {
-                case ';':         // numeric separator
+                case ';':         // numeric separator                
+                  if ( ++tv >= 4 ) // too many #'s specified? abort sequence
+                    { seqdone = 1; sp = esc+1; continue; }                  
                   ++sp;
-                  if ( tv>0 ) tv = 0; /// fixing strange color.
                   continue;
                 case 'J':         // erase in display
                   switch (vals[0]) {
@@ -561,16 +563,24 @@ void Fl_Simple_Terminal::append(const char *s, int len) {
                   ++sp;
                   seqdone = 1;
                   continue;
-                case 'm':         // set color
-                  if ( tv > 0 ) { // at least one value parsed?
-                    current_style_index_ = (vals[0] == 0)            // "reset"?
+                case 'm': {       // set color
+                  // Walk the specified #'s, e.g. ESC [ # ; # ; # m
+                  //                                    |   |   |
+                  //                                    |   |   vals[2]
+                  //                                    |   vals[1]
+                  //                                    vals[0]
+                  if ( ++tv >= 4 ) // too many #'s specified? abort sequence
+                    { seqdone = 1; sp = esc+1; continue; }
+                  for ( int i=0; i<tv; i++ ) {
+                    current_style_index_ = (vals[i] == 0)            // "reset"?
                                              ? normal_style_index_   // use normal color for "reset"
-                                             : (vals[0] % nstyles);  // use user's value, wrapped to ensure not larger than table
+                                             : (vals[i] % nstyles);  // use user's value, wrapped to ensure not larger than table
                     astyle = 'A' + current_style_index_;             // convert index -> style buffer char
                   }
                   ++sp;
                   seqdone = 1;
                   continue;
+                }
                 case '\0':        // EOS in middle of sequence?
                   *ntp = 0;       // end of text
                   *nsp = 0;       // end of style

@@ -323,6 +323,8 @@ int Fl::reload_scheme() {
     set_boxtype(_FL_ROUND_DOWN_BOX, FL_FLAT_ROUND_DOWN_BOX);
     // Use slightly thinner scrollbarslike gleam...
     Fl::scrollbar_size(13);
+#else
+    Fl::scrollbar_size(15);
 #endif /// of FLTK_EXT_VERSION
   } else {
     // Use the standard FLTK look-n-feel...
