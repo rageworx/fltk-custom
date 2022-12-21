@@ -97,6 +97,8 @@ static int scroll_x = 0;
 Fl_Text_Display::Fl_Text_Display(int X, int Y, int W, int H, const char* l)
 : Fl_Group(X, Y, W, H, l) {
 
+#define VISIBLE_LINES_INIT 1 // allow compiler to remove unused code (PR #582)
+
   // Member initialization: same order as declared in .H file
   //    Any Fl_Text_Display methods should only be called /after/ all
   //    members initialized; avoids methods referencing uninitialized values.
@@ -109,7 +111,7 @@ Fl_Text_Display::Fl_Text_Display(int X, int Y, int W, int H, const char* l)
   mCursorToHint = NO_HINT;
   mCursorStyle = NORMAL_CURSOR;
   mCursorPreferredXPos = -1;
-  mNVisibleLines = 1;
+  mNVisibleLines = VISIBLE_LINES_INIT;
   mNBufferLines = 0;
   mBuffer = NULL;
   mStyleBuffer = NULL;
@@ -118,9 +120,11 @@ Fl_Text_Display::Fl_Text_Display(int X, int Y, int W, int H, const char* l)
   mContinuousWrap = 0;
   mWrapMarginPix = 0;
   mLineStarts = new int[mNVisibleLines];
-  { // This code unused unless mNVisibleLines is ever initialized >1
+#if VISIBLE_LINES_INIT > 1
+  { // Note: this code is unused unless mNVisibleLines is ever initialized > 1
     for (int i=1; i<mNVisibleLines; i++) mLineStarts[i] = -1;
   }
+#endif
   mLineStarts[0] = 0;
   mTopLineNum = 1;
   mAbsTopLineNum = 1;
@@ -3171,9 +3175,9 @@ void Fl_Text_Display::draw_line_numbers(bool /*clearAll*/) {
   Fl_Color fgcolor = isactive ? linenumber_fgcolor() : fl_inactive(linenumber_fgcolor());
   Fl_Color bgcolor = isactive ? linenumber_bgcolor() : fl_inactive(linenumber_bgcolor());
   fl_push_clip(x() + xoff,
-               y() + yoff,
+               y() + Fl::box_dy(box()),
                mLineNumWidth,
-               h() - Fl::box_dw(box()) );
+               h() - Fl::box_dh(box()));
   {
     // Set background color for line number area -- LZA / STR# 2621
     // Erase background
@@ -3210,13 +3214,13 @@ void Fl_Text_Display::draw_line_numbers(bool /*clearAll*/) {
       Y += lineHeight;
     }
   }
-
   // fill the void area to the left of the horizontal scrollbar that exists
-  // above or beneath the line number display ( when it's on ) with bgcolor.
-  if ( scrollbar_align() & FL_ALIGN_TOP )
-    fl_rectf( x() + xoff, y() + Fl::box_dy(box()), mLineNumWidth, hscroll_h , bgcolor );
+  // above or beneath the line number display (when on) with background color
+  fl_color(FL_BACKGROUND_COLOR);
+  if (scrollbar_align() & FL_ALIGN_TOP)
+    fl_rectf(x() + xoff, y() + Fl::box_dy(box()), mLineNumWidth, hscroll_h);
   else
-    fl_rectf( x() + xoff, y() + h() - hscroll_h - Fl::box_dy(box()), mLineNumWidth, hscroll_h + Fl::box_dy(box()), bgcolor );
+    fl_rectf(x() + xoff, y() + h() - hscroll_h - Fl::box_dy(box()), mLineNumWidth, hscroll_h + Fl::box_dy(box()));
   fl_pop_clip();
 }
 
@@ -3921,11 +3925,10 @@ void Fl_Text_Display::draw(void) {
              text_area.w, BOTTOM_MARGIN, bgcolor);
 
     // draw that little box in the corner of the scrollbars
-    // fixed, don't draw color as FL_GRAY <- is it a bug ? or ??
     if (mVScrollBar->visible() && mHScrollBar->visible())
       fl_rectf(mVScrollBar->x(), mHScrollBar->y(),
                mVScrollBar->w(), mHScrollBar->h(),
-               bgcolor );
+               FL_BACKGROUND_COLOR);
   }
   else if (damage() & (FL_DAMAGE_SCROLL | FL_DAMAGE_EXPOSE)) {
     //    printf("blanking previous cursor extrusions at Y: %d\n", mCursorOldY);

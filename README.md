@@ -11,7 +11,7 @@
     and is currently maintained by a small group of developers
     across the world with a central repository on GitHub.
 
-    For more information see original README.txt:
+    For more information see README.txt:
     https://github.com/fltk/fltk/blob/master/README.txt
 
 ## WHAT IS FLTK-custom
