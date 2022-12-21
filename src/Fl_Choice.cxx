@@ -85,14 +85,6 @@ void Fl_Choice::draw() {
       fl_color(fl_lighter(color()));
       fl_yxline(x1 + 1, y1 - 8, y1 + 8);
     }
-    /*
-    else if (Fl::is_scheme( "flat" )) {
-		// Show a smaller down arrows without divider.
-		x1 = x() + w() - 13 - dx;
-		y1 = y() + h() / 2;
-		fl_polygon( x1, y1 , x1 + 3, y1 + 3, x1 + 6, y1 );
-	}
-    */
   } else { // Default scheme ("None")
     // Draw arrow box
     draw_box(FL_UP_BOX, X, Y, W, H, color());

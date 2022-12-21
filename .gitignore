@@ -157,4 +157,5 @@ src/xdg-shell-protocol.c
 **/.DS_Store
 *.back
 *.bak
+*.swp
 configure~
