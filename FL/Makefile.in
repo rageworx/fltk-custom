@@ -45,4 +45,3 @@ uninstall:
 	echo "Uninstalling include files..."
 	$(RMDIR) $(DESTDIR)$(includedir)/FL
 @HLINKS@	$(RM) $(DESTDIR)$(includedir)/Fl
-
