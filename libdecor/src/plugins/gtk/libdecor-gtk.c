@@ -454,8 +454,8 @@ libdecor_frame_gtk_new(struct libdecor_plugin_gtk *plugin_gtk)
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	cairo_set_source_rgba(cr, 0, 0, 0, 1);
 	cairo_rectangle(cr, boundary, boundary,
-                        size - 2 * boundary,
-                        size - 2 * boundary);
+			size - 2 * boundary,
+			size - 2 * boundary);
 	cairo_fill(cr);
 	cairo_destroy(cr);
 	blur_surface(frame_gtk->shadow_blur, 64);
@@ -2221,10 +2221,10 @@ pointer_button(void *data,
 					toggle_maximized(&frame_gtk->frame);
 					break;
 				case HEADER_CLOSE:
-                    if (closeable(frame_gtk)) {
-                        libdecor_frame_close(
-                            &frame_gtk->frame);
-                        seat->pointer_focus = NULL;
+					if (closeable(frame_gtk)) {
+					       libdecor_frame_close(
+						       &frame_gtk->frame);
+					       seat->pointer_focus = NULL;
 					}
 					break;
 				default:
@@ -2298,7 +2298,7 @@ seat_name(void *data,
 {
 	/* avoid warning messages when opening/closing popup window */
 	struct seat *seat = (struct seat*)data;
-    seat->name = strdup(name);
+	seat->name = strdup(name);
 }
 
 static struct wl_seat_listener seat_listener = {
