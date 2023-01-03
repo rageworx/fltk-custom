@@ -3216,7 +3216,11 @@ void Fl_Text_Display::draw_line_numbers(bool /*clearAll*/) {
   }
   // fill the void area to the left of the horizontal scrollbar that exists
   // above or beneath the line number display (when on) with background color
+#ifdef FLTK_EXT_VERSION
+  fl_color(bgcolor);
+#else
   fl_color(FL_BACKGROUND_COLOR);
+#endif /// of FLTK_EXT_VERSION
   if (scrollbar_align() & FL_ALIGN_TOP)
     fl_rectf(x() + xoff, y() + Fl::box_dy(box()), mLineNumWidth, hscroll_h);
   else
@@ -3928,7 +3932,11 @@ void Fl_Text_Display::draw(void) {
     if (mVScrollBar->visible() && mHScrollBar->visible())
       fl_rectf(mVScrollBar->x(), mHScrollBar->y(),
                mVScrollBar->w(), mHScrollBar->h(),
+#ifdef FLTK_EXT_VERSION
+               bgcolor);
+#else
                FL_BACKGROUND_COLOR);
+#endif /// of FLTK_EXT_VERSION
   }
   else if (damage() & (FL_DAMAGE_SCROLL | FL_DAMAGE_EXPOSE)) {
     //    printf("blanking previous cursor extrusions at Y: %d\n", mCursorOldY);
