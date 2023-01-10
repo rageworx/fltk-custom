@@ -183,8 +183,6 @@ void fl_message(const char *fmt, ...) {
   Fl_Message msg("i");
   va_list ap;
 
-  // fl_beep(FL_BEEP_MESSAGE);
-
 #ifdef FLTK_EXT_VERSION
   _fl_ask_applycolor( &msg );
 #endif /// of FLTK_EXT_VERSION
@@ -204,8 +202,6 @@ void fl_alert(const char *fmt, ...) {
 
   Fl_Message msg("!");
   va_list ap;
-
-  // fl_beep(FL_BEEP_ERROR);
 
 #ifdef FLTK_EXT_VERSION
   _fl_ask_applycolor( &msg );
@@ -234,7 +230,6 @@ int fl_ask(const char *fmt, ...) {
   Fl_Message msg("?");
   va_list ap;
 
-  // fl_beep(FL_BEEP_QUESTION);
 #ifdef FLTK_EXT_VERSION
   _fl_ask_applycolor( &msg );
 #endif /// of FLTK_EXT_VERSION
@@ -309,8 +304,6 @@ int fl_choice(const char *fmt, const char *b0, const char *b1, const char *b2, .
   Fl_Message msg("?");
   va_list ap;
 
-  // fl_beep(FL_BEEP_QUESTION);
-
 #ifdef FLTK_EXT_VERSION
   _fl_ask_applycolor( &msg );
 #endif /// of FLTK_EXT_VERSION
@@ -345,8 +338,6 @@ int fl_choice_n(const char *fmt, const char *b0, const char *b1, const char *b2,
 
   Fl_Message msg("?");
   va_list ap;
-
-  // fl_beep(FL_BEEP_QUESTION);
 
 #ifdef FLTK_EXT_VERSION
   _fl_ask_applycolor( &msg );
@@ -412,8 +403,6 @@ Fl_Widget *fl_message_icon() {
 */
 const char *fl_input(const char *fmt, const char *defstr, ...) {
 
-  // fl_beep(FL_BEEP_QUESTION);
-
   Fl_Message msg("?");
   va_list ap;
   va_start(ap, defstr);
@@ -455,8 +444,6 @@ const char *fl_input(const char *fmt, const char *defstr, ...) {
 */
 Fl_String fl_input_str(int maxchar, const char *fmt, const char *defstr, ...) {
 
-  // fl_beep(FL_BEEP_QUESTION);
-
   Fl_Message msg("?");
   if (maxchar < 0)
     maxchar = 0;
@@ -489,8 +476,6 @@ Fl_String fl_input_str(int maxchar, const char *fmt, const char *defstr, ...) {
   \retval NULL if Cancel was pushed or the window was closed by the user
 */
 const char *fl_password(const char *fmt, const char *defstr, ...) {
-
-  // fl_beep(FL_BEEP_PASSWORD);
 
   Fl_Message msg("?");
 
@@ -528,8 +513,6 @@ const char *fl_password(const char *fmt, const char *defstr, ...) {
   \since 1.4.0
 */
 Fl_String fl_password_str(int maxchar, const char *fmt, const char *defstr, ...) {
-
-  // fl_beep(FL_BEEP_PASSWORD);
 
   Fl_Message msg("?");
 
