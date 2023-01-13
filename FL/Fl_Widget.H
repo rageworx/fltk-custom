@@ -1,7 +1,7 @@
 //
 // Widget header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2020 by Bill Spitzak and others.
+// Copyright 1998-2023 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -957,26 +957,29 @@ public:
 
     This is the same as calling
     \code
-      do_callback(this, user_data());
+      do_callback(this, user_data(), reason);
     \endcode
+
+    \param[in] reason give a reason to why this callback was called, defaults to \ref FL_REASON_UNKNOWN
+
     \see callback()
-    \see do_callback(Fl_Widget *widget, void *data)
+    \see do_callback(Fl_Widget *widget, void *data, Fl_Callback_Reason reason), Fl_Callback_Reason
   */
-  void do_callback() {do_callback(this, user_data_);}
+  void do_callback(Fl_Callback_Reason reason=FL_REASON_UNKNOWN) {do_callback(this, user_data_, reason);}
 
   /** Calls the widget callback function with arbitrary arguments.
     \param[in] widget call the callback with \p widget as the first argument
     \param[in] arg call the callback with \p arg as the user data (second) argument
+    \param[in] reason give a reason to why this callback was called, defaults to \ref FL_REASON_UNKNOWN
     \see callback()
-    \see do_callback(Fl_Widget *widget, void *data)
+    \see do_callback(Fl_Widget *widget, void *data), Fl_Callback_Reason
   */
-  void do_callback(Fl_Widget *widget, long arg) {
-    do_callback(widget, (void*)(fl_intptr_t)arg);
+  void do_callback(Fl_Widget *widget, long arg, Fl_Callback_Reason reason=FL_REASON_UNKNOWN) {
+    do_callback(widget, (void*)(fl_intptr_t)arg, reason);
   }
 
-  // Causes a widget to invoke its callback function with arbitrary arguments.
-  // Documentation and implementation in Fl_Widget.cxx
-  void do_callback(Fl_Widget *widget, void *arg = 0);
+  void do_callback(Fl_Widget *widget, void *arg = 0, Fl_Callback_Reason reason=FL_REASON_UNKNOWN);
+
 
   /* Internal use only. */
   int test_shortcut();

@@ -686,7 +686,12 @@ Fl_Help_View::draw()
     if ( ver_vis ) {
       if ( scrollbar_.w() != scrollsize ) {             // scrollsize changed?
 #ifdef FLTK_EXT_VERSION
-	scrollbar_.resize(scorn_x, y()+hf, scrollsize, scorn_y - y() - hf);
+        if (Fl::is_scheme("flat")) {
+	      scrollbar_.resize(scorn_x, y()+hf, scrollsize, scorn_y - y() - hf);
+	    }
+	    else {
+	      scrollbar_.resize(scorn_x, y(), scrollsize, scorn_y - y());
+	    }
 #else
         scrollbar_.resize(scorn_x, y(), scrollsize, scorn_y - y());
 #endif /// of FLTK_EXT_VERSION
@@ -3561,7 +3566,7 @@ Fl_Help_View::topline(int top)  // I - Top line number
 
   scrollbar_.value(topline_, h() - scrollsize, 0, size_);
 
-  do_callback();
+  do_callback(FL_REASON_DRAGGED);
 
   redraw();
 }
