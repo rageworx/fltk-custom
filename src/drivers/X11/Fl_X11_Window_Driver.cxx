@@ -1,7 +1,7 @@
 //
 // Definition of X11 window driver.
 //
-// Copyright 1998-2022 by Bill Spitzak and others.
+// Copyright 1998-2023 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -25,8 +25,6 @@
 #  include "../Xlib/Fl_Xlib_Graphics_Driver.H"
 #endif // FLTK_USE_CAIRO
 
-#include <FL/Fl_Overlay_Window.H>
-#include <FL/Fl_Menu_Window.H>
 #include <FL/Fl_Tooltip.H>
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
@@ -550,10 +548,9 @@ int Fl_X11_Window_Driver::scroll(int src_x, int src_y, int src_w, int src_h, int
   return 0;
 }
 
-Fl_X *Fl_X11_Window_Driver::makeWindow()
+void Fl_X11_Window_Driver::makeWindow()
 {
   Fl_X::make_xid(pWindow, fl_visual, fl_colormap);
-  return Fl_X::i(pWindow);
 }
 
 const Fl_Image* Fl_X11_Window_Driver::shape() {

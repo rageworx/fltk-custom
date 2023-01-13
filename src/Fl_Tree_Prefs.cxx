@@ -178,10 +178,6 @@ Fl_Tree_Prefs::Fl_Tree_Prefs() {
     _selectbox = _FL_PLASTIC_THIN_UP_BOX;
   } else if (Fl::is_scheme("oxy")) {
     _selectbox = _FL_OXY_THIN_UP_BOX;
-#ifdef FLTK_EXT_VERSION
-  } else if (Fl::is_scheme("flat")) {
-    _selectbox = _FL_FLAT_THIN_UP_BOX;
-#endif /// of FLTK_EXT_VERSION
   }
 }
 

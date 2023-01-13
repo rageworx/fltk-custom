@@ -45,9 +45,13 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
+#ifdef FLTK_EXT_VERSION
 #include <FL/Fl_Button.H>
+#endif /// of FLTK_EXT_VERSION
 #include <FL/Fl_Input_.H>
+#ifdef FLTK_EXT_VERSION
 #include <FL/Fl_Input.H>
+#endif /// of FLTK_EXT_VERSION
 #include "flstring.h"
 #include "Fl_Screen_Driver.H"
 #include <FL/fl_ask.H>
@@ -60,6 +64,7 @@
 
 Fl_Font fl_message_font_ = FL_HELVETICA;
 Fl_Fontsize fl_message_size_ = -1;
+#ifdef FLTK_EXT_VERSION
 Fl_Color fl_message_window_color_ = FL_GRAY;
 Fl_Color fl_message_label_color_ = FL_BLACK;
 Fl_Color fl_message_button_color_[3] = {FL_GRAY,FL_GRAY,FL_GRAY};
@@ -67,6 +72,7 @@ Fl_Color fl_message_button_label_color_[3] = {FL_BLACK,FL_BLACK,FL_BLACK};
 Fl_Color fl_message_input_color_ = FL_WHITE;
 Fl_Color fl_message_input_text_color_ = FL_BLACK;
 Fl_Font fl_message_input_text_font_ = FL_HELVETICA;
+#endif /// of FLTK_EXT_VERSION
 
 // pointers you can use to change FLTK to another language:
 const char *fl_no = "No";         ///< string pointer used in common dialogs, you can change it to another language
