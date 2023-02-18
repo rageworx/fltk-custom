@@ -13,6 +13,7 @@ fi
 
 COMPILER="CC=llvm-gcc CXX=llvm-g++"
 FEATURES="--enable-localjpeg  --enable-localzlib --enable-localpng"
+OPTIONS=
 
 KVER_0=`uname -r | cut -d . -f1`
 KVER_1=`uname -r | cut -d . -f2`
@@ -29,9 +30,13 @@ echo "Darwin Kernel version identified ${KVER_0}.${KVER_1}.${KVER_2}, architectu
 #   21.x : Monterey
 #   22.x : Ventura
 
+if [ "$1" == "macOS11compatible" ];then
+   OPTIONS="${OPTIONS} -mmacosx-version-min=11.0"
+fi
+
 if [ ${KVER_0} -gt 19 ];then
     echo "Setting for universal binary for Big Sur"
-    export ARCHFLAGS="-arch x86_64 -arch arm64"  
+    export ARCHFLAGS="-arch x86_64 -arch arm64 ${OPTIONS}"
 fi
 
 ./configure ${FEATURES} ${COMPILER} ${FLTKABI}
