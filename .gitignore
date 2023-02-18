@@ -2,10 +2,15 @@
 # Files to be ignored by Git (do not commit)
 #
 
-*.o
-*.exe
+# Ignore everywhere, also in subdirectories
 
-# CMake
+*.bck
+*.exe
+*.o
+**/.DS_Store
+
+# CMake build artifacts if built in source - not recommended, but anyway
+
 bin/
 **/cmake_install.cmake
 **/CMakeCache.txt
@@ -19,13 +24,16 @@ FLTKConfig.cmake
 etc/FLTKConfig.cmake
 
 # MSVC
+
 *.tlog
 .vs/
 
 # VS Code (Visual Studio Code) Editor
+
 .vscode/
 
 # /
+
 /autom4te*.cache
 /build
 /clang
@@ -38,20 +46,19 @@ etc/FLTKConfig.cmake
 /fltk.list
 /fltk.spec
 /makeinclude
-/*.bck
 /TAGS
 
 # /FL
+
 /FL/fl_config.h
 /FL/Makefile
-/FL/*.bck
 
 # /cairo/
+
 /cairo/*.so*
 /cairo/*.dll
 
-# /documentation/
-# see documentation/.gitignore
+# /lib/
 
 # /examples/
 # see examples/.gitignore
@@ -129,13 +136,14 @@ etc/FLTKConfig.cmake
 /lib/*.a
 
 # /misc/
+
 /misc/doxystar
 
 # /src/
+
 /src/*.so*
 /src/*.sl*
 /src/*.a
-/src/*.bck
 /src/*.dll
 /src/*.sav
 /src/*.dylib
@@ -153,7 +161,10 @@ src/xdg-shell-protocol.c
 
 # libdecor/build/demo
 # libdecor/build/egl
-
+/out/build/x64-Debug/.cmake/api/v1/query/client-MicrosoftVS/query.json
+/out/build/x64-Debug
+/CMakeSettings.json
+/CppProperties.json
 **/.DS_Store
 *.back
 *.bak

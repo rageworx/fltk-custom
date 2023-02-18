@@ -1,7 +1,7 @@
 //
 // Widget type code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2021 by Bill Spitzak and others.
+// Copyright 1998-2023 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -14,7 +14,7 @@
 //     https://www.fltk.org/bugs.php
 //
 
-#include "Shortcut_Button.h"
+#include "custom_widgets.h"
 
 #include "fluid.h"
 #include "Fl_Window_Type.h"
@@ -30,65 +30,11 @@
 #include <FL/fl_string_functions.h>
 #include "../src/flstring.h"
 
-/** \class Shortcut_Button
- A button that allows the user to type a key combination to create shortcuts.
- After clicked once, the button catches the following keyboard events and
- records the pressed keys and all modifiers. It draws a text representation of
- the shortcut. The backspace key deletes the current shortcut.
- */
-
-/**
- Draw the textual representation of the shortcut.
- */
-void Shortcut_Button::draw() {
-  if (value()) draw_box(FL_DOWN_BOX, (Fl_Color)9);
-  else draw_box(FL_UP_BOX, FL_WHITE);
-  fl_font(FL_HELVETICA,14); fl_color(FL_FOREGROUND_COLOR);
-  if (g_project.use_FL_COMMAND && (svalue & (FL_CTRL|FL_META))) {
-    char buf[1024];
-    fl_snprintf(buf, 1023, "Command+%s", fl_shortcut_label(svalue&~(FL_CTRL|FL_META)));
-    fl_draw(buf,x()+6,y(),w(),h(),FL_ALIGN_LEFT);
-  } else {
-    fl_draw(fl_shortcut_label(svalue),x()+6,y(),w(),h(),FL_ALIGN_LEFT);
-  }
-}
-
-/**
- Handle keystrokes to catch the user's shortcut.
- */
-int Shortcut_Button::handle(int e) {
-  when(0); type(FL_TOGGLE_BUTTON);
-  if (e == FL_KEYBOARD) {
-    if (!value()) return 0;
-    int v = Fl::event_text()[0];
-    if ( (v > 32 && v < 0x7f) || (v > 0xa0 && v <= 0xff) ) {
-      if (isupper(v)) {
-        v = tolower(v);
-        v |= FL_SHIFT;
-      }
-      v = v | (Fl::event_state()&(FL_META|FL_ALT|FL_CTRL));
-    } else {
-      v = (Fl::event_state()&(FL_META|FL_ALT|FL_CTRL|FL_SHIFT)) | Fl::event_key();
-      if (v == FL_BackSpace && svalue) v = 0;
-    }
-    if (v != svalue) {svalue = v; set_changed(); redraw(); do_callback(); }
-    return 1;
-  } else if (e == FL_UNFOCUS) {
-    int c = changed(); value(0); if (c) set_changed();
-    return 1;
-  } else if (e == FL_FOCUS) {
-    return value();
-  } else {
-    int r = Fl_Button::handle(e);
-    if (e == FL_RELEASE && value() && Fl::focus() != this) take_focus();
-    return r;
-  }
-}
-
 /** \class Widget_Bin_Button
- A button for the widget bin that allows the user to drag widgets into a window.
- Dragging and dropping a new widget makes it easy for the user to position
- a widget inside a window or group.
+ The Widget_Bin_Button button is a button that can be used in the widget bin to
+ allow the user to drag and drop widgets into a window or group. This feature
+ makes it easy for the user to position a widget at a specific location within
+ the window or group.
  */
 
 /**
@@ -124,8 +70,9 @@ int Widget_Bin_Button::handle(int inEvent)
 }
 
 /** \class Widget_Bin_Window_Button
- This button is used by the widget bin to create new windows by drag'n'drop.
- The new window will be created wherever the user drops it on the desktop.
+ The Widget_Bin_Window_Button button is used in the widget bin to create new
+ windows by dragging and dropping. When the button is dragged and dropped onto
+ the desktop, a new window will be created at the drop location.
  */
 
 /**
@@ -179,9 +126,10 @@ int Widget_Bin_Window_Button::handle(int inEvent)
 }
 
 /** \class Fluid_Coord_Input
- An Input field for widget coordinates and sizes.
- This widget adds basic math capability to the text input field and a number
- of variables that can be used in the formula.
+ The Fluid_Coord_Input widget is an input field for entering widget coordinates
+ and sizes. It includes basic math capabilities and allows the use of variables
+ in formulas. This widget is useful for specifying precise positions and
+ dimensions for widgets in a graphical user interface.
  */
 
 /**
@@ -298,10 +246,15 @@ int Fluid_Coord_Input::eval(uchar *&s, int prio) const {
 
 /**
  Evaluate a formula into an integer.
- The interpreter understands unary plus and minus, basic integer math
- (+, -, *, /), brackets, and can handle a user defined list of variables
- by name. There is no error checking. We assume that the formula is
- entered correctly.
+
+ The Fluid_Coord_Input widget includes a formula interpreter that allows you
+ to evaluate a string containing a mathematical formula and obtain the result
+ as an integer. The interpreter supports unary plus and minus, basic integer
+ math operations (such as addition, subtraction, multiplication, and division),
+ and brackets. It also allows you to define a list of variables by name and use
+ them in the formula. The interpreter does not perform error checking, so it is
+ assumed that the formula is entered correctly.
+
  \param s formula as a C string
  \return the calculated value
  */

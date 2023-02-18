@@ -56,10 +56,10 @@
 #  include "../../Fl_XColor.H"
 #  include "../../flstring.h"
 #if HAVE_XRENDER
-#include <X11/extensions/Xrender.h>
+#  include <X11/extensions/Xrender.h>
 #  if RENDER_MAJOR * 100 + RENDER_MAJOR < 10
 #    define RepeatPad  2
-#endif
+#  endif
 #endif // HAVE_XRENDER
 
 static XImage xi;       // template used to pass info to X

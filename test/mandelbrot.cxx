@@ -93,14 +93,14 @@ static void toggle_color(Fl_Widget *o, void *data) {
 
 int main(int argc, char **argv) {
   mbrot.make_window();
-    mbrot.window->begin();
-    Fl_Button* o = new Fl_Button(0, 0, 0, 0, NULL);
-    o->callback(print,NULL);
-    o->shortcut(FL_CTRL+'p');
+  mbrot.window->begin();
+  Fl_Button* o = new Fl_Button(0, 0, 0, 0, NULL);
+  o->callback(print,NULL);
+  o->shortcut(FL_CTRL+'p');
   o = new Fl_Button(0, 0, 0, 0, NULL);
   o->callback(toggle_color,NULL);
   o->shortcut(FL_CTRL+'m');
-    mbrot.window->end();
+  mbrot.window->end();
 
   mbrot.d->X = -.75;
   mbrot.d->scale = 2.5;
@@ -176,7 +176,7 @@ int Drawing_Area::idle() {
           if (use_colors) {
             get_color((float)t, *p, *(p+1), *(p+2));
           } else {
-          *p = 255-int(254*t);
+            *p = 255 - int(254*t);
           }
           break;
         }

@@ -3,6 +3,7 @@
 adjuster.o: ../FL/Enumerations.H
 adjuster.o: ../FL/Fl.H
 adjuster.o: ../FL/Fl_Adjuster.H
+adjuster.o: ../FL/fl_attr.h
 adjuster.o: ../FL/Fl_Bitmap.H
 adjuster.o: ../FL/Fl_Box.H
 adjuster.o: ../FL/Fl_Cairo.H
@@ -20,6 +21,7 @@ adjuster.o: ../FL/Fl_Window.H
 adjuster.o: ../FL/platform_types.h
 animated.o: ../FL/Enumerations.H
 animated.o: ../FL/Fl.H
+animated.o: ../FL/fl_attr.h
 animated.o: ../FL/Fl_Bitmap.H
 animated.o: ../FL/Fl_Button.H
 animated.o: ../FL/Fl_Cairo.H
@@ -46,6 +48,7 @@ animated.o: ../FL/platform_types.h
 animated.o: ../FL/x11.H
 arc.o: ../FL/Enumerations.H
 arc.o: ../FL/Fl.H
+arc.o: ../FL/fl_attr.h
 arc.o: ../FL/Fl_Bitmap.H
 arc.o: ../FL/Fl_Cairo.H
 arc.o: ../FL/fl_casts.H
@@ -96,6 +99,7 @@ ask.o: ../FL/Fl_Window.H
 ask.o: ../FL/platform_types.h
 bitmap.o: ../FL/Enumerations.H
 bitmap.o: ../FL/Fl.H
+bitmap.o: ../FL/fl_attr.h
 bitmap.o: ../FL/Fl_Bitmap.H
 bitmap.o: ../FL/Fl_Button.H
 bitmap.o: ../FL/Fl_Cairo.H
@@ -115,6 +119,7 @@ bitmap.o: pixmaps/sorceress.xbm
 blocks.o: ../config.h
 blocks.o: ../FL/Enumerations.H
 blocks.o: ../FL/Fl.H
+blocks.o: ../FL/fl_attr.h
 blocks.o: ../FL/Fl_Bitmap.H
 blocks.o: ../FL/Fl_Button.H
 blocks.o: ../FL/Fl_Cairo.H
@@ -159,10 +164,12 @@ blocks.o: pixmaps/yellow.xpm
 blocks.o: pixmaps/yellow_bomb.xpm
 boxtype.o: ../FL/Enumerations.H
 boxtype.o: ../FL/Fl.H
+boxtype.o: ../FL/fl_attr.h
 boxtype.o: ../FL/Fl_Bitmap.H
-boxtype.o: ../FL/Fl_Box.H
+boxtype.o: ../FL/Fl_Button.H
 boxtype.o: ../FL/Fl_Cairo.H
 boxtype.o: ../FL/fl_casts.H
+boxtype.o: ../FL/Fl_Choice.H
 boxtype.o: ../FL/fl_config.h
 boxtype.o: ../FL/Fl_Device.H
 boxtype.o: ../FL/Fl_Double_Window.H
@@ -171,11 +178,15 @@ boxtype.o: ../FL/Fl_Export.H
 boxtype.o: ../FL/Fl_Graphics_Driver.H
 boxtype.o: ../FL/Fl_Group.H
 boxtype.o: ../FL/Fl_Image.H
+boxtype.o: ../FL/Fl_Menu_.H
+boxtype.o: ../FL/Fl_Menu_Item.H
 boxtype.o: ../FL/Fl_Pixmap.H
 boxtype.o: ../FL/Fl_Plugin.H
 boxtype.o: ../FL/Fl_Preferences.H
 boxtype.o: ../FL/Fl_Rect.H
 boxtype.o: ../FL/Fl_RGB_Image.H
+boxtype.o: ../FL/Fl_Scheme.H
+boxtype.o: ../FL/Fl_Scheme_Choice.H
 boxtype.o: ../FL/fl_types.h
 boxtype.o: ../FL/fl_utf8.h
 boxtype.o: ../FL/Fl_Widget.H

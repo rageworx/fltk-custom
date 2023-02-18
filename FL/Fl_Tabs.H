@@ -162,6 +162,19 @@ struct Fl_Menu_Item;
   \image html  tabs_uniform.png "Fl_Tabs with uniform colors"
   \image latex tabs_uniform.png "Fl_Tabs with uniform colors" width=8cm
 
+  \b Close \b Button \b on \b Tabs
+
+  The Fl_Tabs widget allows you to specify that a child widget should display
+  a close button in its tab. If the \ref FL_WHEN_CLOSED flag is set for the
+  child widget, an "X" symbol will be displayed to the left of the label text
+  in the tab. When the close button is clicked, the child widget's callback
+  function will be called with the \ref FL_REASON_CLOSED argument. It is then
+  the responsibility of the child widget to remove itself from the
+  Fl_Tabs container.
+
+  Tabs that are in a compressed state will not display a close button until
+  they are fully expanded.
+
   \b Resizing \b Caveats
 
   When Fl_Tabs is resized vertically, the default behavior scales the

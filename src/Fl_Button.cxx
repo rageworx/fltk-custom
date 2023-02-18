@@ -206,6 +206,11 @@ void Fl_Button::key_release_timeout(void *d)
 
   Derived classes may handle this differently.
 
+  A button may reequest callbacks with \p whne() \p FL_WHEN_CHANGED,
+  \p FL_WHEN_NOT_CHANGED, and \p FL_WHEN_RELEASE, triggering the callback
+  reasons \p FL_REASON_CHANGED, \p FL_REASON_SELECTED,
+  and \p FL_REASON_DESELECTED.
+
   \param[in] X, Y, W, H position and size of the widget
   \param[in] L widget label, default is no label
  */
