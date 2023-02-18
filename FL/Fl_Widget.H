@@ -271,17 +271,14 @@ public:
   void parent(Fl_Group* p) {parent_ = p;} // for hacks only, use Fl_Group::add()
 
   /** Gets the widget type.
-      Returns the widget type value, which is used for Forms compatibility
-      and to simulate RTTI.
-
-      \todo Explain "simulate RTTI" (currently only used to decide if a widget
-      is a window, i.e. type()>=FL_WINDOW ?). Is type() really used in a way
-      that ensures "Forms compatibility" ?
+      Returns the widget type value, which gives some information about the derived widget class
+      to which the object belongs. Noticeably, the condition <tt>type() >= FL_WINDOW</tt> indicates
+      a widget is an Fl_Window or derived object.
    */
   uchar type() const {return type_;}
 
   /** Sets the widget type.
-      This is used for Forms compatibility.
+      \see type()
    */
   void type(uchar t) {type_ = t;}
 
@@ -689,9 +686,6 @@ public:
           using only \p long values. You may want to use user_data() instead.
 
     \see user_data()
-
-    \todo [Internal] The user_data value must be implemented using
-          \p fl_intptr_t or similar to avoid 64-bit platform incompatibilities.
   */
   long argument() const {return (long)(fl_intptr_t)user_data_;}
 
@@ -707,7 +701,7 @@ public:
       FL_WHEN_RELEASE.
 
       \return set of flags
-      \see when(uchar)
+      \see when(uchar), Fl_When, do_callback(), Fl::callback_reason()
    */
   Fl_When when() const {return (Fl_When)when_;}
 
@@ -733,6 +727,11 @@ public:
          a newline for a Fl_Multiline_Input) - this changes the behavior.
      \li FL_WHEN_ENTER_KEY|FL_WHEN_NOT_CHANGED: The Enter key will do the
          callback even if the text has not changed. Useful for command fields.
+     \li \ref FL_WHEN_CLOSED : If the user requests that the widget is closed,
+         the callback is called with \ref FL_REASON_CLOSED. The \ref Fl_Tabs
+         widget checks this flag on its children to determine whether to display
+         a close button on the tab of that widget.
+
       Fl_Widget::when() is a set of bitflags used by subclasses of
       Fl_Widget to decide when to do the callback.
 
@@ -741,6 +740,7 @@ public:
       class so that you can scan a panel and do_callback() on all the ones
       that don't do their own callbacks in response to an "OK" button.
       \param[in] i set of flags
+      \see Fl_When, do_callback(), Fl::callback_reason()
    */
   void when(uchar i) {when_ = i;}
 
@@ -979,7 +979,6 @@ public:
   }
 
   void do_callback(Fl_Widget *widget, void *arg = 0, Fl_Callback_Reason reason=FL_REASON_UNKNOWN);
-
 
   /* Internal use only. */
   int test_shortcut();
