@@ -253,7 +253,6 @@ void Fl_Tabs::handle_overflow_menu() {
 
   // create a menu with all children
   overflow_menu = new Fl_Menu_Item[nc+1];
-  //size_t overflow_menu_clrsz = sizeof(Fl_Menu_Item) * ((size_t)nc+1);
   memset(overflow_menu, 0, sizeof(Fl_Menu_Item) * ((size_t)nc+1));
   for (i = 0; i < nc; i++) {
     overflow_menu[i].label(child(i)->label());
