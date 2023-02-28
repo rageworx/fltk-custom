@@ -64,51 +64,82 @@
 
   \since 1.4.0
 */
-
 class Fl_String {
+
 private:
+  /*
+   FLTK does no small string optimisation.
+   If the string is empty and capacity is not set, buffer_ will be NULL.
+   */
+  char *buffer_;
   int size_;
-  char *value_;
   int capacity_;
 
+  void init_();
+  void grow_(int n);
+  void shrink_(int n);
+  Fl_String &replace_(int at, int n_del, const char *src, int n_ins);
+
+protected:
+  static const char NUL;
+
 public:
+  static const int npos;
+
+  // ---- Assignment
   Fl_String();
-  Fl_String(const char *str);
+  Fl_String(const Fl_String &str);
+  Fl_String(const char *cstr);
   Fl_String(const char *str, int size);
+  ~Fl_String();
+  Fl_String& operator=(const Fl_String &str);
+  Fl_String& operator=(const char *cstr);
+  Fl_String &assign(const Fl_String &str);
+  Fl_String &assign(const char *cstr);
+  Fl_String &assign(const char *str, int size);
 
-  // copy constructor
-  Fl_String(const Fl_String &in);
+  // ---- Element Access
+  char at(int pos) const;
+  char operator[](int n) const;
+  char &operator[](int n);
+  const char *data() const;
+  char *data();
+  const char *c_str() const;
 
-  // copy assignment operator
-  Fl_String& operator=(const Fl_String &in);
-
-  // assignment operator for 'const char *'
-  Fl_String& operator=(const char *in);
-
-  virtual ~Fl_String();
-
-private:
-  void init();
-  void alloc_buf(int size, bool preserve_text=false);
-  void release();
-
-public:
-  void value(const char *str);
-  void value(const char *str, int len);
-  /** Returns a pointer to the first character stored in the object */
-  const char *value() const { return value_; }
-  /** Returns a pointer to the first byte stored in the object */
-  char *buffer() { return value_; }
-  /** Returns the number of bytes currently stored in the object */
-  int size() const { return size_; }
-
-  int slen() const;
+  // ---- Capacity
+  bool empty() const;
+  int size() const;
+  void reserve(int n);
   int capacity() const;
-  void capacity(int num_bytes);
+  void shrink_to_fit();
 
-  void debug(const char *info = 0) const;     // output string info
-  void hexdump(const char *info = 0) const;   // output string info + hexdump
+  // --- Operations
+  void clear();
+  Fl_String &insert(int at, const char *src, int n_ins=npos);
+  Fl_String &insert(int at, const Fl_String &src);
+  Fl_String &erase(int at, int n_del);
+  void push_back(char c);
+  void pop_back();
+  Fl_String &append(const char *src, int n_ins=npos);
+  Fl_String &append(const Fl_String &src);
+  Fl_String &append(char c);
+  Fl_String &operator+=(const char *src);
+  Fl_String &operator+=(const Fl_String &src);
+  Fl_String &operator+=(char c);
+  Fl_String &replace(int at, int n_del, const char *src, int n_ins=npos);
+  Fl_String &replace(int at, int n_del, const Fl_String &src);
+  Fl_String substr(int pos=0, int n=npos) const;
+  void resize(int n);
 
+  // --- Non Standard
+  int strlen() const;
+  void debug(const char *info = 0) const;
+  void hexdump(const char *info = 0) const;
 }; // class Fl_String
+
+// ---- Non-member functions
+extern Fl_String operator+(const Fl_String &lhs, const Fl_String &rhs);
+extern Fl_String operator+(const Fl_String &lhs, const char *rhs);
+extern bool operator==(const Fl_String &lhs, const Fl_String &rhs);
 
 #endif // _FL_Fl_String_H_
