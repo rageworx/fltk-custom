@@ -141,8 +141,7 @@ struct fl_margins {
   fl_margins() { clear();  }
 
   int clear() {
-//    puts("fl_margins::clear()");
-
+    // puts("fl_margins::clear()");
     depth_ = 0;
     return margins_[0] = 4;
   }
@@ -150,8 +149,8 @@ struct fl_margins {
   int current() { return margins_[depth_]; }
 
   int pop() {
-//    printf("fl_margins::pop(): depth_=%d, xx=%d\n", depth_,
-//           depth_ > 0 ? margins_[depth_ - 1] : 4);
+    // printf("fl_margins::pop(): depth_=%d, xx=%d\n", depth_,
+    //        depth_ > 0 ? margins_[depth_ - 1] : 4);
 
     if (depth_ > 0) {
       depth_ --;
@@ -164,8 +163,8 @@ struct fl_margins {
 
     xx = margins_[depth_] + indent;
 
-//    printf("fl_margins::push(indent=%d): depth_=%d, xx=%d\n", indent,
-//           depth_ + 1, xx);
+    // printf("fl_margins::push(indent=%d): depth_=%d, xx=%d\n", indent,
+    //        depth_ + 1, xx);
 
     if (depth_ < 99) {
       depth_ ++;

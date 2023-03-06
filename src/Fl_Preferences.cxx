@@ -1001,7 +1001,7 @@ char Fl_Preferences::set( const char *key, const void *data, int dsize ) {
  was a problem storing the data in memory. However it does not
  reflect if the value was actually stored in the preference file.
 
- \param[in] key name of entry
+ \param[in] entry name of entry
  \param[in] value set this entry to value (stops at the first nul character).
  \return 0 if setting the value failed
  */
@@ -1253,9 +1253,9 @@ int Fl_Preferences::RootNode::read() {
   FILE *f = fl_fopen( filename_, "rb" );
   if ( !f )
     return -1;
-  if (fgets( buf, 1024, f )==0) { /* ignore */ }
-  if (fgets( buf, 1024, f )==0) { /* ignore */ }
-  if (fgets( buf, 1024, f )==0) { /* ignore */ }
+  if (fgets( buf, 1024, f )==0) { /* ignore: "; FLTK preferences file format 1.0" */ }
+  if (fgets( buf, 1024, f )==0) { /* ignore: "; vendor: ..." */ }
+  if (fgets( buf, 1024, f )==0) { /* ignore: "; application: ..." */ }
   Node *nd = prefs_->node;
   for (;;) {
     if ( !fgets( buf, 1024, f ) ) break;        // EOF or Error

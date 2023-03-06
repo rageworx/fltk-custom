@@ -21,50 +21,37 @@
   Basic Fl_String class for FLTK.
 */
 
+#include "Fl_Export.H"
+
+// See: https://en.cppreference.com/w/cpp/string/basic_string/basic_string
+
 /**
   Fl_String is the basic string class for FLTK.
 
   In this version Fl_String can be used to store strings, copy strings,
-  and move strings. There are no string manipulation methods yet.
+  move strings, and do basic string manipulation. Fl_String implements a
+  subset of std::string with a couple of extensions. std::string should be
+  a drop-in if we ever decide to allow templates and the std library.
 
-  Fl_String can hold the value of an Fl_Input widget including \e nul bytes
-  if the constructor Fl_String(const char *str, int size) is used.
+  Fl_String always maintains a trailing \e nul byte, but can also contain
+  \e nul bytes insde the string if the constructor
+  Fl_String(const char *str, int size) is used.
 
   Assignment and copy constructors \b copy the string value such that the
   source string can be freed immediately after the assignment.
 
-  The string value() can be an empty string \c "" or \c NULL.
-
-  If value() is not \c NULL it is guaranteed that the string is terminated by
-  a trailing \c nul byte even if the string contains embedded \c nul bytes.
+  c_str() and data() can be an empty string \c "", but never be \c NULL.
 
   The method size() returns the full string size, whether the string contains
-  embedded \c nul bytes or not. The special method slen() returns 0 if value()
-  is \c NULL, otherwise the same as \c strlen() would do.
+  embedded \c nul bytes or not. The special method Fl_String::strlen() returns
+  the length of the string up to the first \e nul.
 
-  Examples:
-  \code
-  Fl_String np(NULL);
-  printf("  np    : value = %p, size = %d, slen = %d\n", np.value(), np.size(), np.slen());
-  Fl_String empty("");
-  printf("  empty : value = %p, size = %d\n", empty.value(), empty.size());
-  Fl_String fltk("FLTK");
-  Fl_Input i(0, 0, 0, 0);
-  i.value("abc\0def", 7);
-  Fl_String str(i.value(), i.size());
-  printf("  str   : strlen = %lu, size = %d, capacity = %d\n",
-         strlen(str.value()), str.size(), str.capacity());
-
-  Output:
-
-  np    : value = (nil), size = 0, slen = 0
-  empty : value = 0x562840befbf0, size = 0
-  str   : strlen = 3, size = 7, capacity = 15
-  \endcode
+  All methods of Fl_String work on a byte level. They are not UTF-8 aware,
+  but may hold and manipulate UTF-8 strings if done with care.
 
   \since 1.4.0
 */
-class Fl_String {
+class FL_EXPORT Fl_String {
 
 private:
   /*
