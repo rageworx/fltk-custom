@@ -78,9 +78,10 @@ Fl_Wayland_Window_Driver::Fl_Wayland_Window_Driver(Fl_Window *win) : Fl_Window_D
   subRect_ = NULL;
 }
 
-void Fl_Wayland_Window_Driver::delete_cursor_(struct wld_window *xid) {
-  struct wl_cursor *wl_cursor = xid->custom_cursor;
-  if (wl_cursor) {
+void Fl_Wayland_Window_Driver::delete_cursor_(struct wld_window *xid, bool delete_rgb) {
+  struct wld_window::custom_cursor_ *custom = xid->custom_cursor;
+  if (custom) {
+    struct wl_cursor *wl_cursor = custom->wl_cursor;
     struct cursor_image *new_image = (struct cursor_image*)wl_cursor->images[0];
     struct fl_wld_buffer *offscreen = (struct fl_wld_buffer *)wl_buffer_get_user_data(new_image->buffer);
     struct wld_window fake_xid;
@@ -92,6 +93,8 @@ void Fl_Wayland_Window_Driver::delete_cursor_(struct wld_window *xid) {
     free(wl_cursor);
     Fl_Wayland_Screen_Driver *scr_driver = (Fl_Wayland_Screen_Driver*)Fl::screen_driver();
     if (scr_driver->default_cursor() == wl_cursor) scr_driver->default_cursor(scr_driver->xc_arrow);
+    if (delete_rgb) delete custom->rgb;
+    delete custom;
     xid->custom_cursor = NULL;
   }
 }
@@ -637,8 +640,10 @@ static void surface_enter(void *data, struct wl_surface *wl_surface, struct wl_o
   if (output == NULL)
     return;
 
-  window->output = output;
+//printf("surface_enter win=%p wl_output=%p wld_scale=%d\n", window->fl_win, wl_output, output->wld_scale);
   Fl_Wayland_Window_Driver *win_driver = Fl_Wayland_Window_Driver::driver(window->fl_win);
+  float pre_scale = Fl::screen_scale(win_driver->screen_num()) * win_driver->wld_scale();
+  window->output = output;
   if (!window->fl_win->parent()) { // for top-level, set its screen number
     Fl_Wayland_Screen_Driver::output *running_output;
     Fl_Wayland_Screen_Driver *scr_dr = (Fl_Wayland_Screen_Driver*)Fl::screen_driver();
@@ -652,15 +657,27 @@ static void surface_enter(void *data, struct wl_surface *wl_surface, struct wl_o
       i++;
     }
   }
+  if (window->kind == Fl_Wayland_Window_Driver::POPUP) {
+    Fl_Wayland_Graphics_Driver::buffer_release(window);
+    window->fl_win->redraw();
+  } else {
+    float post_scale = Fl::screen_scale(win_driver->screen_num()) * output->wld_scale;
+    //printf("pre_scale=%.1f post_scale=%.1f\n", pre_scale, post_scale);
+    if (window->fl_win->as_gl_window() || post_scale != pre_scale) {
+      win_driver->is_a_rescale(true);
+      window->fl_win->size(window->fl_win->w(), window->fl_win->h());
+      win_driver->is_a_rescale(false);
+    }
+    if (window->fl_win->as_gl_window())
+      wl_surface_set_buffer_scale(window->wl_surface, output->wld_scale);
+  }
 }
 
 static void surface_leave(void *data, struct wl_surface *wl_surface, struct wl_output *wl_output)
 {
-  struct wld_window *window = (struct wld_window*)data;
-  if (! window->wl_surface) return;
-  if (window->output->wl_output == wl_output) {
-    window->output = NULL;
-  }
+  // Do nothing because surface_leave old display arrives **after** surface_enter new display
+  //struct wld_window *window = (struct wld_window*)data;
+  //printf("surface_leave win=%p wl_output=%p\n", window->fl_win, wl_output);
 }
 
 static struct wl_surface_listener surface_listener = {
@@ -678,6 +695,8 @@ static void handle_configure(struct libdecor_frame *frame,
   enum libdecor_window_state window_state;
   struct libdecor_state *state;
   Fl_Wayland_Window_Driver *driver = Fl_Wayland_Window_Driver::driver(window->fl_win);
+  // true exactly for the 1st run of handle_configure() for this window
+  bool is_1st_run = (window->xdg_surface == 0);
   // true exactly for the 2nd run of handle_configure() for this window
   bool is_2nd_run = (window->xdg_surface != 0 && driver->wait_for_expose_value);
   float f = Fl::screen_scale(window->fl_win->screen_num());
@@ -754,7 +773,6 @@ static void handle_configure(struct libdecor_frame *frame,
    }
   libdecor_state_free(state);
 
-  window->fl_win->redraw();
   // necessary with SSD
   driver->in_handle_configure = true;
   if (!window->fl_win->as_gl_window()) {
@@ -763,6 +781,9 @@ static void handle_configure(struct libdecor_frame *frame,
     driver->Fl_Window_Driver::flush(); // GL window
   }
   driver->in_handle_configure = false;
+  if (Fl_Wayland_Screen_Driver::compositor != Fl_Wayland_Screen_Driver::WESTON || !is_1st_run) {
+    window->fl_win->clear_damage();
+  }
 }
 
 
@@ -829,8 +850,8 @@ static void xdg_surface_configure(void *data, struct xdg_surface *xdg_surface, u
   }
   window->configured_width = window->fl_win->w();
   window->configured_height = window->fl_win->h();
-  window->fl_win->redraw();
   Fl_Window_Driver::driver(window->fl_win)->flush();
+  window->fl_win->clear_damage();
 }
 
 static const struct xdg_surface_listener xdg_surface_listener = {
@@ -1453,6 +1474,21 @@ void Fl_Wayland_Window_Driver::label(const char *name, const char *iname) {
 
 
 int Fl_Wayland_Window_Driver::set_cursor(const Fl_RGB_Image *rgb, int hotx, int hoty) {
+  return set_cursor_4args(rgb, hotx, hoty, true);
+}
+
+
+int Fl_Wayland_Window_Driver::set_cursor_4args(const Fl_RGB_Image *rgb, int hotx, int hoty,
+                                               bool keep_copy) {
+  if (keep_copy) {
+    int ld = rgb->ld() ? rgb->ld() : rgb->data_w() * rgb->d();
+    uchar *data = new uchar[ld * rgb->data_h()];
+    memcpy(data, rgb->array, ld * rgb->data_h());
+    Fl_RGB_Image *rgb2 = new Fl_RGB_Image(data, rgb->data_w(), rgb->data_h(), rgb->d(), rgb->ld());
+    rgb2->alloc_array = 1;
+    rgb2->scale(rgb->w(), rgb->h());
+    rgb = rgb2;
+  }
 // build a new wl_cursor and its image
   struct wld_window *xid = (struct wld_window *)Fl_Window_Driver::xid(pWindow);
   struct wl_cursor *new_cursor = (struct wl_cursor*)malloc(sizeof(struct wl_cursor));
@@ -1482,12 +1518,14 @@ int Fl_Wayland_Window_Driver::set_cursor(const Fl_RGB_Image *rgb, int hotx, int 
   Fl_Surface_Device::pop_current();
   delete img_surf;
   memcpy(offscreen->data, offscreen->draw_buffer, offscreen->data_size);
-  // delete the previous custom cursor, if there was one
-  delete_cursor_(xid);
+  // delete the previous custom cursor, if there was one, and keep its Fl_RGB_Image if appropriate
+  delete_cursor_(xid, keep_copy);
   //have this new cursor used
-  xid->custom_cursor = new_cursor;
-  Fl_Wayland_Screen_Driver *scr_driver = (Fl_Wayland_Screen_Driver*)Fl::screen_driver();
-  scr_driver->default_cursor(xid->custom_cursor);
+  xid->custom_cursor = new wld_window::custom_cursor_;
+  xid->custom_cursor->wl_cursor = new_cursor;
+  xid->custom_cursor->rgb = rgb;
+  xid->custom_cursor->hotx = hotx;
+  xid->custom_cursor->hoty = hoty;
   return 1;
 }
 

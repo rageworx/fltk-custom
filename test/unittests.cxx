@@ -81,6 +81,8 @@ void UnitTest::add(int index, UnitTest* t) {
     num_tests_ = index+1;
 }
 
+// ----- Ut_Main_Window ------------------------------------------------ MARK: -
+
 Ut_Main_Window::Ut_Main_Window(int w, int h, const char *l)
   : Fl_Double_Window(w, h, l),
     draw_alignment_test_(0)
