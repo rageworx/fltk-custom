@@ -14,7 +14,6 @@
 //     https://www.fltk.org/bugs.php
 //
 
-#include <config.h>
 #include <FL/platform.H>
 #include "Fl_Wayland_Window_Driver.H"
 #include "Fl_Wayland_Screen_Driver.H"
@@ -396,27 +395,13 @@ void Fl_Wayland_Window_Driver::flush() {
 
   Fl_X *ip = Fl_X::flx(pWindow);
   struct flCairoRegion* r = (struct flCairoRegion*)ip->region;
-  float f = Fl::screen_scale(pWindow->screen_num()) * wld_scale();
-  if (r && window->buffer) {
-    for (int i = 0; i < r->count; i++) {
-      int left = r->rects[i].x * f;
-      int top = r->rects[i].y * f;
-      int width = r->rects[i].width * f;
-      int height = r->rects[i].height * f;
-      wl_surface_damage_buffer(window->wl_surface, left, top, width, height);
-//fprintf(stderr, "damage %dx%d %dx%d\n", left, top, width, height);
-    }
-  } else {
-    wl_surface_damage_buffer(window->wl_surface, 0, 0,
-    pWindow->w() * f, pWindow->h() * f);
-//fprintf(stderr, "damage 0x0 %dx%d\n", pWindow->w() * f, pWindow->h() * f);
-  }
+  if (!window->buffer || pWindow->as_overlay_window()) r = NULL;
 
   Fl_Wayland_Window_Driver::in_flush = true;
   Fl_Window_Driver::flush();
   Fl_Wayland_Window_Driver::in_flush = false;
   if (window->buffer->cb) wl_callback_destroy(window->buffer->cb);
-  Fl_Wayland_Graphics_Driver::buffer_commit(window, false);
+  Fl_Wayland_Graphics_Driver::buffer_commit(window, r);
 }
 
 
@@ -667,6 +652,9 @@ static void surface_enter(void *data, struct wl_surface *wl_surface, struct wl_o
       win_driver->is_a_rescale(true);
       window->fl_win->size(window->fl_win->w(), window->fl_win->h());
       win_driver->is_a_rescale(false);
+    } else if (window->buffer) {
+      if (window->buffer->cb) wl_callback_destroy(window->buffer->cb);
+      Fl_Wayland_Graphics_Driver::buffer_commit(window);
     }
     if (window->fl_win->as_gl_window())
       wl_surface_set_buffer_scale(window->wl_surface, output->wld_scale);
@@ -684,6 +672,16 @@ static struct wl_surface_listener surface_listener = {
   surface_enter,
   surface_leave,
 };
+
+
+Fl_Window *Fl_Wayland_Window_Driver::surface_to_window(struct wl_surface *surface) {
+  if (surface) {
+    if (wl_proxy_get_listener((struct wl_proxy *)surface) == &surface_listener) {
+      return ((struct wld_window *)wl_surface_get_user_data(surface))->fl_win;
+    }
+  }
+  return NULL;
+}
 
 
 static void handle_configure(struct libdecor_frame *frame,
@@ -704,16 +702,23 @@ static void handle_configure(struct libdecor_frame *frame,
   if (!window->xdg_surface) window->xdg_surface = libdecor_frame_get_xdg_surface(frame);
 
   if (window->fl_win->fullscreen_active()) {
-    libdecor_frame_set_fullscreen(window->frame, NULL);
+    if (!(window->state & LIBDECOR_WINDOW_STATE_FULLSCREEN)) {
+      libdecor_frame_set_fullscreen(window->frame, NULL);
+    }
   } else if (driver->show_iconic()) {
     libdecor_frame_set_minimized(window->frame);
     driver->show_iconic(0);
   }
   if (!libdecor_configuration_get_window_state(configuration, &window_state))
     window_state = LIBDECOR_WINDOW_STATE_NONE;
+  if ((window->state & LIBDECOR_WINDOW_STATE_FULLSCREEN) &&
+      !(window_state & LIBDECOR_WINDOW_STATE_FULLSCREEN) && !window->fl_win->border()) {
+    // necessary so Mutter correctly positions borderless window back from fullscreen
+    window->fl_win->redraw();
+  }
   window->state = window_state;
 
-  // Weston, KDE and recent versions of Mutter, on purpose, don't set the
+  // Weston, KDE, and some versions of Mutter, on purpose, don't set the
   // window width x height when xdg_toplevel_configure runs twice
   // during resizable window creation (see https://gitlab.freedesktop.org/wayland/wayland-protocols/-/issues/6).
   // Consequently, libdecor_configuration_get_content_size() may return false twice.
@@ -773,14 +778,7 @@ static void handle_configure(struct libdecor_frame *frame,
    }
   libdecor_state_free(state);
 
-  // necessary with SSD
-  driver->in_handle_configure = true;
-  if (!window->fl_win->as_gl_window()) {
-    driver->flush();
-  } else {
-    driver->Fl_Window_Driver::flush(); // GL window
-  }
-  driver->in_handle_configure = false;
+  driver->flush();
   if (Fl_Wayland_Screen_Driver::compositor != Fl_Wayland_Screen_Driver::WESTON || !is_1st_run) {
     window->fl_win->clear_damage();
   }
@@ -859,14 +857,29 @@ static const struct xdg_surface_listener xdg_surface_listener = {
 };
 
 
+static bool parse_states_fullscreen(struct wl_array *states)
+{
+  uint32_t *p;
+  // Replace wl_array_for_each(p, states) rejected by C++
+  for (p = (uint32_t *)(states)->data;
+      (const char *) p < ((const char *) (states)->data + (states)->size);
+      (p)++) {
+    if (*p == XDG_TOPLEVEL_STATE_FULLSCREEN) return true;
+  }
+  return false;
+}
+
+
 static void xdg_toplevel_configure(void *data, struct xdg_toplevel *xdg_toplevel,
                                    int32_t width, int32_t height, struct wl_array *states)
 {
   // runs for borderless top-level windows
-  // under Weston: width & height are 0 during both calls
+  // under Weston: width & height are 0 during both calls, except if fullscreen
   struct wld_window *window = (struct wld_window*)data;
 //fprintf(stderr, "xdg_toplevel_configure: surface=%p size: %dx%d\n", window->wl_surface, width, height);
-  if (window->fl_win->fullscreen_active()) xdg_toplevel_set_fullscreen(xdg_toplevel, NULL);
+  if (window->fl_win->fullscreen_active() && !parse_states_fullscreen(states)) {
+    xdg_toplevel_set_fullscreen(xdg_toplevel, NULL);
+  }
   if (window->configured_width) Fl_Window_Driver::driver(window->fl_win)->wait_for_expose_value = 0;
   float f = Fl::screen_scale(window->fl_win->screen_num());
   if (width == 0 || height == 0) {
@@ -1240,9 +1253,9 @@ void Fl_Wayland_Window_Driver::makeWindow()
   size_range();
   pWindow->set_visible();
   int old_event = Fl::e_number;
+  pWindow->redraw();
   pWindow->handle(Fl::e_number = FL_SHOW); // get child windows to appear
   Fl::e_number = old_event;
-  pWindow->redraw();
   // make sure each popup is mapped with its constraints before mapping next popup
   if (pWindow->menu_window() && !is_floatingtitle) {
     pWindow->wait_for_expose(); // to map the popup
@@ -1449,15 +1462,13 @@ void Fl_Wayland_Window_Driver::fullscreen_on() {
   if (xdg_toplevel()) {
     xdg_toplevel_set_fullscreen(xdg_toplevel(), NULL);
     pWindow->_set_fullscreen();
-    wl_display_roundtrip(Fl_Wayland_Screen_Driver::wl_display); // OK, but try to find something more specific
-    wl_display_roundtrip(Fl_Wayland_Screen_Driver::wl_display);
     Fl::handle(FL_FULLSCREEN, pWindow);
   }
 }
 
 
 void Fl_Wayland_Window_Driver::fullscreen_off(int X, int Y, int W, int H) {
-  if (!border()) pWindow->Fl_Group::resize(X, Y, W, H);
+  if (!border()) pWindow->resize(X, Y, W, H);
   xdg_toplevel_unset_fullscreen(xdg_toplevel());
   pWindow->_clear_fullscreen();
   Fl::handle(FL_FULLSCREEN, pWindow);
@@ -1554,8 +1565,16 @@ void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
   if (fl_win && fl_win->kind == DECORATED && !xdg_toplevel()) {
     pWindow->wait_for_expose();
   }
-  int is_a_move = (X != x() || Y != y() || Fl_Window::is_a_rescale());
-  int is_a_resize = (W != w() || H != h() || Fl_Window::is_a_rescale());
+  int is_a_move = (X != x() || Y != y());
+  bool true_rescale = Fl_Window::is_a_rescale();
+  if (fl_win && fl_win->buffer) {
+    float scale = Fl::screen_scale(pWindow->screen_num()) * wld_scale();
+    int stride = cairo_format_stride_for_width(
+                 Fl_Cairo_Graphics_Driver::cairo_format, int(W * scale) );
+    size_t bsize = stride * int(H * scale);
+    true_rescale = (bsize != fl_win->buffer->data_size);
+  }
+  int is_a_resize = (W != w() || H != h() || true_rescale);
   if (is_a_move) force_position(1);
   else if (!is_a_resize && !is_a_move) return;
   if (is_a_resize) {
@@ -1601,8 +1620,10 @@ void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
         fl_win->configured_width = W;
         fl_win->configured_height = H;
         W *= f; H *= f;
-        xdg_toplevel_set_min_size(fl_win->xdg_toplevel, W, H);
-        xdg_toplevel_set_max_size(fl_win->xdg_toplevel, W, H);
+        if (!pWindow->fullscreen_active()) {
+          xdg_toplevel_set_min_size(fl_win->xdg_toplevel, W, H);
+          xdg_toplevel_set_max_size(fl_win->xdg_toplevel, W, H);
+        }
         xdg_surface_set_window_geometry(fl_win->xdg_surface, 0, 0, W, H);
         //printf("xdg_surface_set_window_geometry: %dx%d\n",W, H);
       }

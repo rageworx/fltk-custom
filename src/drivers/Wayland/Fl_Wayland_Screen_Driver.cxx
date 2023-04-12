@@ -14,7 +14,6 @@
 //     https://www.fltk.org/bugs.php
 //
 
-#include <config.h>
 #include "Fl_Wayland_Screen_Driver.H"
 #include "Fl_Wayland_Window_Driver.H"
 #include "Fl_Wayland_Graphics_Driver.H"
@@ -179,6 +178,7 @@ static void do_set_cursor(struct Fl_Wayland_Screen_Driver::seat *seat, struct wl
             image->hotspot_x / scale,
             image->hotspot_y / scale);
   wl_surface_attach(seat->cursor_surface, buffer, 0, 0);
+  wl_surface_set_buffer_scale(seat->cursor_surface, scale);
   wl_surface_damage_buffer(seat->cursor_surface, 0, 0,
          image->width, image->height);
   wl_surface_commit(seat->cursor_surface);
@@ -217,21 +217,9 @@ static inline void checkdouble() {
 struct wl_display *Fl_Wayland_Screen_Driver::wl_display = NULL;
 
 
-Fl_Window *Fl_Wayland_Screen_Driver::surface_to_window(struct wl_surface *surface) {
-  if (surface) {
-    Fl_X *xp = Fl_X::first;
-    while (xp) {
-      if (((struct wld_window*)xp->xid)->wl_surface == surface) return xp->w;
-      xp = xp->next;
-    }
-  }
-  return NULL;
-}
-
-
 static Fl_Window *event_coords_from_surface(struct wl_surface *surface,
                                        wl_fixed_t surface_x, wl_fixed_t surface_y) {
-  Fl_Window *win = Fl_Wayland_Screen_Driver::surface_to_window(surface);
+  Fl_Window *win = Fl_Wayland_Window_Driver::surface_to_window(surface);
   if (!win) return NULL;
   int delta_x = 0, delta_y = 0;
   while (win->parent()) {
@@ -277,7 +265,7 @@ static void pointer_leave(void *data,
 {
   struct Fl_Wayland_Screen_Driver::seat *seat = (struct Fl_Wayland_Screen_Driver::seat*)data;
   if (seat->pointer_focus == surface) seat->pointer_focus = NULL;
-  Fl_Window *win = Fl_Wayland_Screen_Driver::surface_to_window(surface);
+  Fl_Window *win = Fl_Wayland_Window_Driver::surface_to_window(surface);
   if (win) {
     Fl::belowmouse(0);
     set_event_xy(win);
@@ -319,7 +307,7 @@ static void pointer_button(void *data,
   struct Fl_Wayland_Screen_Driver::seat *seat = (struct Fl_Wayland_Screen_Driver::seat*)data;
   seat->serial = serial;
   int event = 0;
-  Fl_Window *win = Fl_Wayland_Screen_Driver::surface_to_window(seat->pointer_focus);
+  Fl_Window *win = Fl_Wayland_Window_Driver::surface_to_window(seat->pointer_focus);
   if (!win) return;
   win = win->top_window();
   wld_event_time = time;
@@ -355,7 +343,7 @@ static void pointer_axis(void *data,
        wl_fixed_t value)
 {
   struct Fl_Wayland_Screen_Driver::seat *seat = (struct Fl_Wayland_Screen_Driver::seat*)data;
-  Fl_Window *win = Fl_Wayland_Screen_Driver::surface_to_window(seat->pointer_focus);
+  Fl_Window *win = Fl_Wayland_Window_Driver::surface_to_window(seat->pointer_focus);
   if (!win) return;
   wld_event_time = time;
   int delta = wl_fixed_to_int(value) / 10;
@@ -523,15 +511,60 @@ static void wl_keyboard_keymap(void *data, struct wl_keyboard *wl_keyboard,
   seat->xkb_state = xkb_state;
 }
 
+
+static int search_int_vector(Fl_Int_Vector& v, int val) {
+  for (unsigned pos = 0; pos < v.size(); pos++) {
+    if (v[pos] == val) return pos;
+  }
+  return -1;
+}
+
+
+static void remove_int_vector(Fl_Int_Vector& v, int val) {
+  int pos = search_int_vector(v, val);
+  if (pos < 0) return;
+  int last = v.pop_back();
+  if (last != val) v[pos] = last;
+}
+
+
+static int process_wld_key(struct xkb_state *xkb_state, uint32_t key,
+                           uint32_t *p_keycode, xkb_keysym_t *p_sym) {
+  uint32_t keycode = key + 8;
+  xkb_keysym_t sym = xkb_state_key_get_one_sym(xkb_state, keycode);
+  if (sym == 0xfe20) sym = FL_Tab;
+  if (sym >= 'A' && sym <= 'Z') sym += 32; // replace uppercase by lowercase letter
+  int for_key_vector = sym; // for support of Fl::event_key(int)
+  // special processing for number keys == keycodes 10-19 :
+  if (keycode >= 10 && keycode <= 18) {
+    for_key_vector = '1' + (keycode - 10);
+  } else if (keycode == 19) {
+    for_key_vector = '0';
+  }
+  if (p_keycode) *p_keycode = keycode;
+  if (p_sym) *p_sym = sym;
+  return for_key_vector;
+}
+
+
 static void wl_keyboard_enter(void *data, struct wl_keyboard *wl_keyboard,
                uint32_t serial, struct wl_surface *surface,
                struct wl_array *keys)
 {
   struct Fl_Wayland_Screen_Driver::seat *seat = (struct Fl_Wayland_Screen_Driver::seat*)data;
-//fprintf(stderr, "keyboard enter fl_win=%p; keys pressed are:\n", Fl_Wayland_Screen_Driver::surface_to_window(surface));
+//fprintf(stderr, "keyboard enter fl_win=%p; keys pressed are: ", Fl_Wayland_Window_Driver::surface_to_window(surface));
+  // Replace wl_array_for_each(p, keys) rejected by C++
+  for (uint32_t *p = (uint32_t *)(keys)->data;
+      (const char *) p < ((const char *) (keys)->data + (keys)->size);
+      (p)++) {
+    int for_key_vector = process_wld_key(seat->xkb_state, *p, NULL, NULL);
+//fprintf(stderr, "%d ", for_key_vector);
+    if (search_int_vector(key_vector, for_key_vector) < 0) key_vector.push_back(for_key_vector);
+  }
+//fprintf(stderr, "\n");
   seat->keyboard_surface = surface;
   seat->keyboard_enter_serial = serial;
-  Fl_Window *win = Fl_Wayland_Screen_Driver::surface_to_window(surface);
+  Fl_Window *win = Fl_Wayland_Window_Driver::surface_to_window(surface);
   if (win) {
     Fl::handle(FL_FOCUS, win);
     fl_wl_find(fl_wl_xid(win));
@@ -656,48 +689,21 @@ static dead_key_struct dead_keys[] = {
 const int dead_key_count = sizeof(dead_keys)/sizeof(struct dead_key_struct);
 
 
-static int search_int_vector(Fl_Int_Vector& v, int val) {
-  for (unsigned pos = 0; pos < v.size(); pos++) {
-    if (v[pos] == val) return pos;
-  }
-  return -1;
-}
-
-
-static void remove_int_vector(Fl_Int_Vector& v, int val) {
-  int pos = search_int_vector(v, val);
-  if (pos < 0) return;
-  int last = v.pop_back();
-  if (last != val) v[pos] = last;
-}
-
-
 static void wl_keyboard_key(void *data, struct wl_keyboard *wl_keyboard,
                uint32_t serial, uint32_t time, uint32_t key, uint32_t state)
 {
   struct Fl_Wayland_Screen_Driver::seat *seat = (struct Fl_Wayland_Screen_Driver::seat*)data;
   seat->serial = serial;
   static char buf[128];
-  uint32_t keycode = key + 8;
-  xkb_keysym_t sym = xkb_state_key_get_one_sym(seat->xkb_state, keycode);
-  // replace ISO_Left_Tab (Shift-TAB) with FL_Tab
-  if (sym == 0xfe20) sym = FL_Tab;
-  if (sym >= 'A' && sym <= 'Z') sym += 32; // replace uppercase by lowercase letter
+  uint32_t keycode;
+  xkb_keysym_t sym;
+  int for_key_vector = process_wld_key(seat->xkb_state, key, &keycode, &sym);
 /*xkb_keysym_get_name(sym, buf, sizeof(buf));
 const char *action = (state == WL_KEYBOARD_KEY_STATE_PRESSED ? "press" : "release");
-fprintf(stderr, "key %s: sym: %-12s(%d) code:%u fl_win=%p, ", action, buf, sym, keycode, Fl_Wayland_Screen_Driver::surface_to_window(seat->keyboard_surface));*/
+fprintf(stderr, "key %s: sym: %-12s(%d) code:%u fl_win=%p, ", action, buf, sym, keycode, Fl_Wayland_Window_Driver::surface_to_window(seat->keyboard_surface));*/
   xkb_state_key_get_utf8(seat->xkb_state, keycode, buf, sizeof(buf));
 //fprintf(stderr, "utf8: '%s' e_length=%d [%d]\n", buf, (int)strlen(buf), *buf);
-  Fl::e_keysym = sym;
-  int for_key_vector = sym; // for support of Fl::event_key(int)
-  // special processing for number keys == keycodes 10-19 :
-  if (keycode >= 10 && keycode <= 18) {
-    Fl::e_keysym = keycode + 39;
-    for_key_vector = '1' + (keycode - 10);
-  } else if (keycode == 19) {
-    Fl::e_keysym = '0';
-    for_key_vector = '0';
-  }
+  Fl::e_keysym = for_key_vector;
   if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
     if (search_int_vector(key_vector, for_key_vector) < 0) key_vector.push_back(for_key_vector);
   } else {
@@ -741,7 +747,7 @@ fprintf(stderr, "key %s: sym: %-12s(%d) code:%u fl_win=%p, ", action, buf, sym, 
   int event = (state == WL_KEYBOARD_KEY_STATE_PRESSED ? FL_KEYDOWN : FL_KEYUP);
   // Send event to focus-containing top window as defined by FLTK,
   // otherwise send it to Wayland-defined focus window
-  Fl_Window *win = ( Fl::focus() ? Fl::focus()->top_window() : Fl_Wayland_Screen_Driver::surface_to_window(seat->keyboard_surface) );
+  Fl_Window *win = ( Fl::focus() ? Fl::focus()->top_window() : Fl_Wayland_Window_Driver::surface_to_window(seat->keyboard_surface) );
   if (win) {
     set_event_xy(win);
     Fl::e_is_click = 0;
@@ -759,9 +765,10 @@ static void wl_keyboard_leave(void *data, struct wl_keyboard *wl_keyboard,
                uint32_t serial, struct wl_surface *surface)
 {
   struct Fl_Wayland_Screen_Driver::seat *seat = (struct Fl_Wayland_Screen_Driver::seat*)data;
-//fprintf(stderr, "keyboard leave fl_win=%p\n", Fl_Wayland_Screen_Driver::surface_to_window(surface));
+//fprintf(stderr, "keyboard leave fl_win=%p\n", Fl_Wayland_Window_Driver::surface_to_window(surface));
   seat->keyboard_surface = NULL;
-  Fl_Window *win = Fl_Wayland_Screen_Driver::surface_to_window(surface);
+  Fl_Window *win = Fl_Wayland_Window_Driver::surface_to_window(surface);
+  if (!win && Fl::focus()) win = Fl::focus()->top_window();
   if (win) Fl::handle(FL_UNFOCUS, win);
   key_vector.size(0);
 }
@@ -832,7 +839,7 @@ void text_input_preedit_string(void *data, struct zwp_text_input_v3 *zwp_text_in
   Fl::e_length = text ? strlen(text) : 0;
   Fl::e_keysym = 'a'; // fake a simple key
   struct wl_surface *surface = (struct wl_surface*)data;
-  Fl_Window *win =  Fl_Wayland_Screen_Driver::surface_to_window(surface);
+  Fl_Window *win =  Fl_Wayland_Window_Driver::surface_to_window(surface);
   set_event_xy(win);
   Fl::e_is_click = 0;
   Fl::handle(FL_KEYDOWN, win);
@@ -844,7 +851,7 @@ void text_input_commit_string(void *data, struct zwp_text_input_v3 *zwp_text_inp
   Fl::e_text = (char*)text;
   Fl::e_length = strlen(text);
   struct wl_surface *surface = (struct wl_surface*)data;
-  Fl_Window *win =  Fl_Wayland_Screen_Driver::surface_to_window(surface);
+  Fl_Window *win =  Fl_Wayland_Window_Driver::surface_to_window(surface);
   set_event_xy(win);
   Fl::e_is_click = 0;
   Fl::handle(FL_KEYDOWN, win);
@@ -943,6 +950,8 @@ static void output_geometry(void *data,
 {
   //fprintf(stderr, "output_geometry: x=%d y=%d physical=%dx%d\n",x,y,physical_width,physical_height);
   Fl_Wayland_Screen_Driver::output *output = (Fl_Wayland_Screen_Driver::output*)data;
+  output->x = int(x);
+  output->y = int(y);
   output->dpi = 96; // to elaborate
 }
 
@@ -950,8 +959,8 @@ static void output_mode(void *data, struct wl_output *wl_output, uint32_t flags,
       int32_t width, int32_t height, int32_t refresh)
 {
   Fl_Wayland_Screen_Driver::output *output = (Fl_Wayland_Screen_Driver::output*)data;
-  output->width = width;
-  output->height = height;
+  output->width = int(width);
+  output->height = int(height);
 //fprintf(stderr, "output_mode: [%p]=%dx%d\n",output->wl_output,width,height);
 }
 
@@ -1012,6 +1021,9 @@ static struct wl_output_listener output_listener = {
 };
 
 
+// Notice: adding use of unstable protocol "XDG output" would allow FLTK to be notified
+// in real time of changes to the relative location of multiple displays;
+// with the present code, that information is received at startup only.
 static void registry_handle_global(void *user_data, struct wl_registry *wl_registry,
            uint32_t id, const char *interface, uint32_t version) {
 //fprintf(stderr, "interface=%s version=%u\n", interface, version);
@@ -1255,10 +1267,10 @@ static int workarea_xywh[4] = { -1, -1, -1, -1 };
 
 void Fl_Wayland_Screen_Driver::init_workarea()
 {
-  workarea_xywh[0] = 0;
-  workarea_xywh[1] = 0;
   Fl_Wayland_Screen_Driver::output *output;
   wl_list_for_each(output, &outputs, link) {
+    workarea_xywh[0] = output->x; // pixels
+    workarea_xywh[1] = output->y; // pixels
     workarea_xywh[2] = output->width; // pixels
     workarea_xywh[3] = output->height; // pixels
     break;
@@ -1336,7 +1348,8 @@ void Fl_Wayland_Screen_Driver::screen_xywh(int &X, int &Y, int &W, int &H, int n
     wl_list_for_each(output, &outputs, link) {
       if (i++ == n) { // n'th screen of the system
         float s = output->gui_scale * output->wld_scale;
-        X = Y = 0;
+        X = output->x / s;
+        Y = output->y / s;
         W = output->width / s;
         H = output->height / s;
         break;
@@ -1548,7 +1561,7 @@ int Fl_Wayland_Screen_Driver::get_mouse(int &xx, int &yy) {
   open_display();
   xx = Fl::e_x_root; yy = Fl::e_y_root;
   if (!seat->pointer_focus) return 0;
-  Fl_Window *win = Fl_Wayland_Screen_Driver::surface_to_window(seat->pointer_focus);
+  Fl_Window *win = Fl_Wayland_Window_Driver::surface_to_window(seat->pointer_focus);
   if (!win) return 0;
   int snum = Fl_Window_Driver::driver(win)->screen_num();
 //printf("get_mouse(%dx%d)->%d\n", xx, yy, snum);

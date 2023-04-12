@@ -645,12 +645,13 @@ if (UNIX AND OPTION_USE_WAYLAND)
   if (NOT (CMAKE_VERSION VERSION_LESS 3.4))
     pkg_get_variable(PROTOCOLS wayland-protocols pkgdatadir) # requires cmake 3.4
   else()
-    if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "FreeBSD")
-      set(PROTOCOLS /usr/local/share/wayland-protocols)
-    else ()
-      set(PROTOCOLS /usr/share/wayland-protocols)
-    endif (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "FreeBSD")
+    execute_process(COMMAND pkg-config --variable=pkgdatadir wayland-protocols
+      OUTPUT_VARIABLE PROTOCOLS)
+    # strip trailing newline
+    string (REPLACE "\n" "" PROTOCOLS ${PROTOCOLS})
   endif (NOT (CMAKE_VERSION VERSION_LESS 3.4))
+  # replace "//" with "/"
+  string (REPLACE "//" "/" PROTOCOLS ${PROTOCOLS})
   if (NOT(EXISTS ${PROTOCOLS}/stable/xdg-shell/xdg-shell.xml))
     message(WARNING "Install necessary file ${PROTOCOLS}/stable/xdg-shell/xdg-shell.xml")
   endif ()

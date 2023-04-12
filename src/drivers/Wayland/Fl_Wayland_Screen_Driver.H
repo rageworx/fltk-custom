@@ -66,8 +66,9 @@ public:
   };
   struct output { // one record for each screen
     uint32_t id;
-    short width; // in pixels
-    short height; // in pixels
+    int x, y; // logical position of screen
+    int width; // in pixels
+    int height; // in pixels
     float dpi;
     struct wl_output *wl_output;
     int wld_scale; // Wayland scale factor
@@ -85,7 +86,6 @@ public:
 // static member functions
   static void insertion_point_location(int x, int y, int height);
   static bool insertion_point_location(int *px, int *py, int *pwidth, int *pheight);
-  static Fl_Window *surface_to_window(struct wl_surface *);
   static bool own_output(struct wl_output *output);
 
 // member variables
