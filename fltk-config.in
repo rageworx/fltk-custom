@@ -56,8 +56,8 @@ srcdir=@srcdir@
 # Check for local invocation (in FLTK source folder), and update paths accordingly...
 selfdir=`dirname "$0"`
 if test -f "$selfdir/FL/Fl_Window.H"; then
-	includedir="$selfdir"
-	libdir="$selfdir/lib"
+    includedir="$selfdir"
+    libdir="$selfdir/lib"
 fi
 
 # Libraries to link with (must be after 'prefix' stuff and after check for local invocation)
@@ -71,64 +71,64 @@ CAIROLIBS="@CAIROLIBS@"
 GLLIBS="@GLLIBS@"
 
 # Check bundled image libraries in source tree
-	if test -f "$libdir/libfltk_jpeg.a"; then
-		CFLAGS="-I$includedir/jpeg $CFLAGS"
-		CXXFLAGS="-I$includedir/jpeg $CXXFLAGS"
-	fi
+if test -f "$libdir/libfltk_jpeg.a"; then
+    CFLAGS="-I$includedir/jpeg $CFLAGS"
+    CXXFLAGS="-I$includedir/jpeg $CXXFLAGS"
+fi
 
-	if test -f "$libdir/libfltk_z.a"; then
-		CFLAGS="-I$includedir/zlib $CFLAGS"
-		CXXFLAGS="-I$includedir/zlib $CXXFLAGS"
-	fi
+if test -f "$libdir/libfltk_z.a"; then
+    CFLAGS="-I$includedir/zlib $CFLAGS"
+    CXXFLAGS="-I$includedir/zlib $CXXFLAGS"
+fi
 
-	if test -f "$libdir/libfltk_png.a"; then
-		CFLAGS="-I$includedir/png $CFLAGS"
-		CXXFLAGS="-I$includedir/png $CXXFLAGS"
-	fi
+if test -f "$libdir/libfltk_png.a"; then
+    CFLAGS="-I$includedir/png $CFLAGS"
+    CXXFLAGS="-I$includedir/png $CXXFLAGS"
+fi
 
 # Check bundled image libraries in installation folder.
 # Note: jpeg, png, and zlib headers are installed in FL/images
 if test -d $includedir/FL/images; then
-	CFLAGS="-I$includedir/FL/images $CFLAGS"
-	CXXFLAGS="-I$includedir/FL/images $CXXFLAGS"
+    CFLAGS="-I$includedir/FL/images $CFLAGS"
+    CXXFLAGS="-I$includedir/FL/images $CXXFLAGS"
 fi
 
 # Cairo support
 if test -n "$CAIROFLAGS"; then
-	CFLAGS="$CAIROFLAGS $CFLAGS"
-	CXXFLAGS="$CAIROFLAGS $CXXFLAGS"
+    CFLAGS="$CAIROFLAGS $CFLAGS"
+    CXXFLAGS="$CAIROFLAGS $CXXFLAGS"
 fi
 
 usage ()
 {
     echo "Usage: fltk-config [OPTIONS]
 Options:
-	[--version]
-	[--api-version]
+    [--version]
+    [--api-version]
 
 Options telling what we are doing:
-	[--use-gl]        use GL
-	[--use-images]    use extra image formats (PNG, JPEG)
-	[--use-glut]      use glut compatibility layer
-	[--use-forms]     use forms compatibility layer
-	[--use-cairo]     use cairo graphics lib
+    [--use-gl]        use GL
+    [--use-images]    use extra image formats (PNG, JPEG)
+    [--use-glut]      use glut compatibility layer
+    [--use-forms]     use forms compatibility layer
+    [--use-cairo]     use cairo graphics lib
 
 Options telling what information we request:
-	[--cc]            return C compiler used to compile FLTK
-	[--cxx]           return C++ compiler used to compile FLTK
-	[--optim]         return compiler optimization used to compile FLTK
-	[--cflags]        return flags to compile C using FLTK
-	[--cxxflags]      return flags to compile C++ using FLTK
-	[--ldflags]       return flags to link against FLTK
-	[--ldstaticflags] return flags to link against static FLTK library
+    [--cc]            return C compiler used to compile FLTK
+    [--cxx]           return C++ compiler used to compile FLTK
+    [--optim]         return compiler optimization used to compile FLTK
+    [--cflags]        return flags to compile C using FLTK
+    [--cxxflags]      return flags to compile C++ using FLTK
+    [--ldflags]       return flags to link against FLTK
+    [--ldstaticflags] return flags to link against static FLTK library
                                           even if there are DSOs installed
-	[--libs]          return FLTK libraries full path for dependencies
-	[--prefix]        return FLTK install time --prefix directory
-	[--includedir]    return FLTK install time include directory
+    [--libs]          return FLTK libraries full path for dependencies
+    [--prefix]        return FLTK install time --prefix directory
+    [--includedir]    return FLTK install time include directory
 
 Options to compile and link an application:
-	[-g]              compile the program with debugging information
-	[-Dname[=value]]  compile the program with the given define
+    [-g]                        compile the program with debugging information
+    [-Dname[=value]]            compile the program with the given define
     [--compile program.cxx ..]  compile and link the program with optional
                                 .. compiler flags, source files, and libraries
     [--link flags and libs]     additional linker flags and libraries
@@ -155,68 +155,68 @@ link=
 while test $# -gt 0
 do
     case $1 in
-	--version)
-	    echo $VERSION
-	    ;;
-	--api-version)
-	    echo $APIVERSION
-	    ;;
-	--cc)
-	    echo $CC
-	    ;;
-	--cxx)
-	    echo $CXX
-	    ;;
-	--optim)
-	    echo_optim=yes
-	    ;;
-	--use-gl | --use-glut)
-	    use_gl=yes
-	    ;;
-	--use-forms)
-	    use_forms=yes
-	    ;;
-	--use-images)
-	    use_images=yes
-	    ;;
-	--use-cairo)
-	    use_cairo=yes
-	    ;;
-	--cflags)
-	    echo_cflags=yes
-	    ;;
-	--cxxflags)
-	    echo_cxxflags=yes
-	    ;;
-	--ldflags)
-	    echo_ldflags=yes
-	    ;;
-	--ldstaticflags)
-	    echo_ldstaticflags=yes
-	    ;;
-	--libs)
-	    echo_libs=yes
-	    ;;
-	--prefix)
-	    echo_prefix=yes
-	    ;;
-	--includedir)
-	    echo_includedir=yes
-	    ;;
-	-g)
-	    debug=-g
-	    ;;
-	-D*)
-	    CXXFLAGS="$CXXFLAGS $1"
-	    ;;
-	--compile)
-	    compile="$2"
-	    shift
-	    ;;
-	--post)
-	    post="$2"
-	    shift
-	    ;;
+        --version)
+            echo $VERSION
+            ;;
+        --api-version)
+            echo $APIVERSION
+            ;;
+        --cc)
+            echo $CC
+            ;;
+        --cxx)
+            echo $CXX
+            ;;
+        --optim)
+            echo_optim=yes
+            ;;
+        --use-gl | --use-glut)
+            use_gl=yes
+            ;;
+        --use-forms)
+            use_forms=yes
+            ;;
+        --use-images)
+            use_images=yes
+            ;;
+        --use-cairo)
+            use_cairo=yes
+            ;;
+        --cflags)
+            echo_cflags=yes
+            ;;
+        --cxxflags)
+            echo_cxxflags=yes
+            ;;
+        --ldflags)
+            echo_ldflags=yes
+            ;;
+        --ldstaticflags)
+            echo_ldstaticflags=yes
+            ;;
+        --libs)
+            echo_libs=yes
+            ;;
+        --prefix)
+            echo_prefix=yes
+            ;;
+        --includedir)
+            echo_includedir=yes
+            ;;
+        -g)
+            debug=-g
+            ;;
+        -D*)
+            CXXFLAGS="$CXXFLAGS $1"
+            ;;
+        --compile)
+            compile="$2"
+            shift
+            ;;
+        --post)
+            post="$2"
+            shift
+            ;;
         --link)
             # linker flags and libs, allowed only after "--compile"
             if test -n "$compile"; then
@@ -237,7 +237,7 @@ do
                 echo_help=yes
             fi
             ;;
-	*)
+        *)
             # additional source files or libs, allowed only after "--compile"
             if test -n "$compile"; then
                 if test -n "$use_link"; then
@@ -246,9 +246,9 @@ do
                     files="$files $1"                   # other (source) files
                 fi
             else
-	    echo_help=yes
+                echo_help=yes
             fi
-	    ;;
+            ;;
     esac
     shift
 done
@@ -289,7 +289,7 @@ if test x$use_images = xyes; then
     LDSTATIC="$libdir/libfltk_images.a $STATICIMAGELIBS $LDSTATIC"
 fi
 
-if test x$use_cairo = xyes -a -n $CAIROLIBS; then
+if test x$use_cairo = xyes -a -n "$CAIROLIBS"; then
     LDLIBS="$CAIROLIBS $LDLIBS"
     LDSTATIC="$CAIROLIBS $LDSTATIC"
 fi
@@ -306,20 +306,20 @@ if test -n "$compile"; then
     case "$compile" in
         *.cxx)
             prog="`basename \"$compile\" .cxx`"
-	    ;;
+            ;;
         *.cpp)
             prog="`basename \"$compile\" .cpp`"
-	    ;;
+            ;;
         *.cc)
             prog="`basename \"$compile\" .cc`"
-	    ;;
+            ;;
         *.C)
             prog="`basename \"$compile\" .C`"
-	    ;;
-	*)
-	    echo "ERROR: Unknown/bad C++ source file extension on \"$compile\"!"
-	    exit 1
-	    ;;
+            ;;
+        *)
+            echo "ERROR: Unknown/bad C++ source file extension on \"$compile\"!"
+            exit 1
+            ;;
     esac
 
     post="$prog"
@@ -334,47 +334,47 @@ if test -n "$post"; then
     running=`uname`
     if test "$running" = "Darwin"; then
         # if FLTK targets macOS + X11, apps need not be bundled
-    	if test `echo $LDLIBS | fgrep -c -e " -lX11"` = 1; then
-    		running=""
-    	fi
+        if test `echo $LDLIBS | fgrep -c -e " -lX11"` = 1; then
+            running=""
+        fi
     fi
     case $running in
-	Darwin)
-	    echo Creating "'$post.app'" bundle for desktop...
-	    id=`echo $post | tr ' ' '_'`
+        Darwin)
+            echo Creating "'$post.app'" bundle for desktop...
+            id=`echo $post | tr ' ' '_'`
 
-	    # Make the bundle directory and move the executable there
-	    rm -rf "$post.app/Contents/MacOS"
-	    mkdir -p "$post.app/Contents/MacOS"
-	    mv "$post" "$post.app/Contents/MacOS"
+            # Make the bundle directory and move the executable there
+            rm -rf "$post.app/Contents/MacOS"
+            mkdir -p "$post.app/Contents/MacOS"
+            mv "$post" "$post.app/Contents/MacOS"
 
-	    # Make a shell script that runs the bundled executable
-	    echo "#!/bin/sh" >"$post"
-	    echo 'dir="`dirname \"$0\"`"' >>"$post"
-	    echo 'exec "$dir/'"$post.app/Contents/MacOS/$post"'" "$@"' >>"$post"
-	    chmod +x "$post"
+            # Make a shell script that runs the bundled executable
+            echo "#!/bin/sh" >"$post"
+            echo 'dir="`dirname \"$0\"`"' >>"$post"
+            echo 'exec "$dir/'"$post.app/Contents/MacOS/$post"'" "$@"' >>"$post"
+            chmod +x "$post"
 
-	    # Make the simplest Info.plist needed for an application
-	    cat >"$post.app/Contents/Info.plist" <<EOF
+            # Make the simplest Info.plist needed for an application
+            cat >"$post.app/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <plist version="0.9">
     <dict>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleExecutable</key>
-	<string>$post</string>
-	<key>CFBundleIdentifier</key>
-	<string>org.fltk.$id</string>
-	<key>CFBundleName</key>
-	<string>$post</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>NSHighResolutionCapable</key>
-	<true/>
+        <key>CFBundleInfoDictionaryVersion</key>
+        <string>6.0</string>
+        <key>CFBundleExecutable</key>
+        <string>$post</string>
+        <key>CFBundleIdentifier</key>
+        <string>org.fltk.$id</string>
+        <key>CFBundleName</key>
+        <string>$post</string>
+        <key>CFBundlePackageType</key>
+        <string>APPL</string>
+        <key>NSHighResolutionCapable</key>
+        <true/>
     </dict>
 </plist>
 EOF
-	    ;;
+            ;;
     esac
 fi
 
@@ -395,13 +395,13 @@ if test "$echo_ldflags" = "yes"; then
     libdirs=$libs
 
     for i in $LDLIBS ; do
-	if test $i != -L$libdir ; then
-	    if test -z "$my_libs" ; then
-		my_libs="$i"
-	    else
-		my_libs="$my_libs $i"
-	    fi
-	fi
+        if test $i != -L$libdir ; then
+            if test -z "$my_libs" ; then
+                my_libs="$i"
+            else
+                my_libs="$my_libs $i"
+            fi
+        fi
     done
     echo $libdirs $my_libs
 fi
@@ -428,7 +428,7 @@ if test "$echo_libs" = "yes"; then
             if test -f $libdir/lib$lib.a; then
                 USELIBS="$libdir/lib$lib.a $USELIBS"
             fi
-	done
+        done
     fi
 
     echo $USELIBS

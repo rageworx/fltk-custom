@@ -486,4 +486,3 @@ void Fl_Widget::draw_box(Fl_Boxtype t, int X, int Y, int W, int H, Fl_Color c) c
   fl_box_table[t].f(X, Y, W, H, c);
   draw_it_active = 1;
 }
-

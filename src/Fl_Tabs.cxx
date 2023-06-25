@@ -861,3 +861,4 @@ void Fl_Tabs::handle_overflow(int ov) {
   damage(FL_DAMAGE_EXPOSE|FL_DAMAGE_ALL);
   redraw();
 }
+
