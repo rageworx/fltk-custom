@@ -165,7 +165,7 @@ Fl_Tree_Prefs::Fl_Tree_Prefs() {
   _showroot               = 1;
   _connectorwidth         = 17;
   _sortorder              = FL_TREE_SORT_NONE;
-  _selectbox              = FL_FLAT_BOX;
+  _selectbox              = FL_THIN_UP_BOX;
   _selectmode             = FL_TREE_SELECT_SINGLE;
   _itemreselectmode       = FL_TREE_SELECTABLE_ONCE;
   _itemdrawmode           = FL_TREE_ITEM_DRAW_DEFAULT;

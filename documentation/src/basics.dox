@@ -357,8 +357,8 @@ The forms, GL, and images libraries are included with the "--use-foo"
 options, as follows:
 
 \code
-c++ ... `fltk-config --use-forms --ldflags`
-c++ ... `fltk-config --use-gl --ldflags`
+c++ ... `fltk-config --use-forms  --ldflags`
+c++ ... `fltk-config --use-gl     --ldflags`
 c++ ... `fltk-config --use-images --ldflags`
 c++ ... `fltk-config --use-cairo  --ldflags`
 c++ ... `fltk-config --use-forms --use-gl --use-images --ldflags`

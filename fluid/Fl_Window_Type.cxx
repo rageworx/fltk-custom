@@ -199,6 +199,7 @@ uchar *Overlay_Window::read_image(int &ww, int &hh) {
 void Overlay_Window::draw_overlay() {
   window->draw_overlay();
 }
+
 int Overlay_Window::handle(int e) {
   int ret =  window->handle(e);
   if (ret==0) {

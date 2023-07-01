@@ -3691,3 +3691,4 @@ void Fl_Widget_Type::copy_properties() {
   if (!o->active())
     w->deactivate();
 }
+
