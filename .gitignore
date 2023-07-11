@@ -74,61 +74,25 @@ etc/FLTKConfig.cmake
 /fluid/documentation/html/
 
 # /ide/VisualC2008/
-/ide/VisualC2008/fltk.ncb
-/ide/VisualC2008/*.pdb
-/ide/VisualC2008/*.user
-/ide/VisualC2008/*_/
-/ide/VisualC2008/*__0/
-/ide/VisualC2008/fltkdll/
-/ide/VisualC2008/fltkdlld/
-/ide/VisualC2008/Debug/
-/ide/VisualC2008/Debug Cairo/
-/ide/VisualC2008/Release/
-/ide/VisualC2008/Release Cairo/
+/ide/VisualC2008/*
 
 # /ide/VisualC2010/
-/ide/VisualC2010/*.user
-/ide/VisualC2010/*_debug/
-/ide/VisualC2010/*_release/
-/ide/VisualC2010/fltk.*sdf
-/ide/VisualC2010/fltk.suo
-/ide/VisualC2010/fltkdlld.pdb
-/ide/VisualC2010/fltkdll/
-/ide/VisualC2010/fltkdlld/
-/ide/VisualC2010/Debug/
-/ide/VisualC2010/Debug Cairo/
-/ide/VisualC2010/Release/
-/ide/VisualC2010/Release Cairo/
+/ide/VisualC2010/*
 
 # /ide/VisualC2015
-/ide/VisualC2015/*.user
-/ide/VisualC2015/*_debug/
-/ide/VisualC2015/*.db
-/ide/VisualC2015/*_release/
-/ide/VisualC2015/fltk.*sdf
-/ide/VisualC2015/fltk.suo
-/ide/VisualC2015/fltkdlld.pdb
-/ide/VisualC2015/fltkdll/
-/ide/VisualC2015/fltkdlld/
-/ide/VisualC2015/Debug/
-/ide/VisualC2015/Debug Cairo/
-/ide/VisualC2015/Release/
-/ide/VisualC2015/Release Cairo/
-
+/ide/VisualC2015/*
 
 # /ide/Xcode3/
 /ide/Xcode3/build
 
 # /ide/Xcode3/FLTK.xcodeproj/
-/ide/Xcode3/FLTK.xcodeproj/*.pbxuser
-/ide/Xcode3/FLTK.xcodeproj/*.perspectivev3
+/ide/Xcode3/FLTK.xcodeproj/*
 
 # /ide/Xcode4/
 /ide/Xcode4/build
 
 # /ide/Xcode4/FLTK.xcodeproj/
-/ide/Xcode4/FLTK.xcodeproj/*.pbxuser
-/ide/Xcode4/FLTK.xcodeproj/*.perspectivev3
+/ide/Xcode4/FLTK.xcodeproj/*
 
 # /lib/
 /lib/lib*
