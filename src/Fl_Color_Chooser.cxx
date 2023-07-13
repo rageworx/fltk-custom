@@ -428,9 +428,9 @@ int Flcc_ValueBox::handle_key(int key) {
 
 void Fl_Color_Chooser::rgb_cb(Fl_Widget* o, void*) {
   Fl_Color_Chooser* c = (Fl_Color_Chooser*)(o->parent());
-  double R = c->rvalue.value();
-  double G = c->gvalue.value();
-  double B = c->bvalue.value();
+  double R = c->rvalue.clamp( c->rvalue.value() );
+  double G = c->gvalue.clamp( c->gvalue.value() );
+  double B = c->bvalue.clamp( c->bvalue.value() );
   if (c->mode() == M_HSV) {
     if (c->hsv(R,G,B)) c->do_callback(FL_REASON_CHANGED);
     return;
