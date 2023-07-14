@@ -616,12 +616,45 @@ void Fl_GDI_Graphics_Driver::draw_rgb(Fl_RGB_Image *rgb, int XP, int YP, int WP,
   HDC new_gc = CreateCompatibleDC(gc_);
   int save = SaveDC(new_gc);
   SelectObject(new_gc, (HBITMAP)*Fl_Graphics_Driver::id(rgb));
-  if ( (rgb->d() % 2) == 0 ) {
-    alpha_blend_(this->floor(XP), this->floor(YP), WP, HP, new_gc, 0, 0, rgb->data_w(), rgb->data_h());
-  } else {
-    SetStretchBltMode(gc_, HALFTONE);
-    StretchBlt(gc_, this->floor(XP), this->floor(YP), WP, HP, new_gc, 0, 0, rgb->data_w(), rgb->data_h(), SRCCOPY);
+#ifdef FLTK_EXT_VERSION
+  int sclsucc = 0;
+  Fl_Image_UserScale_p usrscl = Fl_Image::user_scaling_algorithm();
+  if ( (Fl_Image::scaling_algorithm() == FL_RGB_SCALING_USER) && (usrscl != NULL ) ) {
+    Fl_RGB_Image* sclrgb = NULL;    
+    usrscl( rgb, this->floor(XP), this->floor(YP), WP, HP, &sclrgb );
+    if ( sclrgb != NULL ) {
+      if (!*Fl_Graphics_Driver::id(sclrgb)) {
+        DeleteObject((HBITMAP)*Fl_Graphics_Driver::id(rgb));
+        cache(sclrgb);
+      }
+      SelectObject(new_gc, (HBITMAP)*Fl_Graphics_Driver::id(sclrgb));
+      if ( (sclrgb->d() % 2) == 0 ) {
+        alpha_blend_(this->floor(XP), this->floor(YP), WP, HP, new_gc, 0, 0, sclrgb->data_w(), sclrgb->data_h());
+      } else {
+        SetStretchBltMode(gc_, HALFTONE);
+        StretchBlt(gc_, this->floor(XP), this->floor(YP), WP, HP, new_gc, 0, 0, sclrgb->data_w(), sclrgb->data_h(), SRCCOPY);
+      }
+      DeleteObject((HBITMAP)*Fl_Graphics_Driver::id(sclrgb));
+      *Fl_Graphics_Driver::id(sclrgb) = 0;
+      delete sclrgb;
+      
+      sclsucc = 1;
+    }
   }
+  
+  if (sclsucc == 0)
+  {
+#endif /// of FLTK_EXT_VERSION
+    if ( (rgb->d() % 2) == 0 ) {
+      alpha_blend_(this->floor(XP), this->floor(YP), WP, HP, new_gc, 0, 0, rgb->data_w(), rgb->data_h());
+    } else {
+      SetStretchBltMode(gc_, HALFTONE);
+      StretchBlt(gc_, this->floor(XP), this->floor(YP), WP, HP, new_gc, 0, 0, rgb->data_w(), rgb->data_h(), SRCCOPY);
+    }
+#ifdef FLTK_EXT_VERSION  
+  }
+#endif /// of FLTK_EXT_VERSION
+  
   RestoreDC(new_gc, save);
   DeleteDC(new_gc);
   pop_clip();

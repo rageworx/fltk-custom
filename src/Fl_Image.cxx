@@ -34,6 +34,10 @@ Fl_RGB_Scaling Fl_Image::RGB_scaling_ = FL_RGB_SCALING_NEAREST;
 
 Fl_RGB_Scaling Fl_Image::scaling_algorithm_ = FL_RGB_SCALING_BILINEAR;
 
+#ifdef FLTK_EXT_VERSION
+Fl_Image_UserScale_p Fl_Image::user_scaling_ = NULL;
+#endif /// of FLTK_EXT_VERSION
+
 /**
  The constructor creates an empty image with the specified
  width, height, and depth. The width and height are in pixels.
