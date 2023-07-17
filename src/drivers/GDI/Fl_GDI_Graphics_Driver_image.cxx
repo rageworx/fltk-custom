@@ -623,10 +623,8 @@ void Fl_GDI_Graphics_Driver::draw_rgb(Fl_RGB_Image *rgb, int XP, int YP, int WP,
     Fl_RGB_Image* sclrgb = NULL;    
     usrscl( rgb, this->floor(XP), this->floor(YP), WP, HP, &sclrgb );
     if ( sclrgb != NULL ) {
-      if (!*Fl_Graphics_Driver::id(sclrgb)) {
-        DeleteObject((HBITMAP)*Fl_Graphics_Driver::id(rgb));
-        cache(sclrgb);
-      }
+      // cache sclrgb for temporary to draw HBITMAP.
+      cache(sclrgb);
       SelectObject(new_gc, (HBITMAP)*Fl_Graphics_Driver::id(sclrgb));
       if ( (sclrgb->d() % 2) == 0 ) {
         alpha_blend_(this->floor(XP), this->floor(YP), WP, HP, new_gc, 0, 0, sclrgb->data_w(), sclrgb->data_h());
@@ -634,6 +632,7 @@ void Fl_GDI_Graphics_Driver::draw_rgb(Fl_RGB_Image *rgb, int XP, int YP, int WP,
         SetStretchBltMode(gc_, HALFTONE);
         StretchBlt(gc_, this->floor(XP), this->floor(YP), WP, HP, new_gc, 0, 0, sclrgb->data_w(), sclrgb->data_h(), SRCCOPY);
       }
+      // delete HBITMAP cache image.
       DeleteObject((HBITMAP)*Fl_Graphics_Driver::id(sclrgb));
       *Fl_Graphics_Driver::id(sclrgb) = 0;
       delete sclrgb;
