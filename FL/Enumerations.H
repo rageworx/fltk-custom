@@ -179,7 +179,7 @@
   rageworx's github repository.
   --- currently 1.4.0.9
 */
-#define FLTK_EXT_VERSION 9
+#define FLTK_EXT_VERSION 10
 #define FL_EXT_VERSIN    FLTK_EXT_VERSION
 
 /*@}*/	// group: Version Numbers
