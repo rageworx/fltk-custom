@@ -12,4 +12,4 @@ fi
 
 EFLAGS="--enable-localjpeg --enable-localzlib --enable-localpng"
 BSYS="--build=x86_64-w64-mingw32"
-./configure ${BSYS} ${EFLAGS}
+./configure ${BSYS} ${EFLAGS} --enable-debug
