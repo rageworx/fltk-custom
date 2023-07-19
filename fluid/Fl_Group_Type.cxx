@@ -25,6 +25,7 @@
 #include "code.h"
 #include "widget_browser.h"
 #include "undo.h"
+#include "Fd_Snap_Action.h"
 
 #include <FL/Fl.H>
 #include <FL/Fl_Group.H>
@@ -78,7 +79,7 @@ void group_cb(Fl_Widget *, void *) {
   // Find the current widget:
   Fl_Type *qq = Fl_Type::current;
   while (qq && (!qq->is_widget() || qq->is_menu_item())) qq = qq->parent;
-  if (!qq || qq->level < 1 || (qq->level == 1 && !strcmp(qq->type_name(), "widget_class"))) {
+  if (!qq || qq->level < 1 || (qq->level == 1 && (qq->id() == Fl_Type::ID_Widget_Class))) {
     fl_message("Please select widgets to group");
     return;
   }
@@ -107,7 +108,7 @@ void ungroup_cb(Fl_Widget *, void *) {
   Fl_Type *q = Fl_Type::current;
   while (q && (!q->is_widget() || q->is_menu_item())) q = q->parent;
   if (q) q = q->parent;
-  if (!q || q->level < 1 || (q->level == 1 && !strcmp(q->type_name(), "widget_class"))) {
+  if (!q || q->level < 1 || (q->level == 1 && (q->id() == Fl_Type::ID_Widget_Class))) {
     fl_message("Please select widgets in a group");
     return;
   }
@@ -426,8 +427,6 @@ int Fl_Flex_Type::is_fixed(Fl_Type *t) {
 
 Fl_Table_Type Fl_Table_type;    // the "factory"
 
-const char table_type_name[] = "Fl_Table";
-
 static const int MAX_ROWS = 14;
 static const int MAX_COLS = 7;
 
@@ -539,6 +538,12 @@ Fl_Widget *Fl_Table_Type::enter_live_mode(int) {
   copy_properties();
   grp->end();
   return live_widget;
+}
+
+void Fl_Table_Type::ideal_size(int &w, int &h) {
+  w = 160;
+  h = 120;
+  Fd_Snap_Action::better_size(w, h);
 }
 
 // ---- Fl_Tabs_Type --------------------------------------------------- MARK: -
