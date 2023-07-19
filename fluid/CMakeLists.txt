@@ -64,7 +64,6 @@ set (HEADERFILES
   custom_widgets.h
   factory.h
   file.h
-  fluid.h
   function_panel.h
   print_panel.h
   pixmaps.h

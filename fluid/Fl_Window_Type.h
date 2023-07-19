@@ -29,6 +29,7 @@ extern Fl_Menu_Item window_type_menu[];
 extern Fl_Widget_Class_Type *current_widget_class;
 void toggle_overlays(Fl_Widget *,void *);
 void toggle_guides(Fl_Widget *,void *);
+void toggle_restricted(Fl_Widget *,void *);
 void show_project_cb(Fl_Widget *, void *);
 void show_grid_cb(Fl_Widget *, void *);
 void show_settings_cb(Fl_Widget *, void *);
@@ -42,7 +43,7 @@ enum {
   FD_BOX    = 32  // user creates a new selection box
 };
 
-class Fl_Window_Type : public Fl_Widget_Type {
+class Fl_Window_Type : public Fl_Widget_Type { // FIXME: Fl_Group
 protected:
 
   Fl_Menu_Item* subtypes() FL_OVERRIDE {return window_type_menu;}
@@ -55,6 +56,9 @@ protected:
   int dx,dy;
   int drag;             // which parts of bbox are being moved
   int numselected;      // number of children selected
+  void draw_out_of_bounds(Fl_Widget_Type *group, int x, int y, int w, int h);
+  void draw_out_of_bounds();
+  void draw_overlaps();
   void draw_overlay();
   void newdx();
   void newposition(Fl_Widget_Type *,int &x,int &y,int &w,int &h);
@@ -66,7 +70,8 @@ protected:
   Fl_Widget *widget(int,int,int,int) FL_OVERRIDE {return 0;}
   int recalc;           // set by fix_overlay()
   void moveallchildren();
-  int pixmapID() FL_OVERRIDE { return 1; }
+  ID id() const FL_OVERRIDE { return ID_Window; }
+  void open_();
 
 public:
 
@@ -80,15 +85,18 @@ public:
     numselected(0),
     recalc(0),
     modal(0), non_modal(0),
+    xclass(NULL),
     sr_min_w(0), sr_min_h(0), sr_max_w(0), sr_max_h(0)
   { }
   uchar modal, non_modal;
+  const char *xclass; // junk string, used for shortcut
 
   Fl_Type *make(Strategy strategy) FL_OVERRIDE;
   const char *type_name() FL_OVERRIDE {return "Fl_Window";}
   const char *alt_type_name() FL_OVERRIDE {return "fltk::Window";}
 
   void open() FL_OVERRIDE;
+  void ideal_size(int &w, int &h) FL_OVERRIDE;
 
   void fix_overlay();                   // Update the bounding box, etc
   uchar *read_image(int &ww, int &hh);  // Read an image of the window
@@ -134,7 +142,7 @@ public:
   void write_code2(Fd_Code_Writer& f) FL_OVERRIDE;
   Fl_Type *make(Strategy strategy) FL_OVERRIDE;
   const char *type_name() FL_OVERRIDE {return "widget_class";}
-  int pixmapID() FL_OVERRIDE { return 48; }
+  ID id() const FL_OVERRIDE { return ID_Widget_Class; }
   int is_parent() const FL_OVERRIDE {return 1;}
   int is_code_block() const FL_OVERRIDE {return 1;}
   int is_decl_block() const FL_OVERRIDE {return 1;}

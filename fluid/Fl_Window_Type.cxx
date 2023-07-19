@@ -72,44 +72,16 @@ void i18n_type_cb(Fl_Choice *c, void *v) {
   }
   switch (g_project.i18n_type) {
   case 0 : /* None */
-      i18n_include_input->hide();
-      i18n_conditional_input->hide();
-      i18n_file_input->hide();
-      i18n_set_input->hide();
-      i18n_function_input->hide();
-      i18n_static_function_input->hide();
+      i18n_gnu_group->hide();
+      i18n_posix_group->hide();
       break;
   case 1 : /* GNU gettext */
-      i18n_include_input->value("<libintl.h>");
-      g_project.i18n_include = i18n_include_input->value();
-      i18n_conditional_input->value("");
-      g_project.i18n_conditional = i18n_conditional_input->value();
-      i18n_function_input->value("gettext");
-      g_project.i18n_function = i18n_function_input->value();
-      i18n_static_function_input->value("gettext_noop");
-      g_project.i18n_static_function = i18n_static_function_input->value();
-      i18n_include_input->show();
-      i18n_conditional_input->show();
-      i18n_file_input->hide();
-      i18n_set_input->hide();
-      i18n_function_input->show();
-      i18n_static_function_input->show();
+      i18n_gnu_group->show();
+      i18n_posix_group->hide();
       break;
   case 2 : /* POSIX cat */
-      i18n_include_input->value("<nl_types.h>");
-      g_project.i18n_include = i18n_include_input->value();
-      i18n_conditional_input->value("");
-      g_project.i18n_conditional = i18n_conditional_input->value();
-      i18n_file_input->value("");
-      g_project.i18n_file = i18n_file_input->value();
-      i18n_set_input->value("1");
-      g_project.i18n_set = i18n_set_input->value();
-      i18n_include_input->show();
-      i18n_conditional_input->show();
-      i18n_file_input->show();
-      i18n_set_input->show();
-      i18n_function_input->hide();
-      i18n_static_function_input->hide();
+      i18n_gnu_group->hide();
+      i18n_posix_group->show();
       break;
   }
 
@@ -140,13 +112,29 @@ static int overlays_invisible;
 class Overlay_Window : public Fl_Overlay_Window {
   void draw() FL_OVERRIDE;
   void draw_overlay() FL_OVERRIDE;
+  static void close_cb(Overlay_Window *self, void*);
 public:
   Fl_Window_Type *window;
   int handle(int) FL_OVERRIDE;
-  Overlay_Window(int W,int H) : Fl_Overlay_Window(W,H) {Fl_Group::current(0);}
+  Overlay_Window(int W,int H) : Fl_Overlay_Window(W,H) {
+    Fl_Group::current(0);
+    callback((Fl_Callback*)close_cb);
+  }
   void resize(int,int,int,int) FL_OVERRIDE;
   uchar *read_image(int &ww, int &hh);
 };
+
+/**
+ \brief User closes the window, so we mark the .fl file as changed.
+ Mark the .fl file a changed, but don;t mark the source files as changed.
+ \param self pointer to this window
+ */
+void Overlay_Window::close_cb(Overlay_Window *self, void*) {
+  if (self->visible())
+    set_modflag(1, -2);
+  self->hide();
+}
+
 void Overlay_Window::draw() {
   const int CHECKSIZE = 8;
   // see if box is clear or a frame or rounded:
@@ -265,9 +253,11 @@ void Fl_Window_Type::move_child(Fl_Type* cc, Fl_Type* before) {
 
 ////////////////////////////////////////////////////////////////
 
-// Double-click on window widget shows the window, or if already shown,
-// it shows the control panel.
-void Fl_Window_Type::open() {
+/**
+ \brief Show the Window Type editor window without setting the modified flag.
+ \see Fl_Window_Type::open()
+ */
+void Fl_Window_Type::open_() {
   Overlay_Window *w = (Overlay_Window *)o;
   if (w->shown()) {
     w->show();
@@ -279,6 +269,20 @@ void Fl_Window_Type::open() {
     w->resizable(p);
   }
   w->image(Fl::scheme_bg_);
+}
+
+/**
+ \brief Show the Window Type editor window and set the modified flag if needed.
+ Double-click on window widget shows the window, or if already shown, it shows
+ the control panel.
+ \see Fl_Window_Type::open_()
+ */
+void Fl_Window_Type::open() {
+  Overlay_Window *w = (Overlay_Window *)o;
+  if (!w->visible()) {
+    set_modflag(1, -2);
+  }
+  open_();
 }
 
 // Read an image of the window
@@ -293,6 +297,18 @@ uchar *Fl_Window_Type::read_image(int &ww, int &hh) {
   if (hidden)
     w->hide();
   return idata;
+}
+
+void Fl_Window_Type::ideal_size(int &w, int &h) {
+  w = 480, h = 320;
+  if (main_window) {
+    int sx, sy, sw, sh;
+    Fl_Window *win = main_window;
+    int screen = Fl::screen_num(win->x(), win->y());
+    Fl::screen_work_area(sx, sy, sw, sh, screen);
+    w = fd_min(w, sw*3/4); h = fd_min(h, sh*3/4);
+    Fd_Snap_Action::better_size(w, h);
+  }
 }
 
 
@@ -336,25 +352,23 @@ void border_cb(Fl_Light_Button* i, void* v) {
 
 void xclass_cb(Fl_Input* i, void* v) {
   if (v == LOAD) {
-    if (!current_widget->is_window()) {
+    if (current_widget->is_window()) {
+      i->show();
+      i->parent()->show();
+      i->value(((Fl_Window_Type *)current_widget)->xclass);
+    } else {
       i->hide();
       i->parent()->hide(); // hides the "X Class:" label as well
-      return;
     }
-    i->show();
-    i->parent()->show();
-    i->value(((Fl_Widget_Type *)current_widget)->xclass);
   } else {
     int mod = 0;
     undo_checkpoint();
     for (Fl_Type *o = Fl_Type::first; o; o = o->next) {
-      if (o->selected && o->is_widget()) {
+      if (o->selected && o->is_window()) {
         mod = 1;
-        Fl_Widget_Type* w = (Fl_Widget_Type*)o;
-        if (w->is_window() || w->is_button())
-          storestring(i->value(),w->xclass);
-        if (w->is_window()) ((Fl_Window*)(w->o))->xclass(w->xclass);
-        else if (w->is_menu_item()) w->redraw();
+        Fl_Window_Type *wt = (Fl_Window_Type *)o;
+        storestring(i->value(), wt->xclass);
+        ((Fl_Window*)(wt->o))->xclass(wt->xclass);
       }
     }
     if (mod) set_modflag(1);
@@ -468,6 +482,96 @@ void Fl_Window_Type::newposition(Fl_Widget_Type *myo,int &X,int &Y,int &R,int &T
   if (T<Y) {int n = Y; Y = T; T = n;}
 }
 
+void fd_hatch(int x, int y, int w, int h, int size=6, int offset=0, int pad=3) {
+  x -= pad; y -= pad; w += 2*pad; h += 2*pad;
+  int yp = (x+offset+y*size-1-y)%size;
+  if (w > h) {
+    for (; yp < h; yp+=size)
+      fl_line(x, y+yp, x+yp, y);
+    for (; yp < w; yp+=size)
+      fl_line(x+yp-h, y+h, x+yp, y);
+    for (; yp < w+h; yp+=size)
+      fl_line(x+yp-h, y+h, x+w, y+yp-w);
+  } else {
+    for (; yp < w; yp+=size)
+      fl_line(x, y+yp, x+yp, y);
+    for (; yp < h; yp+=size)
+      fl_line(x, y+yp, x+w, y+yp-w);
+    for (; yp < h+w; yp+=size)
+      fl_line(x+yp-h, y+h, x+w, y+yp-w);
+  }
+}
+
+/**
+ \brief Draw a hatch pattern over all children that overlap the bounds of this box.
+ \param[in] group check all children of this group
+ \param[in] x, y, w, h bounding box of this group
+ */
+void Fl_Window_Type::draw_out_of_bounds(Fl_Widget_Type *group, int x, int y, int w, int h) {
+  for (Fl_Type *p = group->next; p && p->level>group->level; p = p->next) {
+    if (p->level == group->level+1 && p->is_widget() && !p->is_menu_item()) {
+      Fl_Widget *o = ((Fl_Widget_Type*)p)->o;
+      if (o->x() < x) fd_hatch(o->x(), o->y(), x-o->x(), o->h());
+      if (o->y() < y) fd_hatch(o->x(), o->y(), o->w(), y-o->y());
+      if (o->x()+o->w() > x+w) fd_hatch(x+w, o->y(), (o->x()+o->w())-(x+w), o->h());
+      if (o->y()+o->h() > y+h) fd_hatch(o->x(), y+h, o->w(), (o->y()+o->h())-(y+h));
+    }
+  }
+}
+
+/**
+ \brief Draw a hatch pattern for all groups that have out of bounds children.
+ */
+void Fl_Window_Type::draw_out_of_bounds() {
+  // get every group in the hierarchy, then draw any overlap of a direct child with that group
+  fl_color(FL_DARK_RED);
+  draw_out_of_bounds(this, 0, 0, o->w(), o->h());
+  for (Fl_Type *q=next; q && q->level>level; q = q->next) {
+    // don't do this for Fl_Scroll (which we currently can't handle in FLUID anyway)
+    if (q->is_group() && !q->is_scroll()) {
+      Fl_Widget_Type *w = (Fl_Widget_Type*)q;
+      draw_out_of_bounds(w, w->o->x(), w->o->y(), w->o->w(), w->o->h());
+    }
+  }
+  fl_color(FL_RED);
+}
+
+/**
+ \brief Compare all children in the same level and hatch overlapping areas.
+ */
+void Fl_Window_Type::draw_overlaps() {
+  fl_color(FL_DARK_YELLOW);
+  // loop through all widgets in this window
+  for (Fl_Type *q=next; q && q->level>level; q = q->next) {
+    // is it a valid widget
+    if (q->is_widget() && !q->is_menu_item()) {
+      Fl_Widget_Type *w = (Fl_Widget_Type*)q;
+      // is the widget visible
+      if (w->o->visible()) {
+        int x = w->o->x(), y = w->o->y();
+        int r = x + w->o->w(), b = y + w->o->h();
+        for (Fl_Type *p=q->next; p && p->level>=q->level; p = p->next) {
+          if (p->level==q->level && p->is_widget() && !p->is_menu_item()) {
+            Fl_Widget_Type *wp = (Fl_Widget_Type*)p;
+            if (wp->o->visible()) {
+              int px = fd_max(x, wp->o->x());
+              int py = fd_max(y, wp->o->y());
+              int pr = fd_min(r, wp->o->x() + wp->o->w());
+              int pb = fd_min(b, wp->o->y() + wp->o->h());
+              if (pr > px && pb > py)
+                fd_hatch(px, py, pr-px, pb-py);
+            }
+          }
+        }
+      } else {
+        int l = q->level;
+        for (; q && q->next && q->next->level>l; q = q->next) { }
+      }
+    }
+  }
+  fl_color(FL_RED);
+}
+
 void Fl_Window_Type::draw_overlay() {
   if (recalc) {
     bx = o->w(); by = o->h(); br = 0; bt = 0;
@@ -491,6 +595,13 @@ void Fl_Window_Type::draw_overlay() {
     fl_rect(x,y,r-x,b-y);
   }
   if (overlays_invisible && !drag) return;
+
+  if (show_restricted) {
+    draw_out_of_bounds();
+    draw_overlaps();
+    // TODO: for Fl_Tile, find all areas that are not covered by visible children
+  }
+
   if (selected) fl_rect(0,0,o->w(),o->h());
   if (!numselected) return;
   int mybx,myby,mybr,mybt;
@@ -566,6 +677,8 @@ void Fl_Window_Type::draw_overlay() {
     Fd_Snap_Data data = { dx, dy, sx, sy, sr, st, drag, 4, 4, dx, dy, (Fl_Widget_Type*)selection, this};
     Fd_Snap_Action::draw_all(data);
   }
+
+  // TODO: for invisible boxes (NONE, FLAT, etc.) draw a faint outline when dragging
 }
 
 extern Fl_Menu_Item Main_Menu[];
@@ -585,8 +698,8 @@ void check_redraw_corresponding_parent(Fl_Type *s) {
     if( !s || !s->selected || !s->is_widget()) return;
     for (Fl_Type *i=s; i && i->parent; i=i->parent) {
         if (i->is_group() && prev_parent &&
-            (!strcmp(i->type_name(), "Fl_Tabs") ||
-             !strcmp(i->type_name(), "Fl_Wizard"))) {
+            ( (i->id() == Fl_Type::ID_Tabs) ||
+              (i->id() == Fl_Type::ID_Wizard))) {
              ((Fl_Tabs*)((Fl_Widget_Type*)i)->o)->value(prev_parent->o);
              return;
         }
@@ -619,17 +732,21 @@ void toggle_overlays(Fl_Widget *,void *) {
     }
 }
 
+/**
+ \brief User changes settings to show positioning guides in layout editor overlay.
+ This is called from the main menu and from the check button in the Settings
+ dialog.
+ */
 void toggle_guides(Fl_Widget *,void *) {
   show_guides = !show_guides;
   fluid_prefs.set("show_guides", show_guides);
 
-  if (show_guides) {
+  if (show_guides)
     guides_item->label("Hide Guides");
-    if (guides_button) guides_button->label("Hide &Guides");
-  } else {
+  else
     guides_item->label("Show Guides");
-    if (guides_button) guides_button->label("Show &Guides");
-  }
+  if (guides_button)
+    guides_button->value(show_guides);
 
   for (Fl_Type *o=Fl_Type::first; o; o=o->next) {
     if (o->is_window()) {
@@ -639,8 +756,44 @@ void toggle_guides(Fl_Widget *,void *) {
   }
 }
 
-void guides_cb(Fl_Button *o, void *v) {
+/**
+ \brief User changes settings to show positioning guides in layout editor overlay.
+ This is called from the check button in the Settings dialog.
+ */
+void toggle_guides_cb(Fl_Check_Button *o, void *v) {
   toggle_guides(NULL, NULL);
+}
+
+/**
+ \brief User changes settings to show overlapping and out of bounds widgets.
+ This is called from the main menu and from the check button in the Settings
+ dialog.
+ */
+void toggle_restricted(Fl_Widget *,void *) {
+  show_restricted = !show_restricted;
+  fluid_prefs.set("show_restricted", show_restricted);
+
+  if (show_restricted)
+    restricted_item->label("Hide Restricted");
+  else
+    restricted_item->label("Show Restricted");
+  if (restricted_button)
+    restricted_button->value(show_restricted);
+
+  for (Fl_Type *o=Fl_Type::first; o; o=o->next) {
+    if (o->is_window()) {
+      Fl_Widget_Type* w = (Fl_Widget_Type*)o;
+      ((Overlay_Window*)(w->o))->redraw_overlay();
+    }
+  }
+}
+
+/**
+ \brief User changes settings to show overlapping and out of bounds widgets.
+ This is called from the check button in the Settings dialog.
+ */
+void toggle_restricted_cb(Fl_Check_Button *o, void *v) {
+  toggle_restricted(NULL, NULL);
 }
 
 extern void select(Fl_Type *,int);
@@ -1050,7 +1203,7 @@ void Fl_Window_Type::write_properties(Fd_Project_Writer &f) {
   if (xclass) {f.write_string("xclass"); f.write_word(xclass);}
   if (sr_min_w || sr_min_h || sr_max_w || sr_max_h)
     f.write_string("size_range {%d %d %d %d}", sr_min_w, sr_min_h, sr_max_w, sr_max_h);
-  if (o->visible()) f.write_string("visible");
+  if (o->visible() || override_visible_) f.write_string("visible");
 }
 
 void Fl_Window_Type::read_property(Fd_Project_Reader &f, const char *c) {
@@ -1059,7 +1212,10 @@ void Fl_Window_Type::read_property(Fd_Project_Reader &f, const char *c) {
   } else if (!strcmp(c,"non_modal")) {
     non_modal = 1;
   } else if (!strcmp(c, "visible")) {
-    if (Fl::first_window()) open(); // only if we are using user interface
+    if (batch_mode) // don't actually open any windows in batch mode
+      override_visible_ = 1;
+    else // in interactive mode, we simply show the window
+      open_();
   } else if (!strcmp(c,"noborder")) {
     ((Fl_Window*)o)->border(0);
   } else if (!strcmp(c,"xclass")) {
