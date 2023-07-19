@@ -60,11 +60,11 @@
  <p>Recommended method to refresh GUI while printing :
  \code
  printer->begin_job(0);
- ¡¦¡¦
+ â€¦â€¦
  Fl_Surface_Device::push_current(Fl_Display_Device::display_device());
  Fl::check(); // or any operation that draws to display
  Fl_Surface_Device::pop_current();
- ¡¦¡¦
+ â€¦â€¦
  printer->end_job();
  \endcode
  <b>Platform specifics</b>
