@@ -10,6 +10,12 @@ if [ ! -e configure ];then
     exit 0
 fi
 
+DBGOPT=
+
+if [[ "$1"=="debug" ]];then
+    DBGOPT+="--enable-dbug"
+fi
+
 EFLAGS="--enable-localjpeg --enable-localzlib --enable-localpng"
 BSYS="--build=x86_64-w64-mingw32"
-./configure ${BSYS} ${EFLAGS} --enable-debug
+./configure ${BSYS} ${EFLAGS} ${DBGOPT}
