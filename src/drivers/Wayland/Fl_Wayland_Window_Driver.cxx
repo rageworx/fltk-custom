@@ -352,10 +352,10 @@ void Fl_Wayland_Window_Driver::make_current() {
     ((Fl_Cairo_Graphics_Driver*)fl_graphics_driver)->needs_commit_tag(
                                             &window->buffer->draw_buffer_needs_commit);
   }
-  ((Fl_Wayland_Graphics_Driver*)fl_graphics_driver)->set_buffer(window->buffer, f * wld_s);
+  ((Fl_Wayland_Graphics_Driver*)fl_graphics_driver)->set_cairo(window->buffer->draw_buffer.cairo_, f * wld_s);
   int *poffset = Fl_Window_Driver::menu_offset_y(pWindow);
-  if (poffset) { // for tall menu windows under KDE to offset drawing inside window
-    cairo_translate(window->buffer->cairo_, 0, *poffset);
+  if (poffset) { // for tall menu windows under KWIN to offset drawing inside window
+    cairo_translate(window->buffer->draw_buffer.cairo_, 0, *poffset);
   }
   cairo_rectangle_int_t *extents = subRect();
   if (extents) { // make damage-to-buffer not to leak outside parent
@@ -427,12 +427,6 @@ static void destroy_surface_caution_pointer_focus(struct wl_surface *surface,
 }
 
 
-static void delayed_delete_Fl_X(void *data) {
-  Fl::remove_check(delayed_delete_Fl_X, data);
-  delete (Fl_X*)data;
-}
-
-
 void Fl_Wayland_Window_Driver::hide() {
   Fl_X* ip = Fl_X::flx(pWindow);
   if (hide_common()) return;
@@ -483,22 +477,7 @@ void Fl_Wayland_Window_Driver::hide() {
 //fprintf(stderr, "After hide: sub=%p frame=%p xdg=%p top=%p pop=%p surf=%p\n", wld_win->subsurface,  wld_win->frame, wld_win->xdg_surface, wld_win->xdg_toplevel, wld_win->xdg_popup, wld_win->wl_surface);
     free(wld_win);
   }
-  if (pWindow->as_gl_window() && in_flush_) {
-    // Under Wayland and for a GL window, this summarized scenario can occur
-    // when closing a window with "escape" (e.g. test/cube):
-    // Fl::flush() calls Fl_Wayland_Window_Driver::flush()
-    // calls Fl_Wayland_Gl_Window_Driver::swap_buffers()
-    // calls wl_display_dispatch_pending() calls Fl_Wayland_Window_Driver::hide().
-    // We make sure here to force exit from the loop over all damaged windows
-    // in Fl::flush(), and postpone deletion of the Fl_X record until after return
-    // from Fl::flush().
-      ip->xid = 0;
-      ip->next = NULL;
-      Fl::damage(1); // make sure potential remaining damaged windows get drawn
-      Fl::add_check(delayed_delete_Fl_X, ip);
-    } else {
-      delete ip;
-    }
+  delete ip;
 }
 
 
@@ -614,8 +593,8 @@ int Fl_Wayland_Window_Driver::scroll(int src_x, int src_y, int src_w, int src_h,
       i = src_h - 1; to = -1; step = -1;
     }
     while (i != to) {
-      memcpy(buffer->draw_buffer + (dest_y + i) * buffer->stride + 4 * dest_x,
-             buffer->draw_buffer + (src_y + i) * buffer->stride + 4 * src_x, 4 * src_w);
+      memcpy(buffer->draw_buffer.buffer + (dest_y + i) * buffer->draw_buffer.stride + 4 * dest_x,
+             buffer->draw_buffer.buffer + (src_y + i) * buffer->draw_buffer.stride + 4 * src_x, 4 * src_w);
       i += step;
     }
   } else { // horizontal scroll
@@ -626,8 +605,8 @@ int Fl_Wayland_Window_Driver::scroll(int src_x, int src_y, int src_w, int src_h,
       i = src_h - 1; to = -1; step = -1;
     }
     while (i != to) {
-      memmove(buffer->draw_buffer + (src_y + i) * buffer->stride + 4 * dest_x,
-             buffer->draw_buffer + (src_y + i) * buffer->stride + 4 * src_x, 4 * src_w);
+      memmove(buffer->draw_buffer.buffer + (src_y + i) * buffer->draw_buffer.stride + 4 * dest_x,
+             buffer->draw_buffer.buffer + (src_y + i) * buffer->draw_buffer.stride + 4 * src_x, 4 * src_w);
       i += step;
     }
   }
@@ -799,7 +778,7 @@ static void handle_configure(struct libdecor_frame *frame,
   }
   window->state = window_state;
 
-  // Weston, KDE, and some versions of Mutter, on purpose, don't set the
+  // Weston, KWin, and some versions of Mutter, on purpose, don't set the
   // window width x height when xdg_toplevel_configure runs twice
   // during resizable window creation (see https://gitlab.freedesktop.org/wayland/wayland-protocols/-/issues/6).
   // Consequently, libdecor_configuration_get_content_size() may return false twice.
@@ -906,15 +885,28 @@ void Fl_Wayland_Window_Driver::wait_for_expose()
   }
 }
 
+
 static void delayed_close(void *data) {
   Fl::remove_check(delayed_close, data);
   Fl::handle(FL_CLOSE, (Fl_Window*)data);
 }
 
+
 static void handle_close(struct libdecor_frame *frame, void *user_data)
 { // runs when the close button of a window titlebar is pushed
+  // or after "Quit" of the application menu
+  // or after the Kill command of Sway
   struct wld_window* wl_win = (struct wld_window*)user_data;
-  Fl::add_check(delayed_close, wl_win->fl_win);
+  int X, Y = 0;
+  if (wl_win->kind == Fl_Wayland_Window_Driver::DECORATED) {
+    libdecor_frame_translate_coordinate(wl_win->frame, 0, 0, &X, &Y);
+  }
+  if (Y == 0) Fl::handle(FL_CLOSE, wl_win->fl_win);
+  else {
+    // the close window attempt is delayed because libdecor
+    // uses the frame after return from this function
+    Fl::add_check(delayed_close, wl_win->fl_win);
+  }
 }
 
 
@@ -1031,7 +1023,7 @@ static void popup_configure(void *data, struct xdg_popup *xdg_popup, int32_t x, 
   int HH;
   Fl_Window_Driver::menu_parent(&HH);
   if (window->fl_win->h() > HH && y != win_pos->y) { // A menu taller than the display
-    // Under KDE, height is set to the display height or less: we ignore that.
+    // Under KWin, height is set to the display height or less: we ignore that.
     window->state = (y - win_pos->y);
     // make selected item visible, if there's one
     Fl_Window_Driver::scroll_to_selected_item(window->fl_win);
@@ -1356,7 +1348,7 @@ void Fl_Wayland_Window_Driver::makeWindow()
   if (pWindow->modal() || pWindow->non_modal()) {
     if (pWindow->modal()) Fl::modal_ = pWindow;
     if (new_window->kind == DECORATED && first_xid && first_xid->kind == DECORATED) {
-     libdecor_frame_set_parent(new_window->frame, first_xid->frame);
+     if (first_xid->frame) libdecor_frame_set_parent(new_window->frame, first_xid->frame);
     } else if (new_window->kind == UNFRAMED && new_window->xdg_toplevel && first_xid) {
       Fl_Wayland_Window_Driver *top_dr = Fl_Wayland_Window_Driver::driver(first_xid->fl_win);
       if (top_dr->xdg_toplevel()) xdg_toplevel_set_parent(new_window->xdg_toplevel,
@@ -1545,7 +1537,7 @@ void Fl_Wayland_Window_Driver::use_border() {
   if (!shown() || pWindow->parent()) return;
   pWindow->wait_for_expose(); // useful for border(0) just after show()
   struct libdecor_frame *frame = fl_wl_xid(pWindow)->frame;
-  if (frame && Fl_Wayland_Screen_Driver::compositor != Fl_Wayland_Screen_Driver::KDE) {
+  if (frame && Fl_Wayland_Screen_Driver::compositor != Fl_Wayland_Screen_Driver::KWIN) {
     if (fl_wl_xid(pWindow)->kind == DECORATED) {
       libdecor_frame_set_visibility(frame, pWindow->border());
     } else {
@@ -1636,15 +1628,15 @@ int Fl_Wayland_Window_Driver::set_cursor_4args(const Fl_RGB_Image *rgb, int hotx
   new_cursor->images[0] = (struct wl_cursor_image*)new_image;
   new_cursor->name = strdup("custom cursor");
   // draw the rgb image to the cursor's drawing buffer
-  Fl_Image_Surface *img_surf = new Fl_Image_Surface(new_image->image.width, new_image->image.height, 0, (Fl_Offscreen)offscreen);
+  Fl_Image_Surface *img_surf = new Fl_Image_Surface(new_image->image.width, new_image->image.height, 0, (Fl_Offscreen)&offscreen->draw_buffer);
   Fl_Surface_Device::push_current(img_surf);
   Fl_Wayland_Graphics_Driver *driver = (Fl_Wayland_Graphics_Driver*)img_surf->driver();
   cairo_scale(driver->cr(), scale, scale);
-  memset(offscreen->draw_buffer, 0, offscreen->data_size);
+  memset(offscreen->draw_buffer.buffer, 0, offscreen->draw_buffer.data_size);
   ((Fl_RGB_Image*)rgb)->draw(0, 0);
   Fl_Surface_Device::pop_current();
   delete img_surf;
-  memcpy(offscreen->data, offscreen->draw_buffer, offscreen->data_size);
+  memcpy(offscreen->data, offscreen->draw_buffer.buffer, offscreen->draw_buffer.data_size);
   // delete the previous custom cursor, if there was one, and keep its Fl_RGB_Image if appropriate
   delete_cursor_(xid, keep_copy);
   //have this new cursor used
@@ -1689,7 +1681,7 @@ void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
     int stride = cairo_format_stride_for_width(
                  Fl_Cairo_Graphics_Driver::cairo_format, int(W * scale) );
     size_t bsize = stride * int(H * scale);
-    true_rescale = (bsize != fl_win->buffer->data_size);
+    true_rescale = (bsize != fl_win->buffer->draw_buffer.data_size);
   }
   int is_a_resize = (W != w() || H != h() || true_rescale);
   if (is_a_move) force_position(1);
@@ -1826,8 +1818,8 @@ void Fl_Wayland_Window_Driver::subRect(cairo_rectangle_int_t *r) {
 
 void Fl_Wayland_Window_Driver::reposition_menu_window(int x, int y) {
   if (y == pWindow->y()) return;
-  if (Fl_Wayland_Screen_Driver::compositor == Fl_Wayland_Screen_Driver::KDE) {
-    // The KDE compositor refuses to position a popup such that it extends above
+  if (Fl_Wayland_Screen_Driver::compositor == Fl_Wayland_Screen_Driver::KWIN) {
+    // The KWin compositor refuses to position a popup such that it extends above
     // the top of the screen. Therefore, instead of sliding the popup window
     // on the display, we slide the drawing inside the fixed popup via
     // member variable offset_y of the menuwindow class, and we redraw the popup
@@ -1835,7 +1827,7 @@ void Fl_Wayland_Window_Driver::reposition_menu_window(int x, int y) {
     *Fl_Window_Driver::menu_offset_y(pWindow) += (y - pWindow->y());
     struct wld_window *xid = fl_wl_xid(pWindow);
     wl_surface_set_opaque_region(xid->wl_surface, NULL);
-    if (xid->buffer) memset(xid->buffer->draw_buffer, 0, xid->buffer->data_size);
+    if (xid->buffer) memset(xid->buffer->draw_buffer.buffer, 0, xid->buffer->draw_buffer.data_size);
     //printf("offset_y=%d\n", *Fl_Window_Driver::menu_offset_y(pWindow));
     this->y(y);
     pWindow->redraw();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 by Bill Spitzak and others.
+ * Copyright 2016-2023 by Bill Spitzak and others.
  *
  * This library is free software. Distribution and use rights are outlined in
  * the file "COPYING" which should have been included with this file.  If this
@@ -39,7 +39,7 @@ typedef opaque fl_uintptr_t;
  Platform-specific value representing an offscreen drawing buffer.
   \note This value can be safely cast to these types on each platform:
   \li X11: Pixmap
-  \li Wayland: struct fl_wld_buffer *
+  \li Wayland: struct fl_wld_draw_buffer *
   \li Windows: HBITMAP
   \li macOS:  CGContextRef
  */
@@ -96,8 +96,8 @@ typedef opaque Fl_Timestamp;
 
 #ifdef _WIN64
 
-#if defined(_MSC_VER)
-# include <stddef.h>  /* M$VC */
+#if defined(_MSC_VER) && (_MSC_VER < 1600)
+# include <stddef.h>  /* stdint.h not available before VS 2010 (1600) */
 #else
 # include <stdint.h>
 #endif

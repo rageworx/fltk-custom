@@ -63,14 +63,12 @@ struct gl_start_support { // to support use of gl_start / gl_finish
 static EGLConfig wld_egl_conf = NULL;
 
 EGLDisplay Fl_Wayland_Gl_Window_Driver::egl_display = EGL_NO_DISPLAY;
-EGLint Fl_Wayland_Gl_Window_Driver::configs_count = 0;
 
 
 Fl_Wayland_Gl_Window_Driver::Fl_Wayland_Gl_Window_Driver(Fl_Gl_Window *win) : Fl_Gl_Window_Driver(win) {
   if (egl_display == EGL_NO_DISPLAY) init();
   egl_window = NULL;
   egl_surface = NULL;
-  egl_swap_in_progress = false;
 }
 
 
@@ -97,7 +95,7 @@ void Fl_Wayland_Gl_Window_Driver::init() {
   }
   //printf("EGL major: %d, minor %d\n", major, minor);
 
-  eglGetConfigs(egl_display, NULL, 0, &configs_count);
+  //eglGetConfigs(egl_display, NULL, 0, &configs_count);
   //printf("EGL has %d configs\n", configs_count);
   eglBindAPI(EGL_OPENGL_API);
 }
@@ -116,9 +114,9 @@ char *Fl_Wayland_Gl_Window_Driver::alpha_mask_for_string(const char *str, int n,
   fl_draw(str, n, 0, fl_height() - fl_descent());
   // get the R channel only of the bitmap
   char *alpha_buf = new char[w*h], *r = alpha_buf;
-  struct fl_wld_buffer *off = (struct fl_wld_buffer *)surf->offscreen();
+  struct fl_wld_draw_buffer *off = (struct fl_wld_draw_buffer *)surf->offscreen();
   for (int i = 0; i < h; i++) {
-    uchar *q = off->draw_buffer + i * off->stride;
+    uchar *q = off->buffer + i * off->stride;
     for (int j = 0; j < w; j++) {
       *r++ = *q;
       q += 4;
@@ -156,29 +154,16 @@ Fl_Gl_Choice *Fl_Wayland_Gl_Window_Driver::find(int m, const int *alistp)
   if (m & FL_STENCIL) config_attribs[15] = 1;
   if (m & FL_ALPHA) config_attribs[17] = (m & FL_RGB8) ? 8 : 1;
 
-  static EGLConfig *configs = (void**)calloc(configs_count, sizeof(EGLConfig));
-  eglChooseConfig(egl_display, config_attribs, configs, configs_count, &n);
+  g = new Fl_Wayland_Gl_Choice(m, alistp, first);
+  eglChooseConfig(egl_display, config_attribs, &(g->egl_conf), 1, &n);
   if (n == 0 && (m & FL_MULTISAMPLE)) {
     config_attribs[13] = 0;
-    eglChooseConfig(egl_display, config_attribs, configs, configs_count, &n);
+    eglChooseConfig(egl_display, config_attribs, &(g->egl_conf), 1, &n);
   }
   if (n == 0) {
     Fl::fatal("failed to choose an EGL config\n");
   }
 
-  g = new Fl_Wayland_Gl_Choice(m, alistp, first);
-  /*for (int i = 0; i < n; i++) {
-    EGLint size;
-    eglGetConfigAttrib(egl_display, configs[i], EGL_BUFFER_SIZE, &size);
-    printf("Buffer size for config %d is %d\n", i, size);
-    eglGetConfigAttrib(egl_display, configs[i], EGL_RED_SIZE, &size);
-    printf("Red size for config %d is %d\n", i, size);
-    // just choose the first one
-    g->egl_conf = configs[i];
-    break;
-  }*/
-  // just choose the first config
-  g->egl_conf = configs[0];
   first = g;
   return g;
 }
@@ -356,11 +341,8 @@ void Fl_Wayland_Gl_Window_Driver::swap_buffers() {
     if (!overlay_buffer) return; // don't call eglSwapBuffers until overlay has been drawn
   }
 
-  if (egl_surface && !egl_swap_in_progress) {
-    egl_swap_in_progress = true; // prevents crash while down resizing rotating glpuzzle
-    wl_display_dispatch_pending(Fl_Wayland_Screen_Driver::wl_display);
+  if (egl_surface) {
     eglSwapBuffers(Fl_Wayland_Gl_Window_Driver::egl_display, egl_surface);
-    egl_swap_in_progress = false;
   }
 }
 

@@ -89,7 +89,7 @@ public:
 
   enum ID {
     // administrative
-    ID_Base_, ID_Widget_, ID_Menu_, ID_Browser_, ID_Valuator,
+    ID_Base_, ID_Widget_, ID_Menu_Manager_, ID_Menu_, ID_Browser_, ID_Valuator_,
     // non-widget
     ID_Function, ID_Code, ID_CodeBlock,
     ID_Decl, ID_DeclBlock, ID_Class,
@@ -182,29 +182,23 @@ public:
   int msgnum();
 
   // fake rtti:
+  /** Return 1 if the Type chn have children. */
   virtual int is_parent() const {return 0;}
+  /** Return 1 if the type is a widget or menu item. */
   virtual int is_widget() const {return 0;}
-  /// TODO: Misnamed: This is true if the widget is a button or a menu item with button functionality
+  /** Return 1 if the type is a widget but not a menu item. */
+  virtual int is_true_widget() const {return 0;}
+  /** Return 1 if a type behaves like a button (Fl_Button and Fl_Menu_Item and derived. */
   virtual int is_button() const {return 0;}
-  virtual int is_input() const {return 0;}
-  virtual int is_text_display() const {return 0;}
-  virtual int is_spinner() const {return 0;}
-  virtual int is_menu_item() const {return 0;}
-  virtual int is_menu_button() const {return 0;}
   virtual int is_group() const {return 0;}
-  virtual int is_tabs() const {return 0;}
-  virtual int is_scroll() const {return 0;}
-  virtual int is_flex() const {return 0;}
-  virtual int is_window() const {return 0;}
   virtual int is_code() const {return 0;}
   virtual int is_code_block() const {return 0;}
   virtual int is_decl_block() const {return 0;}
-  virtual int is_comment() const {return 0;}
   virtual int is_class() const {return 0;}
   virtual int is_public() const {return 1;}
 
   virtual ID id() const { return ID_Base_; }
-  virtual bool is_a(ID inID) { return (inID==ID_Base_); }
+  virtual bool is_a(ID inID) const { return (inID==ID_Base_); }
 
   const char* class_name(const int need_nest) const;
   const class Fl_Class_Type* is_in_class() const;

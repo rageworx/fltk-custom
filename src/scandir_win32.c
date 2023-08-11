@@ -1,7 +1,7 @@
 /*
  * Windows scandir function for the Fast Light Tool Kit (FLTK).
  *
- * Copyright 1998-2020 by Bill Spitzak and others.
+ * Copyright 1998-2023 by Bill Spitzak and others.
  *
  * This library is free software. Distribution and use rights are outlined in
  * the file "COPYING" which should have been included with this file.  If this
@@ -90,13 +90,11 @@ int fl_scandir(const char *dirname, struct dirent ***namelist,
 
   for (d = findIn; *d; d++) if (*d=='/') *d='\\';
   if (len==0) { strcpy(findIn, ".\\*"); }
-  if ((len==2)&&findIn[1]==':'&&isalpha(findIn[0])) { *d++ = '\\'; *d = 0; }
+  if ((len == 2) && (findIn[1] == ':') && isalpha(findIn[0])) { *d++ = '\\'; *d = 0; }
   if ((len==1)&& (d[-1]=='.')) { strcpy(findIn, ".\\*"); is_dir = 1; }
   if ((len>0) && (d[-1]=='\\')) { *d++ = '*'; *d = 0; is_dir = 1; }
   if ((len>1) && (d[-1]=='.') && (d[-2]=='\\')) { d[-1] = '*'; is_dir = 1; }
   { /* Create a block to limit the scope while we find the initial "wide" filename */
-     /* unsigned short * wbuf = (unsigned short*)malloc(sizeof(short) *(len + 10)); */
-     /* wbuf[fl_utf2unicode(findIn, strlen(findIn), wbuf)] = 0; */
         unsigned short *wbuf = NULL;
         unsigned wlen = fl_utf8toUtf16(findIn, (unsigned) strlen(findIn), NULL, 0); /* Pass NULL to query length */
         wlen++; /* add a little extra for termination etc. */
@@ -128,7 +126,6 @@ int fl_scandir(const char *dirname, struct dirent ***namelist,
     int dstlen = l * 5 + 1;
     selectDir=(struct dirent*)malloc(sizeof(struct dirent)+dstlen);
 
- /* l = fl_unicode2utf(findw.cFileName, l, selectDir->d_name); */
     l = fl_utf8fromwc(selectDir->d_name, dstlen, findw.cFileName, l);
 
     selectDir->d_name[l] = 0;
