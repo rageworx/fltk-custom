@@ -687,9 +687,9 @@ static void cb_3(Fl_Value_Input* o, void* v) {
 
 static void cb_4(Fl_Choice* o, void* v) {
   if (v == LOAD) {
-    o->value(layout->labelfont);
+    o->value(layout->labelfont+1);
   } else {
-    layout->labelfont = (int)o->value();
+    layout->labelfont = (int)o->value()-1;
   }
 }
 
@@ -703,9 +703,9 @@ static void cb_5(Fl_Value_Input* o, void* v) {
 
 static void cb_6(Fl_Choice* o, void* v) {
   if (v == LOAD) {
-    o->value(layout->textfont);
+    o->value(layout->textfont+1);
   } else {
-    layout->textfont = (int)o->value();
+    layout->textfont = (int)o->value()-1;
   }
 }
 
@@ -1476,7 +1476,7 @@ ped using octal notation `\\0123`. If this option is checked, Fluid will write\
           o->callback((Fl_Callback*)cb_3);
           o->align(Fl_Align(FL_ALIGN_TOP_LEFT));
         } // Fl_Value_Input* o
-        { Fl_Group* o = new Fl_Group(85, 464, 201, 21, "Label Font:");
+        { Fl_Group* o = new Fl_Group(85, 465, 201, 20, "Label Font:");
           o->labelsize(11);
           o->callback((Fl_Callback*)propagate_load);
           o->align(Fl_Align(FL_ALIGN_LEFT));
@@ -1489,12 +1489,13 @@ ped using octal notation `\\0123`. If this option is checked, Fluid will write\
             o->textsize(11);
             o->callback((Fl_Callback*)cb_4);
             Fl_Group::current()->resizable(o);
-            o->menu(fontmenu);
+            o->menu(fontmenu_w_default);
           } // Fl_Choice* o
           { Fl_Value_Input* o = new Fl_Value_Input(235, 465, 50, 20);
             o->tooltip("The size of the label text.");
             o->labelsize(11);
-            o->maximum(100);
+            o->minimum(1);
+            o->maximum(1000);
             o->step(1);
             o->value(14);
             o->textsize(11);
@@ -1502,6 +1503,10 @@ ped using octal notation `\\0123`. If this option is checked, Fluid will write\
           } // Fl_Value_Input* o
           o->end();
         } // Fl_Group* o
+        { Fl_Group* o = new Fl_Group(85, 490, 200, 20, "Text Font:");
+          o->labelsize(11);
+          o->callback((Fl_Callback*)propagate_load);
+          o->align(Fl_Align(FL_ALIGN_LEFT));
         { Fl_Choice* o = new Fl_Choice(85, 490, 150, 20);
           o->tooltip("The value text style.");
           o->box(FL_DOWN_BOX);
@@ -1510,17 +1515,19 @@ ped using octal notation `\\0123`. If this option is checked, Fluid will write\
           o->labelsize(11);
           o->textsize(11);
           o->callback((Fl_Callback*)cb_6);
-          o->menu(fontmenu);
+            o->menu(fontmenu_w_default);
         } // Fl_Choice* o
         { Fl_Value_Input* o = new Fl_Value_Input(235, 490, 50, 20);
           o->tooltip("The value text size.");
           o->labelsize(11);
-          o->maximum(100);
+            o->maximum(1000);
           o->step(1);
           o->value(14);
           o->textsize(11);
           o->callback((Fl_Callback*)cb_7);
         } // Fl_Value_Input* o
+          o->end();
+        } // Fl_Group* o
         o->image()->scale(36, 24);
         w_settings_layout_tab->end();
       } // Fl_Group* w_settings_layout_tab
@@ -1690,6 +1697,10 @@ Fl_Double_Window *shell_run_window=(Fl_Double_Window *)0;
 
 Fl_Simple_Terminal *shell_run_terminal=(Fl_Simple_Terminal *)0;
 
+static void cb_Clear(Fl_Button*, void*) {
+  shell_run_terminal->clear();
+}
+
 Fl_Return_Button *shell_run_button=(Fl_Return_Button *)0;
 
 static void cb_shell_run_button(Fl_Return_Button*, void*) {
@@ -1706,9 +1717,13 @@ Fl_Double_Window* make_shell_window() {
     shell_run_window->align(Fl_Align(FL_ALIGN_CLIP|FL_ALIGN_INSIDE));
     { shell_run_terminal = new Fl_Simple_Terminal(10, 10, 535, 375);
       Fl_Group::current()->resizable(shell_run_terminal);
+      shell_run_terminal->ansi(1);
     } // Fl_Simple_Terminal* shell_run_terminal
     { Fl_Group* o = new Fl_Group(10, 395, 535, 25);
-      { Fl_Box* o = new Fl_Box(10, 395, 435, 25);
+      { Fl_Button* o = new Fl_Button(10, 395, 94, 25, "Clear");
+        o->callback((Fl_Callback*)cb_Clear);
+      } // Fl_Button* o
+      { Fl_Box* o = new Fl_Box(104, 395, 341, 25);
         o->hide();
         Fl_Group::current()->resizable(o);
       } // Fl_Box* o

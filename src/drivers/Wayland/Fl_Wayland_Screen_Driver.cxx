@@ -22,6 +22,7 @@
 #include "xdg-shell-client-protocol.h"
 #include "../Posix/Fl_Posix_System_Driver.H"
 #include <FL/Fl.H>
+#include <FL/Fl_Image_Surface.H>
 #include <FL/platform.H>
 #include <FL/fl_ask.H>
 #include <FL/filename.H>
@@ -51,16 +52,16 @@ struct pointer_output {
   struct wl_list link;
 };
 
-/* Implementation note about support of 3 Wayland compositors: Mutter, Weston, KDE.
+/* Implementation note about support of 3 Wayland compositors: Mutter, Weston, KWin.
 
 - About CSD and SSD :
  * Mutter and Weston use CSD (client-side decoration) which means that libdecor.so draws all window
  titlebars and responds to resize, minimization and maximization events.
- * KDE uses SSD (server-side decoration) which means the OS draws titlebars according to its own rules
+ * KWin uses SSD (server-side decoration) which means the OS draws titlebars according to its own rules
  and triggers resize, minimization and maximization events.
 
 - Function registry_handle_global() runs within fl_open_display() and sets public static variable
- Fl_Wayland_Screen_Driver::compositor to either Fl_Wayland_Screen_Driver::MUTTER, ::WESTON, or ::KDE.
+ Fl_Wayland_Screen_Driver::compositor to either Fl_Wayland_Screen_Driver::MUTTER, ::WESTON, or ::KWIN.
 
 - Specific operations for WESTON:
  * When a libdecor-framed window is minimized under Weston, the frame remains on display. To avoid
@@ -85,7 +86,7 @@ struct pointer_output {
 
  - Support of Fl_Window::border(int) :
  FLTK uses libdecor_frame_set_visibility() to show or hide a toplevel window's frame. This doesn't work
- with KDE which uses Server-Side Decoration. In that case, FLTK hides and re-shows the window to toggle
+ with KWin which uses Server-Side Decoration. In that case, FLTK hides and re-shows the window to toggle
  between presence and absence of a window's frame.
 */
 
@@ -1107,8 +1108,8 @@ static void registry_handle_global(void *user_data, struct wl_registry *wl_regis
     Fl_Wayland_Screen_Driver::compositor = Fl_Wayland_Screen_Driver::WESTON;
     //fprintf(stderr, "Running the Weston compositor\n");
   } else if (strcmp(interface, "org_kde_plasma_shell") == 0) {
-    Fl_Wayland_Screen_Driver::compositor = Fl_Wayland_Screen_Driver::KDE;
-    //fprintf(stderr, "Running the KDE compositor\n");
+    Fl_Wayland_Screen_Driver::compositor = Fl_Wayland_Screen_Driver::KWIN;
+    //fprintf(stderr, "Running the KWin compositor\n");
   } else if (strncmp(interface, "zowl_mach_ipc", 13) == 0) {
     Fl_Wayland_Screen_Driver::compositor = Fl_Wayland_Screen_Driver::OWL;
     //fprintf(stderr, "Running the Owl compositor\n");
@@ -1169,8 +1170,15 @@ static void wayland_socket_callback(int fd, struct wl_display *display) {
   struct pollfd fds = (struct pollfd) { fd, POLLIN, 0 };
   do {
     if (wl_display_dispatch(display) == -1) {
-      Fl::fatal("Fatal error while communicating with the Wayland server: %s",
-                strerror(errno));
+      int err = wl_display_get_error(display);
+      if (err == EPROTO) {
+        const struct wl_interface *interface;
+        int code = wl_display_get_protocol_error(display, &interface, NULL);
+        Fl::fatal("Fatal error no %d in Wayland protocol: %s", code, interface->name);
+      } else {
+        Fl::fatal("Fatal error while communicating with the Wayland server: %s",
+                  strerror(errno));
+      }
     }
   }
   while (poll(&fds, 1, 0) > 0);
@@ -1487,7 +1495,13 @@ void Fl_Wayland_Screen_Driver::get_system_colors()
 Fl_RGB_Image *Fl_Wayland_Screen_Driver::read_win_rectangle(int X, int Y, int w, int h, Fl_Window *win,
                                                            bool ignore, bool *p_ignore) {
   struct wld_window* xid = win ? fl_wl_xid(win) : NULL;
-  struct fl_wld_buffer *buffer = win ? xid->buffer : (struct fl_wld_buffer *)Fl_Surface_Device::surface()->driver()->gc();
+  if (win && (!xid || !xid->buffer)) return NULL;
+  struct fl_wld_draw_buffer *buffer;
+  if (win) buffer = &xid->buffer->draw_buffer;
+  else {
+    Fl_Image_Surface_Driver *dr = (Fl_Image_Surface_Driver*)Fl_Surface_Device::surface();
+    buffer = (struct fl_wld_draw_buffer *)dr->image_surface()->offscreen();
+  }
   float s = win ?
     Fl_Wayland_Window_Driver::driver(win)->wld_scale() * scale(win->screen_num()) :
                   Fl_Surface_Device::surface()->driver()->scale();
@@ -1504,7 +1518,7 @@ Fl_RGB_Image *Fl_Wayland_Screen_Driver::read_win_rectangle(int X, int Y, int w, 
   uchar *data = new uchar[ws * hs * 3];
   uchar *p = data, *q;
   for (int j = 0; j < hs; j++) {
-    q = buffer->draw_buffer + (j+Ys) * buffer->stride + 4 * Xs;
+    q = buffer->buffer + (j+Ys) * buffer->stride + 4 * Xs;
     for (int i = 0; i < ws; i++) {
       *p++ = *(q+2); // R
       *p++ = *(q+1); // G
@@ -1520,7 +1534,7 @@ Fl_RGB_Image *Fl_Wayland_Screen_Driver::read_win_rectangle(int X, int Y, int w, 
 
 void Fl_Wayland_Screen_Driver::offscreen_size(Fl_Offscreen off_, int &width, int &height)
 {
-  struct fl_wld_buffer *off = (struct fl_wld_buffer *)off_;
+  struct fl_wld_draw_buffer *off = (struct fl_wld_draw_buffer *)off_;
   width = off->width;
   height = off->data_size / off->stride;
 }
@@ -1678,6 +1692,21 @@ void *Fl_Wayland_Screen_Driver::control_maximize_button(void *data) {
     }
     return NULL;
   }
+}
+
+
+int Fl_Wayland_Screen_Driver::poll_or_select_with_delay(double time_to_wait) {
+  if (wl_display_dispatch_pending(wl_display) > 0) return 1;
+  return Fl_Unix_Screen_Driver::poll_or_select_with_delay(time_to_wait);
+}
+
+
+// like Fl_Wayland_Screen_Driver::poll_or_select_with_delay(0.0) except no callbacks are done:
+int Fl_Wayland_Screen_Driver::poll_or_select() {
+  int ret = wl_display_prepare_read(wl_display);
+  if (ret == 0) wl_display_cancel_read(wl_display);
+  else return 1;
+  return Fl_Unix_Screen_Driver::poll_or_select();
 }
 
 
