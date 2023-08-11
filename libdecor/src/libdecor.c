@@ -1421,9 +1421,10 @@ check_symbol_conflicts(const struct libdecor_plugin_description *plugin_descript
 			void *libsym = dlsym(lib, *symbol);
 			if (!dlerror() && libsym != sym) {
 				fprintf(stderr, "Plugin \"%s\" uses conflicting symbol \"%s\".\n",
-					plugin_description->description, *symbol);
+				plugin_description->description, *symbol);
 				return false;
 			}
+		}
 		}
 
 		symbol++;

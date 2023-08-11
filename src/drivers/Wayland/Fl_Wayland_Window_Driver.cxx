@@ -444,7 +444,7 @@ void Fl_Wayland_Window_Driver::hide() {
       wld_win->subsurface = NULL;
     }
     if (wld_win->kind == DECORATED) {
-      libdecor_frame_unref(wld_win->frame);
+      if (wld_win->frame) libdecor_frame_unref(wld_win->frame);
       wld_win->frame = NULL;
       wld_win->xdg_surface = NULL;
     } else {
@@ -887,8 +887,11 @@ void Fl_Wayland_Window_Driver::wait_for_expose()
 
 
 static void delayed_close(void *data) {
+  if (data) {
   Fl::remove_check(delayed_close, data);
   Fl::handle(FL_CLOSE, (Fl_Window*)data);
+    Fl::add_timeout(0.01, delayed_close, NULL); // necessary for closing with app menu
+  }
 }
 
 
