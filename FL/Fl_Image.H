@@ -35,9 +35,19 @@ class Fl_RGB_Image;
 */
 enum Fl_RGB_Scaling {
   FL_RGB_SCALING_NEAREST = 0, ///< default RGB image scaling algorithm
+#ifndef FLTK_EXT_VERSION
   FL_RGB_SCALING_BILINEAR     ///< more accurate, but slower RGB image scaling algorithm
+#else
+  FL_RGB_SCALING_BILINEAR = 1,
+  FL_RGB_SCALING_USER
+#endif /// of FLTK_EXT_VERSION    
 };
 
+#ifdef FLTK_EXT_VERSION
+/** User scaling callback type definition for FL_RGB_SCALING_USER */
+typedef void (Fl_Image_UserScale)(Fl_RGB_Image*, int, int, int, int, Fl_RGB_Image**);
+typedef Fl_Image_UserScale* Fl_Image_UserScale_p; // needed for BORLAND
+#endif /// of FLTK_EXT_VERSION    
 
 /**
   Base class for image caching, scaling and drawing.
@@ -71,6 +81,9 @@ private:
   const char * const *data_;
   static Fl_RGB_Scaling RGB_scaling_; // method used when copying RGB images
   static Fl_RGB_Scaling scaling_algorithm_; // method used to rescale RGB source images before drawing
+#ifdef FLTK_EXT_VERSION
+  static Fl_Image_UserScale_p user_scaling_; /// user scaling callback method.
+#endif /// of FLTK_EXT_VERSION
   // Forbid use of copy constructor and assign operator
   Fl_Image & operator=(const Fl_Image &);
   Fl_Image(const Fl_Image &);
@@ -317,7 +330,20 @@ public:
    This function controls what method is used when the image to be resized is an Fl_RGB_Image.
    \version 1.4
    */
+#ifndef FLTK_EXT_VERSION
   static void scaling_algorithm(Fl_RGB_Scaling algorithm) {scaling_algorithm_ = algorithm; }
+#else 
+  /** In version of FLTK-custom provides FL_RGB_SCALING_USER with userscale callback method,
+   to better image quality. userscale only needed when algorithm set to FL_RGB_SCALING_USER.
+   */
+  static void scaling_algorithm(Fl_RGB_Scaling algorithm, Fl_Image_UserScale* userscale = NULL) 
+  {
+      scaling_algorithm_ = algorithm;
+      user_scaling_ = userscale;
+  }
+  
+  static Fl_Image_UserScale* user_scaling_algorithm() { return user_scaling_; }
+#endif /// of FLTK_EXT_VERSION    
   /** Gets what algorithm is used when resizing a source image to draw it. */
   static Fl_RGB_Scaling scaling_algorithm() {return scaling_algorithm_;}
   static bool register_images_done;
