@@ -288,14 +288,14 @@ void Fl_Input_::setfont() const {
 }
 
 /**
-  Draws the text in the passed bounding box.
+ Draws the text in the passed bounding box.
 
-  If <tt>damage() & FL_DAMAGE_ALL</tt> is true, this assumes the
-  area has already been erased to color(). Otherwise it does
-  minimal update and erases the area itself.
+ If <tt>damage() & FL_DAMAGE_ALL</tt> is true, this assumes the
+ area has already been erased to color(). Otherwise it does
+ minimal update and erases the area itself.
 
-  \param X, Y, W, H area that must be redrawn
-*/
+ \param X, Y, W, H area that must be redrawn
+ */
 void Fl_Input_::drawtext(int X, int Y, int W, int H) {
   drawtext(X, Y, W, H, (Fl::focus()==this));
 }
@@ -510,8 +510,8 @@ void Fl_Input_::drawtext(int X, int Y, int W, int H, bool draw_active) {
 
   fl_pop_clip();
   if (draw_active) {
-       fl_set_spot(textfont(), textsize(),
-               (int)xpos+curx, Y+ypos_cur-fl_descent(), W, H, window()); //fix issue #270
+    fl_set_spot(textfont(), textsize(),
+                (int)xpos+curx, Y+ypos_cur-fl_descent(), W, H, window()); //fix issue #270
   }
 }
 

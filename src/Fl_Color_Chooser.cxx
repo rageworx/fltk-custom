@@ -429,9 +429,9 @@ int Flcc_ValueBox::handle_key(int key) {
 void Fl_Color_Chooser::rgb_cb(Fl_Widget* o, void*) {
   Fl_Color_Chooser* c = (Fl_Color_Chooser*)(o->parent());
   // clamp input values to valid ranges (issue #749, part 1)
-  double R = c->rvalue.clamp( c->rvalue.value() );
-  double G = c->gvalue.clamp( c->gvalue.value() );
-  double B = c->bvalue.clamp( c->bvalue.value() );
+  double R = c->rvalue.clamp(c->rvalue.value());
+  double G = c->gvalue.clamp(c->gvalue.value());
+  double B = c->bvalue.clamp(c->bvalue.value());
   // update input values if they were clamped (#749, part 2)
   c->rvalue.value(R);
   c->gvalue.value(G);
