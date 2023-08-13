@@ -49,8 +49,8 @@ Fl_Shortcut_Button::Fl_Shortcut_Button(int X,int Y,int W,int H, const char* l)
   default_set_(false),
   handle_default_button_(false),
   pre_esc_(0),
-  shortcut_value(0),
-  default_shortcut_(0)
+  default_shortcut_(0),
+  shortcut_value(0)
 {
   box(FL_DOWN_BOX);
   selection_color(FL_SELECTION_COLOR);
@@ -138,7 +138,7 @@ void Fl_Shortcut_Button::draw() {
     fl_draw(text, X, Y, W-H, H, align() | FL_ALIGN_INSIDE);
     fl_draw_symbol("@-29undo", X+W-H, Y, H, H, textcol);
   } else {
-  fl_draw(text, X, Y, W, H, align() | FL_ALIGN_INSIDE);
+    fl_draw(text, X, Y, W, H, align() | FL_ALIGN_INSIDE);
   }
   if (Fl::focus() == this) draw_focus();
 }

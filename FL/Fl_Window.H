@@ -159,7 +159,7 @@ public:
   */
     Fl_Window(int w, int h, const char *title = 0);
   /** Creates a window from the given position (x, y), size (w, h) and title.
-
+   
    On a multi-screen system, the values computed by
    Fl::screen_xywh(int &X, int &Y, int &W, int &H, int n) can be used to
    discover the coordinates of the area of screen \#n.

@@ -13,7 +13,7 @@ fi
 DBGOPT=
 
 if [[ "$1"=="debug" ]];then
-    DBGOPT+="--enable-dbug"
+    DBGOPT+="--enable-debug"
 fi
 
 EFLAGS="--enable-localjpeg --enable-localzlib --enable-localpng"

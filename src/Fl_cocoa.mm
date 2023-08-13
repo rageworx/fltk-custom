@@ -95,9 +95,9 @@ static int im_enabled = -1;
 // OS version-dependent pasteboard type names.
 // Some, but not all, versions of the 10.6 SDK for PPC lack the 3 symbols below (PR #761)
 #if (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_6) || defined(__POWERPC__)
-#define NSPasteboardTypeTIFF @"public.tiff"
-#define NSPasteboardTypePDF @"com.adobe.pdf"
-#define NSPasteboardTypeString @"public.utf8-plain-text"
+#  define NSPasteboardTypeTIFF @"public.tiff"
+#  define NSPasteboardTypePDF @"com.adobe.pdf"
+#  define NSPasteboardTypeString @"public.utf8-plain-text"
 #endif
 static NSString *TIFF_pasteboard_type = (fl_mac_os_version >= 100600 ? NSPasteboardTypeTIFF : NSTIFFPboardType);
 static NSString *PDF_pasteboard_type = (fl_mac_os_version >= 100600 ? NSPasteboardTypePDF : NSPDFPboardType);
