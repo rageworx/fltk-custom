@@ -177,7 +177,7 @@
 /*
   FLTK_EXT_VERSION is for identifying customized version for
   rageworx's github repository.
-  --- currently 1.4.0.9
+  --- currently 1.4.0.10
 */
 #define FLTK_EXT_VERSION 10
 #define FL_EXT_VERSIN    FLTK_EXT_VERSION

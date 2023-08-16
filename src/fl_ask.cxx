@@ -561,8 +561,7 @@ Fl_String fl_password_str(int &ret, int maxchar, const char *fmt, const char *de
 Fl_String fl_password_str(int maxchar, const char *fmt, const char *defstr, ...) {
 
   Fl_Message msg("?");
-  if (maxchar < 0)
-    maxchar = 0;
+  if (maxchar < 0) maxchar = 0;
 
 #ifdef FLTK_EXT_VERSION
   _fl_ask_applycolor( &msg );

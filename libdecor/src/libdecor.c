@@ -1425,7 +1425,6 @@ check_symbol_conflicts(const struct libdecor_plugin_description *plugin_descript
 				return false;
 			}
 		}
-		}
 
 		symbol++;
 	}
