@@ -18,6 +18,7 @@
 #include "Fl_Wayland_Window_Driver.H"
 #include "Fl_Wayland_Screen_Driver.H"
 #include "Fl_Wayland_Graphics_Driver.H"
+#include "Fl_Wayland_Image_Surface_Driver.H"
 #include <FL/filename.H>
 #include <wayland-cursor.h>
 #include "../../../libdecor/src/libdecor.h"
@@ -76,7 +77,9 @@ void Fl_Wayland_Window_Driver::delete_cursor_(struct wld_window *xid, bool delet
   if (custom) {
     struct wl_cursor *wl_cursor = custom->wl_cursor;
     struct cursor_image *new_image = (struct cursor_image*)wl_cursor->images[0];
-    struct fl_wld_buffer *offscreen = (struct fl_wld_buffer *)wl_buffer_get_user_data(new_image->buffer);
+    struct Fl_Wayland_Graphics_Driver::wld_buffer *offscreen =
+      (struct Fl_Wayland_Graphics_Driver::wld_buffer *)
+        wl_buffer_get_user_data(new_image->buffer);
     struct wld_window fake_xid;
     fake_xid.buffer = offscreen;
     Fl_Wayland_Graphics_Driver::buffer_release(&fake_xid);
@@ -575,7 +578,7 @@ int Fl_Wayland_Window_Driver::scroll(int src_x, int src_y, int src_w, int src_h,
                                  void (*draw_area)(void*, int,int,int,int), void* data)
 {
   struct wld_window * xid = fl_wl_xid(pWindow);
-  struct fl_wld_buffer *buffer = xid->buffer;
+  struct Fl_Wayland_Graphics_Driver::wld_buffer *buffer = xid->buffer;
   float s = wld_scale() * fl_graphics_driver->scale();
   if (s != 1) {
     src_x = src_x * s;
@@ -1620,7 +1623,9 @@ int Fl_Wayland_Window_Driver::set_cursor_4args(const Fl_RGB_Image *rgb, int hotx
   new_image->image.delay = 0;
   new_image->offset = 0;
   //create a Wayland buffer and have it used as an image of the new cursor
-  struct fl_wld_buffer *offscreen = Fl_Wayland_Graphics_Driver::create_shm_buffer(new_image->image.width, new_image->image.height);
+  struct Fl_Wayland_Graphics_Driver::wld_buffer *offscreen;
+  Fl_Image_Surface *img_surf = Fl_Wayland_Graphics_Driver::custom_offscreen(
+      new_image->image.width, new_image->image.height, &offscreen);
   new_image->buffer = offscreen->wl_buffer;
   wl_buffer_set_user_data(new_image->buffer, offscreen);
   new_cursor->image_count = 1;
@@ -1628,11 +1633,9 @@ int Fl_Wayland_Window_Driver::set_cursor_4args(const Fl_RGB_Image *rgb, int hotx
   new_cursor->images[0] = (struct wl_cursor_image*)new_image;
   new_cursor->name = strdup("custom cursor");
   // draw the rgb image to the cursor's drawing buffer
-  Fl_Image_Surface *img_surf = new Fl_Image_Surface(new_image->image.width, new_image->image.height, 0, (Fl_Offscreen)&offscreen->draw_buffer);
   Fl_Surface_Device::push_current(img_surf);
   Fl_Wayland_Graphics_Driver *driver = (Fl_Wayland_Graphics_Driver*)img_surf->driver();
   cairo_scale(driver->cr(), scale, scale);
-  memset(offscreen->draw_buffer.buffer, 0, offscreen->draw_buffer.data_size);
   ((Fl_RGB_Image*)rgb)->draw(0, 0);
   Fl_Surface_Device::pop_current();
   delete img_surf;
@@ -1673,7 +1676,9 @@ void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
   if (fl_win && fl_win->kind == DECORATED && !xdg_toplevel()) {
     pWindow->wait_for_expose();
   }
-  if (!pWindow->parent()) X = Y = 0; // toplevel windows must have origin at 0,0
+  // toplevel, non-popup windows must have origin at 0,0
+  if (!pWindow->parent() &&
+      !(pWindow->menu_window() || pWindow->tooltip_window())) X = Y = 0;
   int is_a_move = (X != x() || Y != y());
   bool true_rescale = Fl_Window::is_a_rescale();
   if (fl_win && fl_win->buffer) {
