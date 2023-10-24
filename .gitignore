@@ -95,3 +95,9 @@ src/xdg-shell-protocol.c
 /out/build/x64-Debug
 /CMakeSettings.json
 /CppProperties.json
+
+# Others
+fltk-options/fltk-options
+fltk-options/fltk-options.app/
+fluid/fluid
+fluid/fluid.app/
