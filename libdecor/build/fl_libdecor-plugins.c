@@ -53,8 +53,6 @@ struct buffer { // identical in libdecor-cairo.c and libdecor-gtk.c
 
 #else // !USE_SYSTEM_LIBDECOR
 
-#  include "xdg-decoration-client-protocol.h"
-
 const struct libdecor_plugin_description *fl_libdecor_plugin_description = NULL;
 
 #  ifdef HAVE_GTK
@@ -217,7 +215,7 @@ struct libdecor_frame_gtk {
 
 
 static unsigned char *gtk_titlebar_buffer(struct libdecor_frame *frame,
-                                                 int *width, int *height, int *stride)
+                                          int *width, int *height, int *stride)
 {
   struct libdecor_frame_gtk *lfg = (struct libdecor_frame_gtk *)frame;
 #if USE_SYSTEM_LIBDECOR || !HAVE_GTK
@@ -274,8 +272,8 @@ static const char *get_libdecor_plugin_description(struct libdecor_frame *frame)
   if (Y == 0) {
     return "Server-Side Decoration";
   }
-   if (!plugin_description) {
- #if USE_SYSTEM_LIBDECOR
+  if (!plugin_description) {
+#if USE_SYSTEM_LIBDECOR
      char fname[PATH_MAX];
      const char *dir = getenv("LIBDECOR_PLUGIN_DIR");
      if (!dir) dir = LIBDECOR_PLUGIN_DIR;

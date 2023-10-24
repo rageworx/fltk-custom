@@ -41,6 +41,7 @@ set (CPPFILES
   Fl_File_Input.cxx
   Fl_Flex.cxx
   Fl_Graphics_Driver.cxx
+  Fl_Grid.cxx
   Fl_Group.cxx
   Fl_Help_View.cxx
   Fl_Image.cxx
@@ -581,8 +582,6 @@ if (WIN32)
   list (APPEND STATIC_FILES fl_call_main.c)
 endif (WIN32)
 
-add_definitions(-DFL_LIBRARY)
-
 #######################################################################
 
 # prepare optional libs for shared and static FLTK libraries
@@ -834,19 +833,19 @@ if (OPTION_BUILD_SHARED_LIBS AND MSVC)
   target_link_libraries (fltk_SHARED ${OPTIONAL_LIBS})
 
   if (FLTK_USE_BUILTIN_JPEG)
-    target_link_libraries (fltk_SHARED fltk_jpeg_SHARED)
+    target_link_libraries (fltk_SHARED fltk_jpeg)
   else()
     target_link_libraries (fltk_SHARED ${FLTK_JPEG_LIBRARIES})
   endif ()
 
   if (FLTK_USE_BUILTIN_PNG)
-    target_link_libraries (fltk_SHARED fltk_png_SHARED)
+    target_link_libraries (fltk_SHARED fltk_png)
   else()
     target_link_libraries (fltk_SHARED ${FLTK_PNG_LIBRARIES})
   endif ()
 
   if (FLTK_USE_BUILTIN_ZLIB)
-    target_link_libraries (fltk_SHARED fltk_z_SHARED)
+    target_link_libraries (fltk_SHARED fltk_z)
   else()
     target_link_libraries (fltk_SHARED ${FLTK_ZLIB_LIBRARIES})
   endif ()

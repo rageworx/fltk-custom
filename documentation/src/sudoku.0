@@ -1,0 +1,40 @@
+sudoku(6)                                                            sudoku(6)
+
+
+
+NNAAMMEE
+       sudoku − the fltk sudoku game
+
+
+SSYYNNOOPPSSIISS
+       _S_u_d_o_k_u  is  a  FLTK‐based  version of the game of Sudoku.  Sudoku (pro‐
+       nounced soo‐dough‐coo with the emphasis on the  first  syllable)  is  a
+       simple  number‐based  puzzle/game  played on a 9x9 grid that is divided
+       into 3x3 subgrids. The goal is to enter a number from 1 to  9  in  each
+       cell so that each number appears only once in each column and row.
+
+       At the start of a new game, Sudoku fills in a random selection of cells
+       for you ‐ the number of cells depends on the difficulty level you  use.
+       Click  in  any  of  the  empty cells or use the arrow keys to highlight
+       individual cells and press a number from 1 to 9 to fill in the cell. To
+       clear  a cell, press 0, Delete, or Backspace. As you complete each sub‐
+       grid, correct subgrids are highlighted in green. When you have success‐
+       fully  completed  all  subgrids, the entire puzzle is highlighted until
+       you start a new game.
+
+       As you work to complete the puzzle, you can display possible  solutions
+       inside  each  cell by holding the Shift key and pressing each number in
+       turn. Repeat the process to remove individual numbers, or press a  num‐
+       ber  without  the  Shift  key to replace them with the actual number to
+       use.
+
+SSEEEE AALLSSOO
+       fltk(3)
+       FLTK Web Site, https://www.fltk.org/
+
+AAUUTTHHOORR
+       Michael R Sweet.
+
+
+
+15 January 2006                   FLTK Sudoku                        sudoku(6)

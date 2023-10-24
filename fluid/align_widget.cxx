@@ -1,7 +1,7 @@
 //
 // Alignment code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2010 by Bill Spitzak and others.
+// Copyright 1998-2023 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -24,8 +24,8 @@
 #include <FL/Fl_Window.H>
 
 /**
- the first behaviour always uses the first selected widget as a reference
- the second behaviour uses the largest widget (most extreme positions) as
+ the first behavior always uses the first selected widget as a reference
+ the second behavior uses the largest widget (most extreme positions) as
  a reference.
  */
 #define BREAK_ON_FIRST break
@@ -60,7 +60,7 @@ void align_widget_cb(Fl_Widget*, long how)
           }
           Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
           if (o->next && o->next->level > o->level && !o->next->selected &&
-              !o->is_a(Fl_Type::ID_Menu_Manager_)) {
+              !o->is_a(ID_Menu_Manager_)) {
             // When resizing a group, make sure we also move the children...
             ((igroup *)w)->full_resize(left, w->y(), w->w(), w->h());
           } else {
@@ -95,7 +95,7 @@ void align_widget_cb(Fl_Widget*, long how)
           }
           Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
           if (o->next && o->next->level > o->level && !o->next->selected &&
-              !o->is_a(Fl_Type::ID_Menu_Manager_)) {
+              !o->is_a(ID_Menu_Manager_)) {
             // When resizing a group, make sure we also move the children...
             ((igroup *)w)->full_resize((center2-w->w())/2, w->y(), w->w(), w->h());
           } else {
@@ -127,7 +127,7 @@ void align_widget_cb(Fl_Widget*, long how)
           }
           Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
           if (o->next && o->next->level > o->level && !o->next->selected &&
-              !o->is_a(Fl_Type::ID_Menu_Manager_)) {
+              !o->is_a(ID_Menu_Manager_)) {
             // When resizing a group, make sure we also move the children...
             ((igroup *)w)->full_resize(right-w->w(), w->y(), w->w(), w->h());
           } else {
@@ -158,7 +158,7 @@ void align_widget_cb(Fl_Widget*, long how)
           }
           Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
           if (o->next && o->next->level > o->level && !o->next->selected &&
-              !o->is_a(Fl_Type::ID_Menu_Manager_)) {
+              !o->is_a(ID_Menu_Manager_)) {
             // When resizing a group, make sure we also move the children...
             ((igroup *)w)->full_resize(w->x(), top, w->w(), w->h());
           } else {
@@ -193,7 +193,7 @@ void align_widget_cb(Fl_Widget*, long how)
           }
           Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
           if (o->next && o->next->level > o->level && !o->next->selected &&
-              !o->is_a(Fl_Type::ID_Menu_Manager_)) {
+              !o->is_a(ID_Menu_Manager_)) {
             // When resizing a group, make sure we also move the children...
             ((igroup *)w)->full_resize(w->x(), (center2-w->h())/2, w->w(), w->h());
           } else {
@@ -225,7 +225,7 @@ void align_widget_cb(Fl_Widget*, long how)
           }
           Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
           if (o->next && o->next->level > o->level && !o->next->selected &&
-              !o->is_a(Fl_Type::ID_Menu_Manager_)) {
+              !o->is_a(ID_Menu_Manager_)) {
             // When resizing a group, make sure we also move the children...
             ((igroup *)w)->full_resize( w->x(), bot-w->h(), w->w(), w->h());
           } else {
@@ -236,7 +236,7 @@ void align_widget_cb(Fl_Widget*, long how)
           if (w->window()) w->window()->redraw();
         }
     break;
-  //---- space evently
+  //---- space evenly
   case 20: // space evenly across
     left = max; right = min; wdt = 0, n = 0;
     for (o = Fl_Type::first; o; o = o->next)
@@ -265,7 +265,7 @@ void align_widget_cb(Fl_Widget*, long how)
           }
           Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
           if (o->next && o->next->level > o->level && !o->next->selected &&
-              !o->is_a(Fl_Type::ID_Menu_Manager_)) {
+              !o->is_a(ID_Menu_Manager_)) {
             // When resizing a group, make sure we also move the children...
             ((igroup *)w)->full_resize(left+wsum+wdt*cnt/n, w->y(), w->w(), w->h());
           } else {
@@ -307,7 +307,7 @@ void align_widget_cb(Fl_Widget*, long how)
           }
           Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
           if (o->next && o->next->level > o->level && !o->next->selected &&
-              !o->is_a(Fl_Type::ID_Menu_Manager_)) {
+              !o->is_a(ID_Menu_Manager_)) {
             // When resizing a group, make sure we also move the children...
             ((igroup *)w)->full_resize(w->x(), top+hsum+hgt*cnt/n, w->w(), w->h());
           } else {
@@ -342,7 +342,7 @@ void align_widget_cb(Fl_Widget*, long how)
           }
           Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
           if (o->next && o->next->level > o->level && !o->next->selected &&
-              !o->is_a(Fl_Type::ID_Menu_Manager_)) {
+              !o->is_a(ID_Menu_Manager_)) {
             // When resizing a group, make sure we also move the children...
             ((igroup *)w)->full_resize(w->x(), w->y(), wdt, w->h());
           } else {
@@ -373,7 +373,7 @@ void align_widget_cb(Fl_Widget*, long how)
           }
           Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
           if (o->next && o->next->level > o->level && !o->next->selected &&
-              !o->is_a(Fl_Type::ID_Menu_Manager_)) {
+              !o->is_a(ID_Menu_Manager_)) {
             // When resizing a group, make sure we also move the children...
             ((igroup *)w)->full_resize( w->x(), w->y(), w->w(), hgt);
           } else {
@@ -406,7 +406,7 @@ void align_widget_cb(Fl_Widget*, long how)
           }
           Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
           if (o->next && o->next->level > o->level && !o->next->selected &&
-              !o->is_a(Fl_Type::ID_Menu_Manager_)) {
+              !o->is_a(ID_Menu_Manager_)) {
             // When resizing a group, make sure we also move the children...
             ((igroup *)w)->full_resize( w->x(), w->y(), wdt, hgt);
           } else {
@@ -434,7 +434,7 @@ void align_widget_cb(Fl_Widget*, long how)
         else center2 = 2*p->x()+p->w();
 
         if (o->next && o->next->level > o->level && !o->next->selected &&
-            !o->is_a(Fl_Type::ID_Menu_Manager_)) {
+            !o->is_a(ID_Menu_Manager_)) {
           // When resizing a group, make sure we also move the children...
           ((igroup *)w)->full_resize((center2-w->w())/2, w->y(), w->w(), w->h());
         } else {
@@ -461,7 +461,7 @@ void align_widget_cb(Fl_Widget*, long how)
         else center2 = 2*p->y()+p->h();
 
         if (o->next && o->next->level > o->level && !o->next->selected &&
-            !o->is_a(Fl_Type::ID_Menu_Manager_)) {
+            !o->is_a(ID_Menu_Manager_)) {
           // When resizing a group, make sure we also move the children...
           ((igroup *)w)->full_resize(w->x(), (center2-w->h())/2, w->w(), w->h());
         } else {

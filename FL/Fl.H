@@ -471,7 +471,7 @@ public:
   static int  has_check(Fl_Timeout_Handler, void* = 0);
   static void remove_check(Fl_Timeout_Handler, void* = 0);
 
-  static Fl_Timestamp now();
+  static Fl_Timestamp now(double offset = 0);
   static double seconds_since(Fl_Timestamp& then);
   static double seconds_between(Fl_Timestamp& back, Fl_Timestamp& further_back);
   static long ticks_since(Fl_Timestamp& then);
@@ -1162,7 +1162,7 @@ public:
     that the normal one is first, followed by bold, italic, and bold
     italic.
 
-    The only argument to this function is somehat obsolete since FLTK and most
+    The only argument to this function is somewhat obsolete since FLTK and most
     underlying operating systems move to support Unicode. For completeness,
     following is the original documentation and a few updates:
 

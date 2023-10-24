@@ -21,8 +21,12 @@
 #include <FL/Fl.H>
 #include "custom_widgets.h"
 #include <FL/Fl_Double_Window.H>
-#include <FL/Fl_Tabs.H>
+#include <FL/Fl_Grid.H>
+#include <FL/Fl_Button.H>
 #include <FL/Fl_Group.H>
+Fl_Double_Window* make_window();
+#include <FL/Fl_Tabs.H>
+extern Fl_Tabs *widget_tabs;
 extern void propagate_load(Fl_Group*, void*);
 #include <FL/Fl_Input.H>
 extern void label_cb(Fl_Input*, void*);
@@ -30,7 +34,6 @@ extern void label_cb(Fl_Input*, void*);
 extern Fl_Menu_Item labeltypemenu[];
 extern void labeltype_cb(Fl_Choice*, void*);
 extern void image_cb(Fl_Input*, void*);
-#include <FL/Fl_Button.H>
 extern void image_browse_cb(Fl_Button*, void*);
 #include "pixmaps.h"
 extern void compress_image_cb(Fl_Button*, void*);
@@ -113,6 +116,7 @@ extern void textsize_cb(Fl_Value_Input*, void*);
 extern void textcolor_cb(Fl_Button*, void*);
 extern Fl_Button *w_textcolor;
 extern void textcolor_menu_cb(Fl_Menu_Button*, void*);
+extern void compact_cb(Fl_Light_Button*, void*);
 extern void subclass_cb(Fl_Input*, void*);
 extern void subtype_cb(Fl_Choice*, void*);
 extern void name_cb(Fl_Input*, void*);
@@ -132,6 +136,34 @@ extern void when_cb(Fl_Menu_Button*, void*);
 #include <FL/Fl_Input_Choice.H>
 extern void user_data_type_cb(Fl_Input_Choice*, void*);
 extern Fl_Box *w_when_box;
+extern Fl_Group *widget_tab_grid_child;
+extern void grid_set_row_cb(Fluid_Coord_Input*, void*);
+extern Fluid_Coord_Input *widget_grid_row_input;
+extern void grid_dec_row_cb(Fl_Button*, void*);
+extern void grid_inc_row_cb(Fl_Button*, void*);
+extern void grid_set_col_cb(Fluid_Coord_Input*, void*);
+extern Fluid_Coord_Input *widget_grid_col_input;
+extern void grid_dec_col_cb(Fl_Button*, void*);
+extern void grid_inc_col_cb(Fl_Button*, void*);
+extern void grid_align_cb(Fl_Choice*, void*);
+extern void grid_set_min_wdt_cb(Fluid_Coord_Input*, void*);
+extern void grid_set_min_hgt_cb(Fluid_Coord_Input*, void*);
+extern void grid_set_rowspan_cb(Fluid_Coord_Input*, void*);
+extern Fluid_Coord_Input *widget_grid_rowspan_input;
+extern void grid_dec_rowspan_cb(Fl_Button*, void*);
+extern void grid_inc_rowspan_cb(Fl_Button*, void*);
+extern void grid_set_colspan_cb(Fluid_Coord_Input*, void*);
+extern Fluid_Coord_Input *widget_grid_colspan_input;
+extern void grid_dec_colspan_cb(Fl_Button*, void*);
+extern void grid_inc_colspan_cb(Fl_Button*, void*);
+extern Fl_Group *widget_tab_grid;
+extern Fluid_Coord_Input *widget_grid_rows;
+extern Fluid_Coord_Input *widget_grid_cols;
+extern Fluid_Coord_Input *widget_grid_curr_row;
+extern Fl_Group *widget_grid_curr_row_attributes;
+extern Fluid_Coord_Input *widget_grid_curr_col;
+extern Fl_Group *widget_grid_curr_col_attributes;
+extern Fl_Tabs *widget_tabs_repo;
 extern void live_mode_cb(Fl_Button*, void*);
 extern Fl_Button *wLiveMode;
 extern void overlay_cb(Fl_Button*, void*);
@@ -145,4 +177,5 @@ extern Fl_Menu_Item menu_Children[];
 extern Fl_Menu_Item menu_2[];
 extern Fl_Menu_Item menu_3[];
 extern Fl_Menu_Item menu_4[];
+extern Fl_Menu_Item menu_5[];
 #endif

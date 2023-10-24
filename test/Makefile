@@ -1,7 +1,7 @@
 #
 # Test/example program Makefile for the Fast Light Tool Kit (FLTK).
 #
-# Copyright 1998-2021 by Bill Spitzak and others.
+# Copyright 1998-2023 by Bill Spitzak and others.
 #
 # This library is free software. Distribution and use rights are outlined in
 # the file "COPYING" which should have been included with this file.  If this
@@ -34,20 +34,7 @@ CPPUNITTEST = \
 	unittest_core.cxx
 
 OBJUNITTEST = \
-	unittests.o \
-	unittest_about.o \
-	unittest_points.o \
-	unittest_complex_shapes.o \
-	unittest_fast_shapes.o \
-	unittest_circles.o \
-	unittest_text.o \
-	unittest_unicode.o \
-	unittest_symbol.o \
-	unittest_images.o \
-	unittest_viewport.o \
-	unittest_scrollbarsize.o \
-	unittest_schemes.o \
-	unittest_simple_terminal.o
+	$(CPPUNITTEST:.cxx=.o)
 
 CPPFILES =\
 	adjuster.cxx \
@@ -88,6 +75,10 @@ CPPFILES =\
 	fullscreen.cxx \
 	gl_overlay.cxx \
 	glpuzzle.cxx \
+	glut_test.cxx \
+	grid_alignment \
+	grid_buttons \
+	grid_login \
 	hello.cxx \
 	help_dialog.cxx \
 	icon.cxx \
@@ -173,6 +164,9 @@ ALL =	\
 	fltk-versions$(EXEEXT) \
 	fonts$(EXEEXT) \
 	forms$(EXEEXT) \
+	grid_alignment$(EXEEXT) \
+	grid_buttons$(EXEEXT) \
+	grid_login$(EXEEXT) \
 	hello$(EXEEXT) \
 	help_dialog$(EXEEXT) \
 	icon$(EXEEXT) \
@@ -218,7 +212,7 @@ ALL =	\
 	twowin$(EXEEXT) \
 	utf8$(EXEEXT) \
 	windowfocus$(EXEEXT)
-	
+
 ALLFLUID = \
 	checkers$(EXEEXT) \
 	fast_slow$(EXEEXT) \
@@ -239,6 +233,7 @@ GLALL = \
 	fullscreen$(EXEEXT) \
 	gl_overlay$(EXEEXT) \
 	glpuzzle$(EXEEXT) \
+	glut_test$(EXEEXT) \
 	shape$(EXEEXT) \
 	unittests$(EXEEXT)
 
@@ -447,6 +442,12 @@ forms$(EXEEXT): forms.o
 	echo Linking $@...
 	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ forms.o $(LINKFLTKFORMS) $(LDLIBS)
 	$(OSX_ONLY) ../fltk-config --post $@
+
+grid_alignment$(EXEEXT): grid_alignment.o
+
+grid_buttons$(EXEEXT): grid_buttons.o
+
+grid_login$(EXEEXT): grid_login.o
 
 hello$(EXEEXT): hello.o
 
@@ -672,6 +673,11 @@ glpuzzle$(EXEEXT): glpuzzle.o
 gl_overlay$(EXEEXT): gl_overlay.o
 	echo Linking $@...
 	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ gl_overlay.o $(LINKFLTKGL) $(LINKFLTK) $(GLDLIBS)
+	$(OSX_ONLY) ../fltk-config --post $@
+
+glut_test$(EXEEXT): glut_test.o
+	echo Linking $@...
+	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ glut_test.o $(LINKFLTKGL) $(LINKFLTK) $(GLDLIBS)
 	$(OSX_ONLY) ../fltk-config --post $@
 
 unittests$(EXEEXT): $(OBJUNITTEST)

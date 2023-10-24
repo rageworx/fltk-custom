@@ -551,23 +551,23 @@ button->callback(xyz_callback, &xyz_data);
 \endcode
 
 \note You cannot delete a widget inside a callback, as the
-        widget may still be accessed by FLTK after your callback
-        is completed. Instead, use the Fl::delete_widget()
-        method to mark your widget for deletion when it is safe
-        to do so.
+widget may still be accessed by FLTK after your callback
+is completed. Instead, use the Fl::delete_widget()
+method to mark your widget for deletion when it is safe
+to do so.
 
-        Many programmers new to FLTK or C++ try to use a
-        non-static class method instead of a static class method
-        or function for their callback. Since callbacks are done
+Many programmers new to FLTK or C++ try to use a
+non-static class method instead of a static class method
+or function for their callback. Since callbacks are done
 outside a C++ class, the `this` pointer is not
-        initialized for class methods.
+initialized for class methods.
 
-        To work around this problem, define a static method
-        in your class that accepts a pointer to the class, and
-        then have the static method call the class method(s) as
-        needed. The data pointer you provide to the
-        \p callback() method of the widget can be a
-        pointer to the instance of your class.
+To work around this problem, define a static method
+in your class that accepts a pointer to the class, and
+then have the static method call the class method(s) as
+needed. The data pointer you provide to the
+\p callback() method of the widget can be a
+pointer to the instance of your class.
 
 \code
 class Foo {

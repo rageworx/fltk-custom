@@ -14,7 +14,7 @@
 //     https://www.fltk.org/bugs.php
 //
 
-#include <FL/Fl_String.H>
+#include "Fl_String.H"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -463,6 +463,21 @@ Fl_String &Fl_String::operator+=(const Fl_String &src) {
  */
 Fl_String &Fl_String::operator+=(char c) {
   return append(c);
+}
+
+/**
+ Find a string inside this string.
+ \param[in] needle    find this string
+ \param[in] start_pos start looking at this position
+ \return the offset of the text inside this string, if it was found
+ \return Fl_String::npos if the needle was not found
+ */
+int Fl_String::find(const Fl_String &needle, int start_pos) const {
+  if ((start_pos < 0) || (start_pos >= size_)) return npos;
+  const char *haystack = data() + start_pos;
+  const char *found = strstr(haystack, needle.c_str());
+  if (!found) return npos;
+  return (int)(found - data());
 }
 
 /**

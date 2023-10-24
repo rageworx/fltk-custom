@@ -1541,10 +1541,10 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
           Fl::e_dx = dy;
           Fl::e_dy = 0;
         } else { // shift key not pressed (normal behavior): send vertical mousewheel event
-        Fl::e_dx = 0;
+          Fl::e_dx = 0;
           Fl::e_dy = dy;
         }
-          Fl::handle(FL_MOUSEWHEEL, window);
+        Fl::handle(FL_MOUSEWHEEL, window);
         return 0;
       }
 
@@ -1560,9 +1560,9 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
           Fl::e_dy = dx;
         } else { // shift key not pressed (normal behavior): send horizontal mousewheel event
           Fl::e_dx = dx;
-        Fl::e_dy = 0;
+          Fl::e_dy = 0;
         }
-          Fl::handle(FL_MOUSEWHEEL, window);
+        Fl::handle(FL_MOUSEWHEEL, window);
         return 0;
       }
 

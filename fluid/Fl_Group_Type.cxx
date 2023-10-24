@@ -61,7 +61,7 @@ Fl_Type *Fl_Group_Type::make(Strategy strategy) {
  \brief Enlarge the group size, so all children fit within.
  */
 void fix_group_size(Fl_Type *tt) {
-  if (!tt || !tt->is_group()) return;
+  if (!tt || !tt->is_a(ID_Group)) return;
   Fl_Group_Type* t = (Fl_Group_Type*)tt;
   int X = t->o->x();
   int Y = t->o->y();
@@ -69,12 +69,12 @@ void fix_group_size(Fl_Type *tt) {
   int B = Y+t->o->h();
   for (Fl_Type *nn = t->next; nn && nn->level > t->level; nn = nn->next) {
     if (nn->is_true_widget()) {
-    Fl_Widget_Type* n = (Fl_Widget_Type*)nn;
-    int x = n->o->x();  if (x < X) X = x;
-    int y = n->o->y();  if (y < Y) Y = y;
-    int r = x+n->o->w();if (r > R) R = r;
-    int b = y+n->o->h();if (b > B) B = b;
-  }
+      Fl_Widget_Type* n = (Fl_Widget_Type*)nn;
+      int x = n->o->x();  if (x < X) X = x;
+      int y = n->o->y();  if (y < Y) Y = y;
+      int r = x+n->o->w();if (r > R) R = r;
+      int b = y+n->o->h();if (b > B) B = b;
+    }
   }
   t->o->resize(X,Y,R-X,B-Y);
 }
@@ -83,7 +83,7 @@ void group_cb(Fl_Widget *, void *) {
   // Find the current widget:
   Fl_Type *qq = Fl_Type::current;
   while (qq && !qq->is_true_widget()) qq = qq->parent;
-  if (!qq || qq->level < 1 || (qq->level == 1 && qq->is_a(Fl_Type::ID_Widget_Class))) {
+  if (!qq || qq->level < 1 || (qq->level == 1 && qq->is_a(ID_Widget_Class))) {
     fl_message("Please select widgets to group");
     return;
   }
@@ -112,7 +112,7 @@ void ungroup_cb(Fl_Widget *, void *) {
   Fl_Type *q = Fl_Type::current;
   while (q && !q->is_true_widget()) q = q->parent;
   if (q) q = q->parent;
-  if (!q || q->level < 1 || (q->level == 1 && q->is_a(Fl_Type::ID_Widget_Class))) {
+  if (!q || q->level < 1 || (q->level == 1 && q->is_a(ID_Widget_Class))) {
     fl_message("Please select widgets in a group");
     return;
   }

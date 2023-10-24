@@ -17,16 +17,18 @@
 #ifndef _FLUID_FLUID_H
 #define _FLUID_FLUID_H
 
-#include <FL/filename.H>
+#include "fluid_filename.h"
 #include <FL/Fl_Preferences.H>
 #include <FL/Fl_Menu_Item.H>
-#include <FL/Fl_String.H>
+#include "../src/Fl_String.H"
 
 #define BROWSERWIDTH 300
 #define BROWSERHEIGHT 500
 #define WINWIDTH 300
 #define MENUHEIGHT 25
 #define WINHEIGHT (BROWSERHEIGHT+MENUHEIGHT)
+
+// ---- types
 
 class Fl_Double_Window;
 class Fl_Window;
@@ -35,6 +37,19 @@ class Fl_Type;
 class Fl_Choice;
 class Fl_Button;
 class Fl_Check_Button;
+
+/**
+ Indicate the storage location for tools like layout suites and shell macros.
+ \see class Fd_Shell_Command, class Fd_Layout_Suite
+ */
+typedef enum {
+  FD_STORE_INTERNAL,  ///< stored inside FLUID app
+  FD_STORE_USER,      ///< suite is stored in the user wide FLUID settings
+  FD_STORE_PROJECT,   ///< suite is stored within the current .fl project file
+  FD_STORE_FILE       ///< store suite in external file
+} Fd_Tool_Store;
+
+// ---- global variables
 
 extern int force_parent;
 
@@ -71,18 +86,18 @@ extern Fl_Check_Button *guides_button;
 
 extern int modflag;
 
-extern void enter_project_dir();
-extern void leave_project_dir();
-
 extern int update_file;            // fluid -u
 extern int compile_file;           // fluid -c
 extern int compile_strings;        // fluic -cs
 extern int batch_mode;
 
 extern int pasteoffset;
-extern int pasteoffset;
 
-// ---- project settings
+extern Fl_String g_code_filename_arg;
+extern Fl_String g_header_filename_arg;
+extern Fl_String g_launch_path;
+
+// ---- project class declaration
 
 class Fluid_Project {
 public:
@@ -90,6 +105,16 @@ public:
   ~Fluid_Project();
   void reset();
   void update_settings_dialog();
+
+  Fl_String projectfile_path() const;
+  Fl_String projectfile_name() const;
+  Fl_String codefile_path() const;
+  Fl_String codefile_name() const;
+  Fl_String headerfile_path() const;
+  Fl_String headerfile_name() const;
+  Fl_String stringsfile_path() const;
+  Fl_String stringsfile_name() const;
+  Fl_String basename() const;
 
   int i18n_type;
   Fl_String i18n_gnu_include;
@@ -102,7 +127,6 @@ public:
   Fl_String i18n_pos_file;
   Fl_String i18n_pos_set;
 
-  Fl_String basename;
   int include_H_from_C;
   int use_FL_COMMAND;
   int utf8_in_src;
@@ -115,13 +139,14 @@ public:
 
 extern Fluid_Project g_project;
 
-extern Fl_String g_code_filename_arg;
-extern Fl_String g_header_filename_arg;
-
 // ---- public functions
 
+extern void enter_project_dir();
+extern void leave_project_dir();
 extern void set_filename(const char *c);
 extern void set_modflag(int mf, int mfc=-1);
+
+extern const Fl_String &get_tmpdir();
 
 // ---- public callback functions
 
@@ -130,19 +155,12 @@ extern void save_template_cb(Fl_Widget *, void *);
 extern void revert_cb(Fl_Widget *,void *);
 extern void exit_cb(Fl_Widget *,void *);
 
-#ifdef __APPLE__
-extern void apple_open_cb(const char *c);
-#endif // __APPLE__
-
-extern void open_cb(Fl_Widget *, void *v);
-extern void open_history_cb(Fl_Widget *, void *v);
-extern void new_cb(Fl_Widget *, void *v);
-extern void new_from_template_cb(Fl_Widget *w, void *v);
-
-extern int write_code_files();
+extern int write_code_files(bool dont_show_completion_dialog=false);
 extern void write_strings_cb(Fl_Widget *, void *);
 extern void align_widget_cb(Fl_Widget *, long);
 extern void toggle_widgetbin_cb(Fl_Widget *, void *);
+
+extern char position_window(Fl_Window *w, const char *prefsName, int Visible, int X, int Y, int W=0, int H=0);
 
 inline int fd_min(int a, int b) { return (a < b ? a : b); }
 inline int fd_max(int a, int b) { return (a > b ? a : b); }

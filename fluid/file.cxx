@@ -137,7 +137,7 @@ int Fd_Project_Reader::open_read(const char *s) {
     fin = stdin;
     fname = "stdin";
   } else {
-    FILE *f = fl_fopen(s,"r");
+    FILE *f = fl_fopen(s, "r");
     if (!f)
       return 0;
     fin = f;
@@ -210,7 +210,7 @@ int Fd_Project_Reader::read_quoted() {      // read whatever character is after 
  \param[in] paste if set, merge into existing design, else replace design
  \param[in] strategy add nodes after current or as last child
  \param[in] skip_options this is set if the options were already found in
- a previous call, and there is no need to waste time searchingg for them.
+ a previous call, and there is no need to waste time searching for them.
  */
 void Fd_Project_Reader::read_children(Fl_Type *p, int paste, Strategy strategy, char skip_options) {
   Fl_Type::current = p;
@@ -325,29 +325,12 @@ void Fd_Project_Reader::read_children(Fl_Type *p, int paste, Strategy strategy, 
         goto CONTINUE;
       }
 
-      if (strcmp(c, "win_shell_cmd")==0) {
-        if (shell_settings_windows.command)
-          free((void*)shell_settings_windows.command);
-        shell_settings_windows.command = fl_strdup(read_word());
-        goto CONTINUE;
-      } else if (strcmp(c, "win_shell_flags")==0) {
-        shell_settings_windows.flags = atoi(read_word());
-        goto CONTINUE;
-      } else if (strcmp(c, "linux_shell_cmd")==0) {
-        if (shell_settings_linux.command)
-          free((void*)shell_settings_linux.command);
-        shell_settings_linux.command = fl_strdup(read_word());
-        goto CONTINUE;
-      } else if (strcmp(c, "linux_shell_flags")==0) {
-        shell_settings_linux.flags = atoi(read_word());
-        goto CONTINUE;
-      } else if (strcmp(c, "mac_shell_cmd")==0) {
-        if (shell_settings_macos.command)
-          free((void*)shell_settings_macos.command);
-        shell_settings_macos.command = fl_strdup(read_word());
-        goto CONTINUE;
-      } else if (strcmp(c, "mac_shell_flags")==0) {
-        shell_settings_macos.flags = atoi(read_word());
+      if (strcmp(c, "shell_commands")==0) {
+        if (g_shell_config) {
+          g_shell_config->read(this);
+        } else {
+          read_word();
+        }
         goto CONTINUE;
       }
     }
@@ -419,16 +402,24 @@ int Fd_Project_Reader::read_project(const char *filename, int merge, Strategy st
   read_children(Fl_Type::current, merge, strategy);
   Fl_Type::current = 0;
   // Force menu items to be rebuilt...
-  for (o = Fl_Type::first; o; o = o->next)
-    if (o->is_a(Fl_Type::ID_Menu_Manager_))
+  for (o = Fl_Type::first; o; o = o->next) {
+    if (o->is_a(ID_Menu_Manager_)) {
       o->add_child(0,0);
-  for (o = Fl_Type::first; o; o = o->next)
+    }
+  }
+  for (o = Fl_Type::first; o; o = o->next) {
     if (o->selected) {
       Fl_Type::current = o;
       break;
     }
+  }
   selection_changed(Fl_Type::current);
-  shell_settings_read();
+  if (g_shell_config) {
+    g_shell_config->rebuild_shell_menu();
+    g_shell_config->update_settings_dialog();
+  }
+  g_layout_list.update_dialogs();
+  g_project.update_settings_dialog();
   int ret = close_read();
   undo_resume();
   return ret;
@@ -813,23 +804,8 @@ int Fd_Project_Writer::write_project(const char *filename, int selected_only) {
     write_string("\nheader_name"); write_word(g_project.header_file_name.c_str());
     write_string("\ncode_name"); write_word(g_project.code_file_name.c_str());
     g_layout_list.write(this);
-#if 0
-    // https://github.com/fltk/fltk/issues/328
-    // Project wide settings require a redesign.
-    shell_settings_write();
-    if (shell_settings_windows.command) {
-      write_string("\nwin_shell_cmd"); write_word(shell_settings_windows.command);
-      write_string("\nwin_shell_flags"); write_string("%d", shell_settings_windows.flags);
-    }
-    if (shell_settings_linux.command) {
-      write_string("\nlinux_shell_cmd"); write_word(shell_settings_linux.command);
-      write_string("\nlinux_shell_flags"); write_string("%d", shell_settings_linux.flags);
-    }
-    if (shell_settings_macos.command) {
-      write_string("\nmac_shell_cmd"); write_word(shell_settings_macos.command);
-      write_string("\nmac_shell_flags"); write_string("%d", shell_settings_macos.flags);
-    }
-#endif
+    if (g_shell_config)
+      g_shell_config->write(this);
   }
 
   for (Fl_Type *p = Fl_Type::first; p;) {

@@ -87,11 +87,21 @@ CREATE_EXAMPLE (flex_login flex_login.cxx fltk)
 CREATE_EXAMPLE (fltk-versions fltk-versions.cxx fltk)
 CREATE_EXAMPLE (fonts fonts.cxx fltk)
 CREATE_EXAMPLE (forms forms.cxx "fltk_forms;fltk")
+
+if (OPENGL_FOUND)
+  CREATE_EXAMPLE (glut_test glut_test.cxx "fltk_gl;fltk")
+endif()
+
+CREATE_EXAMPLE (grid_alignment grid_alignment.cxx fltk)
+CREATE_EXAMPLE (grid_buttons grid_buttons.cxx fltk)
+CREATE_EXAMPLE (grid_login grid_login.cxx fltk)
+
 if (OPENGL_FOUND)
   CREATE_EXAMPLE (handle_events handle_events.cxx "fltk_gl;fltk") # opt. Fl_Gl_Window
 else()
   CREATE_EXAMPLE (handle_events handle_events.cxx fltk) # w/o Fl_Gl_Window
 endif()
+
 CREATE_EXAMPLE (hello hello.cxx fltk)
 CREATE_EXAMPLE (help_dialog help_dialog.cxx "fltk_images;fltk")
 CREATE_EXAMPLE (icon icon.cxx fltk)
@@ -169,7 +179,11 @@ SET (UNITTEST_SRCS
 )
 if (OPENGL_FOUND)
   set (UNITTEST_LIBS fltk_gl fltk ${OPENGL_LIBRARIES})
-  set (UNITTEST_LIBS_SHARED fltk_gl_SHARED fltk_SHARED ${OPENGL_LIBRARIES})
+  if (MSVC)
+    set (UNITTEST_LIBS_SHARED fltk_SHARED ${OPENGL_LIBRARIES})
+  else ()
+    set (UNITTEST_LIBS_SHARED fltk_gl_SHARED fltk_SHARED ${OPENGL_LIBRARIES})
+  endif ()
 else ()
   set (UNITTEST_LIBS fltk)
   set (UNITTEST_LIBS_SHARED fltk_SHARED)

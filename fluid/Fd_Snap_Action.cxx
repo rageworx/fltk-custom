@@ -18,6 +18,7 @@
 
 #include "Fl_Group_Type.h"
 #include "alignment_panel.h"
+#include "shell_command.h"  // get and set Fl_String preferences
 #include "file.h"
 
 #include <FL/fl_draw.H>
@@ -29,7 +30,7 @@
 
 // TODO: warning if the user wants to change builtin layouts
 // TODO: move panel to global settings panel (move load & save to main pulldown, or to toolbox?)
-// INFO: how about a small tool box for quick preset selection and diabeling of individual snaps?
+// INFO: how about a small tool box for quick preset selection and disabeling of individual snaps?
 
 void select_layout_suite_cb(Fl_Widget *, void *user_data);
 
@@ -416,13 +417,13 @@ void Fd_Layout_Suite::name(const char *n) {
 }
 
 /**
- Initialise the class for first use.
+ Initialize the class for first use.
  */
 void Fd_Layout_Suite::init() {
   name_ = NULL;
   menu_label = NULL;
   layout[0] = layout[1] = layout[2] = NULL;
-  storage_ = 0;
+  storage_ = FD_STORE_INTERNAL;
 }
 
 /**
@@ -587,8 +588,7 @@ Fd_Layout_List::Fd_Layout_List()
   list_capacity_(2),
   list_is_static_(true),
   current_suite_(0),
-  current_preset_(0),
-  filename_(NULL)
+  current_preset_(0)
 {
   fl_add_symbol("fd_beaker", fd_beaker, 1);
   fl_add_symbol("fd_user", fd_user, 1);
@@ -611,7 +611,6 @@ Fd_Layout_List::~Fd_Layout_List() {
     }
     ::free(list_);
   }
-  if (filename_) ::free(filename_);
 }
 
 /**
@@ -651,9 +650,9 @@ void Fd_Layout_List::update_menu_labels() {
 /**
  Load all user layouts from the FLUID user preferences.
  */
-int Fd_Layout_List::load(const char *filename) {
+int Fd_Layout_List::load(const Fl_String &filename) {
   remove_all(FD_STORE_FILE);
-  Fl_Preferences prefs(filename, "layout.fluid.fltk.org", NULL);
+  Fl_Preferences prefs(filename.c_str(), "layout.fluid.fltk.org", NULL, Fl_Preferences::C_LOCALE);
   read(prefs, FD_STORE_FILE);
   return 0;
 }
@@ -661,10 +660,9 @@ int Fd_Layout_List::load(const char *filename) {
 /**
  Save all user layouts to the FLUID user preferences.
  */
-int Fd_Layout_List::save(const char *filename) {
+int Fd_Layout_List::save(const Fl_String &filename) {
   assert(this);
-  assert(filename);
-  Fl_Preferences prefs(filename, "layout.fluid.fltk.org", NULL);
+  Fl_Preferences prefs(filename.c_str(), "layout.fluid.fltk.org", NULL, (Fl_Preferences::Root)(Fl_Preferences::C_LOCALE|Fl_Preferences::CLEAR));
   prefs.clear();
   write(prefs, FD_STORE_FILE);
   return 0;
@@ -673,7 +671,7 @@ int Fd_Layout_List::save(const char *filename) {
 /**
  Write Suite and Layout selection and selected layout data to Preferences database.
  */
-void Fd_Layout_List::write(Fl_Preferences &prefs, int storage) {
+void Fd_Layout_List::write(Fl_Preferences &prefs, Fd_Tool_Store storage) {
   Fl_Preferences prefs_list(prefs, "Layouts");
   prefs_list.clear();
   prefs_list.set("current_suite", list_[current_suite()].name_);
@@ -691,11 +689,11 @@ void Fd_Layout_List::write(Fl_Preferences &prefs, int storage) {
 /**
  Read Suite and Layout selection and selected layout data to Preferences database.
  */
-void Fd_Layout_List::read(Fl_Preferences &prefs, int storage) {
+void Fd_Layout_List::read(Fl_Preferences &prefs, Fd_Tool_Store storage) {
   Fl_Preferences prefs_list(prefs, "Layouts");
   Fl_String cs;
   int cp = 0;
-  prefs_list.get("current_suite", cs, "");
+  preferences_get(prefs_list, "current_suite", cs, "");
   prefs_list.get("current_preset", cp, 0);
   for (int i = 0; i < prefs_list.groups(); ++i) {
     Fl_Preferences prefs_suite(prefs_list, Fl_Preferences::Name(i));
@@ -717,6 +715,14 @@ void Fd_Layout_List::read(Fl_Preferences &prefs, int storage) {
  Write Suite and Layout selection and project layout data to an .fl project file.
  */
 void Fd_Layout_List::write(Fd_Project_Writer *out) {
+  // Don't write the Snap field if no custom layout was used
+  if ((current_suite()==0) && (current_preset()==0)) {
+    int nSuite = 0;
+    for (int i=0; i<list_size_; i++) {
+      if (list_[i].storage_ == FD_STORE_PROJECT) nSuite++;
+    }
+    if (nSuite == 0) return;
+  }
   out->write_string("\nsnap {\n  ver 1\n");
   out->write_string("  current_suite "); out->write_word(list_[current_suite()].name_); out->write_string("\n");
   out->write_string("  current_preset %d\n", current_preset());
@@ -839,7 +845,7 @@ void Fd_Layout_List::capacity(int n) {
 
 /**
  \brief Clone the currently selected suite and append it to the list.
- Selectes the new layout and updates the UI.
+ Selects the new layout and updates the UI.
  */
 int Fd_Layout_List::add(const char *name) {
   if (list_size_ == list_capacity_) {
@@ -854,7 +860,7 @@ int Fd_Layout_List::add(const char *name) {
     new_suite.layout[i] = new Fd_Layout_Preset;
     ::memcpy(new_suite.layout[i], old_suite.layout[i], sizeof(Fd_Layout_Preset));
   }
-  int new_storage = old_suite.storage_;
+  Fd_Tool_Store new_storage = old_suite.storage_;
   if (new_storage == FD_STORE_INTERNAL)
     new_storage = FD_STORE_USER;
   new_suite.storage(new_storage);
@@ -899,7 +905,7 @@ void Fd_Layout_List::remove(int ix) {
  Remove all Suites that use the given storage attribute.
  \param[in] storage storage attribute, see FD_STORE_INTERNAL, etc.
  */
-void Fd_Layout_List::remove_all(int storage) {
+void Fd_Layout_List::remove_all(Fd_Tool_Store storage) {
   for (int i=list_size_-1; i>=0; --i) {
     if (list_[i].storage_ == storage)
       remove(i);
@@ -930,11 +936,11 @@ static bool in_window(Fd_Snap_Data &d) {
 }
 
 static bool in_group(Fd_Snap_Data &d) {
-  return (d.wgt && d.wgt->parent && d.wgt->parent->is_group() && d.wgt->parent != d.win);
+  return (d.wgt && d.wgt->parent && d.wgt->parent->is_a(ID_Group) && d.wgt->parent != d.win);
 }
 
 static bool in_tabs(Fd_Snap_Data &d) {
-  return (d.wgt && d.wgt->parent && d.wgt->parent->is_a(Fl_Type::ID_Tabs));
+  return (d.wgt && d.wgt->parent && d.wgt->parent->is_a(ID_Tabs));
 }
 
 static Fl_Group *parent(Fd_Snap_Data &d) {
@@ -964,7 +970,7 @@ static Fl_Group *parent(Fd_Snap_Data &d) {
  \param[in] x_ref position of moving point
  \param[in] x_snap position of target point
  \return 1 if the points are not within range and won;t be considered
- \return 0 if the point is as close as another in a prevoius action
+ \return 0 if the point is as close as another in a previous action
  \return -1 if this point is closer than any previous check, and this is the
     new distance to beat.
  */
@@ -1042,7 +1048,7 @@ void Fd_Snap_Action::check_all(Fd_Snap_Data &data) {
 }
 
 /**
- \brief Draw a visual indicator for all sanp actions that were applied during the last check.
+ \brief Draw a visual indicator for all snap actions that were applied during the last check.
  Only one snap coordinate can win. FLUID chooses the one that is closest to
  the current user event. If two or more snap actions suggest the same
  coordinate, all of them will be drawn.
@@ -1443,7 +1449,7 @@ public:
     clr();
     best_match = NULL;
     if (!d.wgt) return;
-    if (!d.wgt->parent->is_group()) return;
+    if (!d.wgt->parent->is_a(ID_Group)) return;
     int dsib_min = 1024;
     Fl_Group_Type *gt = (Fl_Group_Type*)d.wgt->parent;
     Fl_Group *g = (Fl_Group*)gt->o;
@@ -1634,9 +1640,9 @@ Fd_Snap_Widget_Ideal_Height snap_widget_ideal_height;
 // ---- snap actions list ---------------------------------------------- MARK: -
 
 /**
- /brief The list of all snap actions availabel to FLUID.
+ /brief The list of all snap actions available to FLUID.
  New snap actions can be appended to the list. If multiple snap actions
- with different corrdinates, but the same sanp distance are found, the last
+ with different coordinates, but the same snap distance are found, the last
  action in the list wins. All snap actions with the same distance and same
  winning coordinates are drawn in the overlay plane.
  */

@@ -1,7 +1,7 @@
 //
 // C function type code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2021 by Bill Spitzak and others.
+// Copyright 1998-2023 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -45,7 +45,7 @@ Fl_Class_Type *current_class = NULL;
 int has_toplevel_function(const char *rtype, const char *sig) {
   Fl_Type *child;
   for (child = Fl_Type::first; child; child = child->next) {
-    if (!child->is_in_class() && child->is_a(Fl_Type::ID_Function)) {
+    if (!child->is_in_class() && child->is_a(ID_Function)) {
       const Fl_Function_Type *fn = (const Fl_Function_Type*)child;
       if (fn->has_signature(rtype, sig))
         return 1;
@@ -62,7 +62,7 @@ static char buffer[128]; // for error messages
 
 /**
  Check a quoted string contains a character.
- This is used to find a matchin " or ' in a string.
+ This is used to find a matching " or ' in a string.
  \param[inout] c start searching here, return where we found \c type
  \param[in] type find this character
  \return NULL if the character was found, else a pointer to a static string
@@ -112,7 +112,7 @@ const char *_c_check(const char * & c, int type) {
       break;
 //    case '#':
 //      // treat cpp directives as a comment:
-//      // Matt: a '#' character can appear as a concatenator when defining macros
+//      // Matt: a '#' character can appear as a concatenation when defining macros
 //      // Matt: so instead we just silently ignore the '#'
 //      while (*c != '\n' && *c) c++;
 //      break;
@@ -163,7 +163,7 @@ const char *c_check(const char *c, int type) {
   return _c_check(c,type);
 }
 
-// ---- Fl_Function_Type implemntation
+// ---- Fl_Function_Type implementation
 
 /** \class Fl_Function_Type
  Manage a C++ function node in the Fluid design.
@@ -349,6 +349,50 @@ int Fl_Function_Type::is_public() const {
   return public_;
 }
 
+static bool fd_isspace(int c) {
+  return (c>0 && c<128 && isspace(c));
+}
+
+static bool fd_iskeyword(int c) {
+  return (c>0 && c<128 && (isalnum(c) || c=='_'));
+}
+
+// remove all function default parameters and `override` keyword
+static void clean_function_for_implementation(char *out, const char *function_name) {
+  char *sptr = out;
+  const char *nptr = function_name;
+  int skips=0,skipc=0;
+  int nc=0,plevel=0;
+  bool arglist_done = false;
+  for (;*nptr; nc++,nptr++) {
+    if (arglist_done && fd_isspace(nptr[0])) {
+      // skip `override` and `FL_OVERRIDE` keywords if they are following the list of arguments
+      if (strncmp(nptr+1, "override", 8)==0 && !fd_iskeyword(nptr[9])) { nptr += 8; continue; }
+      else if (strncmp(nptr+1, "FL_OVERRIDE", 11)==0 && !fd_iskeyword(nptr[12])) { nptr += 11; continue; }
+    }
+    if (!skips && *nptr=='(') plevel++;
+    else if (!skips && *nptr==')') { plevel--; if (plevel==0) arglist_done = true; }
+    if ( *nptr=='"' &&  !(nc &&  *(nptr-1)=='\\') )
+      skips = skips ? 0 : 1;
+    else if(!skips && *nptr=='\'' &&  !(nc &&  *(nptr-1)=='\\'))
+      skipc = skipc ? 0 : 1;
+    if(!skips && !skipc && plevel==1 && *nptr =='=' && !(nc && *(nptr-1)=='\'') ) { // ignore '=' case
+      while(*++nptr  && (skips || skipc || ( (*nptr!=',' && *nptr!=')') || plevel!=1) )) {
+        if ( *nptr=='"' &&  *(nptr-1)!='\\' )
+          skips = skips ? 0 : 1;
+        else if(!skips && *nptr=='\'' &&  *(nptr-1)!='\\')
+          skipc = skipc ? 0 : 1;
+        if (!skips && !skipc && *nptr=='(') plevel++;
+        else if (!skips && *nptr==')') plevel--;
+      }
+      if (*nptr==')') if (--plevel==0) arglist_done = true;
+    }
+    if (sptr < (out + 1024 - 1)) *sptr++ = *nptr;
+  }
+  *sptr = '\0';
+}
+
+
 /**
  Write the code for the source and the header file.
  This writes the code that goes \b before all children of this class.
@@ -435,33 +479,10 @@ void Fl_Function_Type::write_code1(Fd_Code_Writer& f) {
       } else {
         f.write_h("%s;\n", s);
       }
-      // skip all function default param. init in body:
-      int skips=0,skipc=0;
-      int nc=0,plevel=0;
-      for (sptr=s,nptr=(char*)name(); *nptr; nc++,nptr++) {
-        if (!skips && *nptr=='(') plevel++;
-        else if (!skips && *nptr==')') plevel--;
-        if ( *nptr=='"' &&  !(nc &&  *(nptr-1)=='\\') )
-          skips = skips ? 0 : 1;
-        else if(!skips && *nptr=='\'' &&  !(nc &&  *(nptr-1)=='\\'))
-          skipc = skipc ? 0 : 1;
-        if(!skips && !skipc && plevel==1 && *nptr =='=' &&
-           !(nc && *(nptr-1)=='\'') ) // ignore '=' case
-          while(*++nptr  && (skips || skipc || ( (*nptr!=',' && *nptr!=')') || plevel!=1) )) {
-            if ( *nptr=='"' &&  *(nptr-1)!='\\' )
-              skips = skips ? 0 : 1;
-            else if(!skips && *nptr=='\'' &&  *(nptr-1)!='\\')
-              skipc = skipc ? 0 : 1;
-            if (!skips && !skipc && *nptr=='(') plevel++;
-            else if (!skips && *nptr==')') plevel--;
-          }
-
-        if (sptr < (s + sizeof(s) - 1)) *sptr++ = *nptr;
-      }
-      *sptr = '\0';
-
-      if (havechildren)
+      if (havechildren) {
+        clean_function_for_implementation(s, name());
         f.write_c("%s::%s {\n", k, s);
+      }
     } else {
       if (havechildren)
         write_comment_c(f);
@@ -478,34 +499,11 @@ void Fl_Function_Type::write_code1(Fd_Code_Writer& f) {
       }
 
       // write everything but the default parameters (if any)
-      char s[1024], *sptr;
-      char *nptr;
-      int skips=0,skipc=0;
-      int nc=0,plevel=0;
-      for (sptr=s,nptr=(char*)name(); *nptr; nc++,nptr++) {
-        if (!skips && *nptr=='(') plevel++;
-        else if (!skips && *nptr==')') plevel--;
-        if ( *nptr=='"' &&  !(nc &&  *(nptr-1)=='\\') )
-          skips = skips ? 0 : 1;
-        else if(!skips && *nptr=='\'' &&  !(nc &&  *(nptr-1)=='\\'))
-          skipc = skipc ? 0 : 1;
-        if(!skips && !skipc && plevel==1 && *nptr =='=' &&
-           !(nc && *(nptr-1)=='\'') ) // ignore '=' case
-          while(*++nptr  && (skips || skipc || ( (*nptr!=',' && *nptr!=')') || plevel!=1) )) {
-            if ( *nptr=='"' &&  *(nptr-1)!='\\' )
-              skips = skips ? 0 : 1;
-            else if(!skips && *nptr=='\'' &&  *(nptr-1)!='\\')
-              skipc = skipc ? 0 : 1;
-            if (!skips && !skipc && *nptr=='(') plevel++;
-            else if (!skips && *nptr==')') plevel--;
-          }
-
-        if (sptr < (s + sizeof(s) - 1)) *sptr++ = *nptr;
-      }
-      *sptr = '\0';
-
-      if (havechildren)
+      char s[1024];
+      if (havechildren) {
+        clean_function_for_implementation(s, name());
         f.write_c("%s%s %s {\n", rtype, star, s);
+      }
     }
   }
 
@@ -609,7 +607,7 @@ void Fl_Code_Type::open() {
     const char *cmd = G_external_editor_command;
     const char *code = name();
     if ( editor_.open_editor(cmd, code) == 0 )
-      return;   // return if editor opened ok, fallthru to built-in if not
+      return;   // return if editor opened ok, fall thru to built-in if not
   }
   // Use built-in code editor..
   if (!code_panel) make_code_panel();
@@ -710,7 +708,7 @@ int Fl_Code_Type::handle_editor_changes() {
   return 0;
 }
 
-// ---- Fl_CodeBlock_Type implemntation
+// ---- Fl_CodeBlock_Type implementation
 
 /** \class Fl_CodeBlock_Type
  Manage two blocks of C++ code enclosing its children.
@@ -1578,7 +1576,7 @@ void Fl_Comment_Type::read_property(Fd_Project_Reader &f, const char *c) {
 /**
  Load available preset comments.
  Fluid comes with GPL and LGPL preset for comments. Users can
- add their own presets which are stored per user in a seperate
+ add their own presets which are stored per user in a separate
  preferences database.
  */
 static void load_comments_preset(Fl_Preferences &menu) {
@@ -1981,10 +1979,10 @@ void Fl_Class_Type::write_code2(Fd_Code_Writer& f) {
 /**
  Return 1 if this class contains a function with the given signature.
  */
-int Fl_Class_Type::has_function(const char *rtype, const char *sig) const {
+int Fl_Type::has_function(const char *rtype, const char *sig) const {
   Fl_Type *child;
   for (child = next; child && child->level > level; child = child->next) {
-    if (child->level == level+1 && child->is_a(Fl_Type::ID_Function)) {
+    if (child->level == level+1 && child->is_a(ID_Function)) {
       const Fl_Function_Type *fn = (const Fl_Function_Type*)child;
       if (fn->has_signature(rtype, sig))
         return 1;

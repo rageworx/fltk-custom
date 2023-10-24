@@ -2,11 +2,6 @@
 version 1.0400
 header_name {.h}
 code_name {.cxx}
-snap {
-  ver 1
-  current_suite FLTK
-  current_preset 1
-}
 comment {//
 // FLUID template support for the Fast Light Tool Kit (FLTK).
 //
@@ -37,7 +32,7 @@ decl {\#include <FL/fl_ask.H>} {private local
 decl {\#include <FL/fl_string_functions.h>} {private local
 }
 
-decl {\#include <FL/filename.H>} {private local
+decl {\#include "fluid_filename.h"} {private local
 }
 
 decl {\#include "../src/flstring.h"} {private local

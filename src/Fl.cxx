@@ -15,8 +15,8 @@
 //
 
 /** \file src/Fl.cxx
- Implementation of the member functions of class Fl.
- */
+  Implementation of the member functions of class Fl.
+*/
 
 #include <FL/Fl.H>
 #include <FL/platform.H>
@@ -677,9 +677,9 @@ int Fl::ready()
   Fl:run() will run as long as there are visible windows.
   Call Fl::hide_all_windows() to hide (close) all currently shown
   (visible) windows, effectively terminating the Fl::run() loop.
- \see Fl::run()
+  \see Fl::run()
   \since 1.4.0
- */
+*/
 void Fl::hide_all_windows() {
   while (Fl::first_window()) {
     Fl::first_window()->hide();
@@ -943,6 +943,10 @@ Fl_Widget* fl_oldfocus; // kludge for Fl_Group...
 /**
     Sets the widget that will receive FL_KEYBOARD events.
 
+    Use this function inside the \c handle(int) member function of a widget of yours
+    to give focus to the widget, for example when it receives the FL_FOCUS or the FL_PUSH event.
+    Otherwise, use Fl_Widget::take_focus() to give focus to a widget;
+ 
     If you change Fl::focus(), the previous widget and all
     parents (that don't contain the new widget) are sent FL_UNFOCUS
     events.  Changing the focus does \e not send FL_FOCUS to
@@ -1143,12 +1147,12 @@ void fl_throw_focus(Fl_Widget *o) {
 // the inactive widget and all inactive parent groups.
 //
 // This is used to send FL_SHORTCUT events to the Fl::belowmouse() widget
-// in case the target widget itself is inactive_r(). In this case the event
+// in case the target widget itself is !active_r(). In this case the event
 // is sent to the first active_r() parent.
 //
 // This prevents sending events to inactive widgets that might get the
 // input focus otherwise. The search is fast and light and avoids calling
-// inactive_r() multiple times.
+// !active_r() multiple times.
 // See STR #3216.
 //
 // Returns: first active_r() widget "above" the widget wi or NULL if
@@ -1397,11 +1401,11 @@ int Fl::handle_(int e, Fl_Window* window)
     if (grab()) {
       wi = grab();
       if (!drag_release || !Fl::event_buttons())
-      pushed_ = 0; // must be zero before callback is done!
+        pushed_ = 0; // must be zero before callback is done!
     } else if (pushed()) {
       wi = pushed();
       if (!drag_release || !Fl::event_buttons())
-      pushed_ = 0; // must be zero before callback is done!
+        pushed_ = 0; // must be zero before callback is done!
     } else if (modal() && wi != modal())
       return 0;
     int r = send_event(e, wi, window);

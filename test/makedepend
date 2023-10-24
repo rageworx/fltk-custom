@@ -91,7 +91,6 @@ ask.o: ../FL/Fl_Image.H
 ask.o: ../FL/Fl_Input.H
 ask.o: ../FL/Fl_Input_.H
 ask.o: ../FL/Fl_Return_Button.H
-ask.o: ../FL/Fl_String.H
 ask.o: ../FL/fl_types.h
 ask.o: ../FL/fl_utf8.h
 ask.o: ../FL/Fl_Widget.H
@@ -225,7 +224,6 @@ browser.o: ../FL/Fl_Scrollbar.H
 browser.o: ../FL/Fl_Select_Browser.H
 browser.o: ../FL/Fl_Simple_Terminal.H
 browser.o: ../FL/Fl_Slider.H
-browser.o: ../FL/Fl_String.H
 browser.o: ../FL/Fl_Text_Buffer.H
 browser.o: ../FL/Fl_Text_Display.H
 browser.o: ../FL/fl_types.h
@@ -246,7 +244,6 @@ button.o: ../FL/fl_config.h
 button.o: ../FL/Fl_Export.H
 button.o: ../FL/Fl_Group.H
 button.o: ../FL/Fl_Image.H
-button.o: ../FL/Fl_String.H
 button.o: ../FL/fl_types.h
 button.o: ../FL/fl_utf8.h
 button.o: ../FL/Fl_Widget.H
@@ -331,7 +328,6 @@ checkers.o: ../FL/Fl_Preferences.H
 checkers.o: ../FL/Fl_Rect.H
 checkers.o: ../FL/Fl_RGB_Image.H
 checkers.o: ../FL/Fl_Slider.H
-checkers.o: ../FL/Fl_String.H
 checkers.o: ../FL/fl_types.h
 checkers.o: ../FL/fl_utf8.h
 checkers.o: ../FL/Fl_Valuator.H
@@ -383,7 +379,6 @@ clipboard.o: ../FL/Fl_RGB_Image.H
 clipboard.o: ../FL/Fl_Scrollbar.H
 clipboard.o: ../FL/Fl_Shared_Image.H
 clipboard.o: ../FL/Fl_Slider.H
-clipboard.o: ../FL/Fl_String.H
 clipboard.o: ../FL/Fl_Tabs.H
 clipboard.o: ../FL/Fl_Text_Buffer.H
 clipboard.o: ../FL/Fl_Text_Display.H
@@ -432,7 +427,6 @@ colbrowser.o: ../FL/Fl_Hold_Browser.H
 colbrowser.o: ../FL/Fl_Image.H
 colbrowser.o: ../FL/Fl_Scrollbar.H
 colbrowser.o: ../FL/Fl_Slider.H
-colbrowser.o: ../FL/Fl_String.H
 colbrowser.o: ../FL/fl_types.h
 colbrowser.o: ../FL/fl_utf8.h
 colbrowser.o: ../FL/Fl_Valuator.H
@@ -539,6 +533,7 @@ cube.o: ../FL/fl_config.h
 cube.o: ../FL/Fl_Device.H
 cube.o: ../FL/Fl_Export.H
 cube.o: ../FL/Fl_Gl_Window.H
+cube.o: ../FL/Fl_Grid.H
 cube.o: ../FL/Fl_Group.H
 cube.o: ../FL/Fl_Image.H
 cube.o: ../FL/Fl_Light_Button.H
@@ -550,8 +545,8 @@ cube.o: ../FL/Fl_Plugin.H
 cube.o: ../FL/Fl_Preferences.H
 cube.o: ../FL/Fl_Printer.H
 cube.o: ../FL/Fl_Radio_Light_Button.H
+cube.o: ../FL/Fl_Rect.H
 cube.o: ../FL/Fl_Slider.H
-cube.o: ../FL/Fl_String.H
 cube.o: ../FL/Fl_Sys_Menu_Bar.H
 cube.o: ../FL/fl_types.h
 cube.o: ../FL/fl_utf8.h
@@ -566,7 +561,6 @@ CubeMain.o: ../FL/Enumerations.H
 CubeMain.o: ../FL/Fl.H
 CubeMain.o: ../FL/fl_attr.h
 CubeMain.o: ../FL/Fl_Bitmap.H
-CubeMain.o: ../FL/Fl_Box.H
 CubeMain.o: ../FL/Fl_Cairo.H
 CubeMain.o: ../FL/fl_casts.H
 CubeMain.o: ../FL/fl_config.h
@@ -638,6 +632,7 @@ cursor.o: ../FL/Fl_Value_Slider.H
 cursor.o: ../FL/Fl_Widget.H
 cursor.o: ../FL/Fl_Window.H
 cursor.o: ../FL/platform_types.h
+cursor.o: ../fluid/pixmaps/compressed.xpm
 curve.o: ../FL/Enumerations.H
 curve.o: ../FL/Fl.H
 curve.o: ../FL/fl_attr.h
@@ -700,7 +695,6 @@ demo.o: ../FL/Fl_Scheme_Choice.H
 demo.o: ../FL/Fl_Scrollbar.H
 demo.o: ../FL/Fl_Simple_Terminal.H
 demo.o: ../FL/Fl_Slider.H
-demo.o: ../FL/Fl_String.H
 demo.o: ../FL/Fl_Text_Buffer.H
 demo.o: ../FL/Fl_Text_Display.H
 demo.o: ../FL/fl_types.h
@@ -761,7 +755,6 @@ device.o: ../FL/Fl_Round_Button.H
 device.o: ../FL/Fl_Scrollbar.H
 device.o: ../FL/Fl_Shared_Image.H
 device.o: ../FL/Fl_Slider.H
-device.o: ../FL/Fl_String.H
 device.o: ../FL/Fl_SVG_File_Surface.H
 device.o: ../FL/Fl_Tile.H
 device.o: ../FL/fl_types.h
@@ -845,7 +838,6 @@ editor.o: ../FL/Fl_Return_Button.H
 editor.o: ../FL/Fl_RGB_Image.H
 editor.o: ../FL/Fl_Scrollbar.H
 editor.o: ../FL/Fl_Slider.H
-editor.o: ../FL/Fl_String.H
 editor.o: ../FL/Fl_Text_Buffer.H
 editor.o: ../FL/Fl_Text_Display.H
 editor.o: ../FL/Fl_Text_Editor.H
@@ -921,7 +913,6 @@ file_chooser.o: ../FL/Fl_Scrollbar.H
 file_chooser.o: ../FL/Fl_Shared_Image.H
 file_chooser.o: ../FL/Fl_Simple_Terminal.H
 file_chooser.o: ../FL/Fl_Slider.H
-file_chooser.o: ../FL/Fl_String.H
 file_chooser.o: ../FL/Fl_Text_Buffer.H
 file_chooser.o: ../FL/Fl_Text_Display.H
 file_chooser.o: ../FL/Fl_Tile.H
@@ -985,7 +976,6 @@ fltk-versions.o: ../FL/fl_config.h
 fltk-versions.o: ../FL/Fl_Export.H
 fltk-versions.o: ../FL/Fl_Group.H
 fltk-versions.o: ../FL/Fl_Image.H
-fltk-versions.o: ../FL/Fl_String.H
 fltk-versions.o: ../FL/fl_types.h
 fltk-versions.o: ../FL/fl_utf8.h
 fltk-versions.o: ../FL/Fl_Widget.H
@@ -1032,7 +1022,6 @@ fonts.o: ../FL/Fl_Return_Button.H
 fonts.o: ../FL/Fl_RGB_Image.H
 fonts.o: ../FL/Fl_Scrollbar.H
 fonts.o: ../FL/Fl_Slider.H
-fonts.o: ../FL/Fl_String.H
 fonts.o: ../FL/Fl_Tile.H
 fonts.o: ../FL/fl_types.h
 fonts.o: ../FL/fl_utf8.h
@@ -1090,7 +1079,6 @@ forms.o: ../FL/Fl_Round_Button.H
 forms.o: ../FL/Fl_Scrollbar.H
 forms.o: ../FL/fl_show_colormap.H
 forms.o: ../FL/Fl_Slider.H
-forms.o: ../FL/Fl_String.H
 forms.o: ../FL/Fl_Tile.H
 forms.o: ../FL/Fl_Timer.H
 forms.o: ../FL/fl_types.h
@@ -1171,7 +1159,6 @@ fullscreen.o: ../FL/Fl_Menu_Item.H
 fullscreen.o: ../FL/Fl_Scrollbar.H
 fullscreen.o: ../FL/Fl_Single_Window.H
 fullscreen.o: ../FL/Fl_Slider.H
-fullscreen.o: ../FL/Fl_String.H
 fullscreen.o: ../FL/Fl_Toggle_Light_Button.H
 fullscreen.o: ../FL/fl_types.h
 fullscreen.o: ../FL/fl_utf8.h
@@ -1203,6 +1190,24 @@ glpuzzle.o: ../FL/glut.H
 glpuzzle.o: ../FL/platform_types.h
 glpuzzle.o: trackball.c
 glpuzzle.o: trackball.h
+glut_test.o: ../FL/Enumerations.H
+glut_test.o: ../FL/Fl.H
+glut_test.o: ../FL/fl_attr.h
+glut_test.o: ../FL/Fl_Bitmap.H
+glut_test.o: ../FL/Fl_Cairo.H
+glut_test.o: ../FL/fl_casts.H
+glut_test.o: ../FL/fl_config.h
+glut_test.o: ../FL/Fl_Export.H
+glut_test.o: ../FL/Fl_Gl_Window.H
+glut_test.o: ../FL/Fl_Group.H
+glut_test.o: ../FL/Fl_Image.H
+glut_test.o: ../FL/fl_types.h
+glut_test.o: ../FL/fl_utf8.h
+glut_test.o: ../FL/Fl_Widget.H
+glut_test.o: ../FL/Fl_Window.H
+glut_test.o: ../FL/gl.h
+glut_test.o: ../FL/glut.H
+glut_test.o: ../FL/platform_types.h
 gl_overlay.o: ../config.h
 gl_overlay.o: ../FL/Enumerations.H
 gl_overlay.o: ../FL/Fl.H
@@ -1623,7 +1628,6 @@ menubar.o: ../FL/Fl_Scheme_Choice.H
 menubar.o: ../FL/Fl_Scrollbar.H
 menubar.o: ../FL/Fl_Simple_Terminal.H
 menubar.o: ../FL/Fl_Slider.H
-menubar.o: ../FL/Fl_String.H
 menubar.o: ../FL/fl_string_functions.h
 menubar.o: ../FL/Fl_Sys_Menu_Bar.H
 menubar.o: ../FL/Fl_Text_Buffer.H
@@ -1647,7 +1651,6 @@ message.o: ../FL/fl_config.h
 message.o: ../FL/Fl_Export.H
 message.o: ../FL/Fl_Group.H
 message.o: ../FL/Fl_Image.H
-message.o: ../FL/Fl_String.H
 message.o: ../FL/fl_types.h
 message.o: ../FL/fl_utf8.h
 message.o: ../FL/Fl_Widget.H
@@ -1718,7 +1721,6 @@ native-filechooser.o: ../FL/Fl_RGB_Image.H
 native-filechooser.o: ../FL/Fl_Scrollbar.H
 native-filechooser.o: ../FL/Fl_Simple_Terminal.H
 native-filechooser.o: ../FL/Fl_Slider.H
-native-filechooser.o: ../FL/Fl_String.H
 native-filechooser.o: ../FL/Fl_Text_Buffer.H
 native-filechooser.o: ../FL/Fl_Text_Display.H
 native-filechooser.o: ../FL/Fl_Tile.H
@@ -1926,7 +1928,6 @@ pixmap_browser.o: ../FL/Fl_Return_Button.H
 pixmap_browser.o: ../FL/Fl_Scrollbar.H
 pixmap_browser.o: ../FL/Fl_Shared_Image.H
 pixmap_browser.o: ../FL/Fl_Slider.H
-pixmap_browser.o: ../FL/Fl_String.H
 pixmap_browser.o: ../FL/Fl_SVG_File_Surface.H
 pixmap_browser.o: ../FL/Fl_Tile.H
 pixmap_browser.o: ../FL/fl_types.h
@@ -1962,7 +1963,6 @@ preferences.o: ../FL/Fl_Menu_Item.H
 preferences.o: ../FL/Fl_Preferences.H
 preferences.o: ../FL/Fl_Round_Button.H
 preferences.o: ../FL/Fl_Slider.H
-preferences.o: ../FL/Fl_String.H
 preferences.o: ../FL/fl_types.h
 preferences.o: ../FL/fl_utf8.h
 preferences.o: ../FL/Fl_Valuator.H
@@ -2222,7 +2222,6 @@ resizebox.o: ../FL/Fl_Preferences.H
 resizebox.o: ../FL/Fl_Radio_Button.H
 resizebox.o: ../FL/Fl_Rect.H
 resizebox.o: ../FL/Fl_RGB_Image.H
-resizebox.o: ../FL/Fl_String.H
 resizebox.o: ../FL/fl_types.h
 resizebox.o: ../FL/fl_utf8.h
 resizebox.o: ../FL/Fl_Widget.H
@@ -2378,7 +2377,6 @@ sudoku.o: ../FL/Fl_RGB_Image.H
 sudoku.o: ../FL/Fl_Scrollbar.H
 sudoku.o: ../FL/Fl_Shared_Image.H
 sudoku.o: ../FL/Fl_Slider.H
-sudoku.o: ../FL/Fl_String.H
 sudoku.o: ../FL/Fl_Sys_Menu_Bar.H
 sudoku.o: ../FL/fl_types.h
 sudoku.o: ../FL/fl_utf8.h
@@ -2438,7 +2436,6 @@ table.o: ../FL/Fl_Group.H
 table.o: ../FL/Fl_Image.H
 table.o: ../FL/Fl_Input.H
 table.o: ../FL/Fl_Input_.H
-table.o: ../FL/Fl_Int_Vector.H
 table.o: ../FL/Fl_Light_Button.H
 table.o: ../FL/Fl_Menu_.H
 table.o: ../FL/Fl_Menu_Item.H
@@ -2451,7 +2448,6 @@ table.o: ../FL/Fl_Scroll.H
 table.o: ../FL/Fl_Scrollbar.H
 table.o: ../FL/Fl_Simple_Terminal.H
 table.o: ../FL/Fl_Slider.H
-table.o: ../FL/Fl_String.H
 table.o: ../FL/Fl_Table.H
 table.o: ../FL/Fl_Table_Row.H
 table.o: ../FL/Fl_Text_Buffer.H
@@ -2483,7 +2479,6 @@ tabs.o: ../FL/Fl_Input_.H
 tabs.o: ../FL/Fl_Menu_.H
 tabs.o: ../FL/Fl_Menu_Item.H
 tabs.o: ../FL/Fl_Return_Button.H
-tabs.o: ../FL/Fl_String.H
 tabs.o: ../FL/Fl_Tabs.H
 tabs.o: ../FL/fl_types.h
 tabs.o: ../FL/fl_utf8.h
@@ -2509,7 +2504,6 @@ threads.o: ../FL/Fl_Group.H
 threads.o: ../FL/Fl_Image.H
 threads.o: ../FL/Fl_Scrollbar.H
 threads.o: ../FL/Fl_Slider.H
-threads.o: ../FL/Fl_String.H
 threads.o: ../FL/fl_types.h
 threads.o: ../FL/fl_utf8.h
 threads.o: ../FL/Fl_Valuator.H
@@ -2603,7 +2597,6 @@ tree.o: ../FL/Fl_RGB_Image.H
 tree.o: ../FL/Fl_Scrollbar.H
 tree.o: ../FL/Fl_Simple_Terminal.H
 tree.o: ../FL/Fl_Slider.H
-tree.o: ../FL/Fl_String.H
 tree.o: ../FL/Fl_Text_Buffer.H
 tree.o: ../FL/Fl_Text_Display.H
 tree.o: ../FL/Fl_Tile.H
@@ -2669,7 +2662,6 @@ unittests.o: ../FL/Fl_RGB_Image.H
 unittests.o: ../FL/Fl_Scrollbar.H
 unittests.o: ../FL/Fl_Simple_Terminal.H
 unittests.o: ../FL/Fl_Slider.H
-unittests.o: ../FL/Fl_String.H
 unittests.o: ../FL/fl_string_functions.h
 unittests.o: ../FL/Fl_Text_Buffer.H
 unittests.o: ../FL/Fl_Text_Display.H
@@ -2774,10 +2766,13 @@ unittest_complex_shapes.o: ../FL/Fl_Window.H
 unittest_complex_shapes.o: ../FL/platform_types.h
 unittest_complex_shapes.o: unittests.h
 unittest_core.o: ../FL/Enumerations.H
+unittest_core.o: ../FL/filename.H
 unittest_core.o: ../FL/Fl.H
 unittest_core.o: ../FL/fl_attr.h
 unittest_core.o: ../FL/Fl_Bitmap.H
+unittest_core.o: ../FL/Fl_Button.H
 unittest_core.o: ../FL/Fl_Cairo.H
+unittest_core.o: ../FL/fl_callback_macros.H
 unittest_core.o: ../FL/fl_casts.H
 unittest_core.o: ../FL/fl_config.h
 unittest_core.o: ../FL/Fl_Device.H
@@ -2795,7 +2790,6 @@ unittest_core.o: ../FL/Fl_RGB_Image.H
 unittest_core.o: ../FL/Fl_Scrollbar.H
 unittest_core.o: ../FL/Fl_Simple_Terminal.H
 unittest_core.o: ../FL/Fl_Slider.H
-unittest_core.o: ../FL/Fl_String.H
 unittest_core.o: ../FL/Fl_Text_Buffer.H
 unittest_core.o: ../FL/Fl_Text_Display.H
 unittest_core.o: ../FL/fl_types.h
@@ -2804,6 +2798,7 @@ unittest_core.o: ../FL/Fl_Valuator.H
 unittest_core.o: ../FL/Fl_Widget.H
 unittest_core.o: ../FL/Fl_Window.H
 unittest_core.o: ../FL/platform_types.h
+unittest_core.o: ../src/Fl_String.H
 unittest_core.o: unittests.h
 unittest_fast_shapes.o: ../config.h
 unittest_fast_shapes.o: ../FL/Enumerations.H
@@ -2962,7 +2957,6 @@ unittest_scrollbarsize.o: ../FL/Fl_Export.H
 unittest_scrollbarsize.o: ../FL/Fl_Graphics_Driver.H
 unittest_scrollbarsize.o: ../FL/Fl_Group.H
 unittest_scrollbarsize.o: ../FL/Fl_Image.H
-unittest_scrollbarsize.o: ../FL/Fl_Int_Vector.H
 unittest_scrollbarsize.o: ../FL/Fl_Pixmap.H
 unittest_scrollbarsize.o: ../FL/Fl_Plugin.H
 unittest_scrollbarsize.o: ../FL/Fl_Preferences.H

@@ -1,7 +1,7 @@
 //
 // Widget type code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2021 by Bill Spitzak and others.
+// Copyright 1998-2023 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -18,17 +18,17 @@
 /// \{
 
 /** \class Fl_Type
-Each object described by Fluid is one of these objects.  They
-are all stored in a double-linked list.
+ Each object described by Fluid is one of these objects.  They
+ are all stored in a double-linked list.
 
-The "type" of the object is covered by the virtual functions.
-There will probably be a lot of these virtual functions.
+ The "type" of the object is covered by the virtual functions.
+ There will probably be a lot of these virtual functions.
 
-The type browser is also a list of these objects, but they
-are "factory" instances, not "real" ones.  These objects exist
-only so the "make" method can be called on them.  They are
-not in the linked list and are not written to files or
-copied or otherwise examined.
+ The type browser is also a list of these objects, but they
+ are "factory" instances, not "real" ones.  These objects exist
+ only so the "make" method can be called on them.  They are
+ not in the linked list and are not written to files or
+ copied or otherwise examined.
 
  The Fl_Type inheritance is currently:
       --+-- Fl_Type
@@ -67,6 +67,7 @@ copied or otherwise examined.
           +-+ Fl_Group_Type
           | +-- Fl_Pack_Type
           | +-- Fl_Flex_Type
+          | +-- Fl_Grid_Type
           | +-- Fl_Table_Type
           | +-- Fl_Tabs_Type
           | +-- Fl_Scroll_Type
@@ -238,7 +239,12 @@ static void delete_children(Fl_Type *p) {
   }
 }
 
-// object list operations:
+/** Delete all nodes in the Types tree and reset project settings, or delete selected nodes.
+ Also calls the browser to refresh.
+ \note Please refactor this into two separate methods of Fluid_Project.
+ \param[in] selected_only if set, delete only the selected widgets and
+ don't reset the project.
+ */
 void delete_all(int selected_only) {
   for (Fl_Type *f = Fl_Type::first; f;) {
     if (f->selected || !selected_only) {
@@ -252,19 +258,30 @@ void delete_all(int selected_only) {
   }
   if(!selected_only) {
     // reset the setting for the external shell command
-    shell_prefs_get();
-    shell_settings_write();
+    if (g_shell_config) {
+      g_shell_config->clear(FD_STORE_PROJECT);
+      g_shell_config->rebuild_shell_menu();
+      g_shell_config->update_settings_dialog();
+    }
     widget_browser->hposition(0);
     widget_browser->vposition(0);
     g_layout_list.remove_all(FD_STORE_PROJECT);
+    g_layout_list.current_suite(0);
+    g_layout_list.current_preset(0);
     g_layout_list.update_dialogs();
   }
   selection_changed(0);
   widget_browser->redraw();
 }
 
-// update a string member:
-// replace a string pointer with new value, strips leading/trailing blanks:
+/** Update a string.
+ Replace a string pointer with new value, strips leading/trailing blanks.
+ As a side effect, this call also sets the mod flags.
+ \param[in] n new string, can be NULL
+ \param[out] p update this pointer, possibly reallocate memory
+ \param[in] nostrip if set, do not strip leading and trailing spaces and tabs
+ \return 1 if the string in p changed
+ */
 int storestring(const char *n, const char * & p, int nostrip) {
   if (n == p) return 0;
   undo_checkpoint();
@@ -290,7 +307,10 @@ int storestring(const char *n, const char * & p, int nostrip) {
   return 1;
 }
 
-void fixvisible(Fl_Type *p) {
+/** Update the `visible` flag for `p` and all its descendants.
+ \param[in] p start here and update all descendants
+ */
+void update_visibility_flag(Fl_Type *p) {
   Fl_Type *t = p;
   for (;;) {
     if (t->parent) t->visible = t->parent->visible && t->parent->open_;
@@ -300,7 +320,7 @@ void fixvisible(Fl_Type *p) {
   }
 }
 
-// ---- implemenation of Fl_Type
+// ---- implementation of Fl_Type
 
 /** \var Fl_Type *Fl_Type::parent
  Link to the parent node in the tree structure.
@@ -349,7 +369,7 @@ Fl_Type::Fl_Type() {
 
  The destructor removes itself from the doubly linked list. This is dangerous,
  because the node does not know if it is part of the widget tree, or if it is
- in a seperate tree. We try to take care of that as well as possible.
+ in a separate tree. We try to take care of that as well as possible.
  */
 Fl_Type::~Fl_Type() {
   // warning: destructor only works for widgets that have been add()ed.
@@ -422,7 +442,7 @@ Fl_Group_Type *Fl_Type::group() {
   if (!is_widget())
     return NULL;
   for (Fl_Type *t = this; t; t=t->parent)
-    if (t->is_group())
+    if (t->is_a(ID_Group))
       return (Fl_Group_Type*)t;
   return NULL;
 }
@@ -477,7 +497,7 @@ void Fl_Type::add(Fl_Type *p, Strategy strategy) {
   // tell this that it was added, so it can update itself
   if (p) p->add_child(this,0);
   open_ = 1;
-  fixvisible(this);
+  update_visibility_flag(this);
   set_modflag(1);
 
   if (strategy==kAddAfterCurrent && current) {
@@ -523,7 +543,7 @@ void Fl_Type::insert(Fl_Type *g) {
   if (prev) prev->next = this; else first = this;
   end->next = g;
   g->prev = end;
-  fixvisible(this);
+  update_visibility_flag(this);
   // tell parent that it has a new child, so it can update itself
   if (parent) parent->add_child(this, g);
   widget_browser->redraw();
@@ -584,7 +604,7 @@ Fl_Type *Fl_Type::remove() {
 }
 
 void Fl_Type::name(const char *n) {
-  int nostrip = is_a(Fl_Type::ID_Comment);
+  int nostrip = is_a(ID_Comment);
   if (storestring(n,name_,nostrip)) {
     if (visible) widget_browser->redraw();
   }
@@ -661,6 +681,7 @@ void Fl_Type::write(Fd_Project_Writer &f) {
   f.write_word(name());
   f.write_open(level);
   write_properties(f);
+  if (parent) parent->write_parent_properties(f, this, true);
   f.write_close(level);
   if (!is_parent()) return;
   // now do children:
@@ -716,9 +737,97 @@ void Fl_Type::read_property(Fd_Project_Reader &f, const char *c) {
     open_ = 1;
   else if (!strcmp(c,"selected"))
     select(this,1);
+  else if (!strcmp(c,"parent_properties"))
+    if (parent) {
+      const char *cc = f.read_word(1);
+      if (strcmp(cc, "{")==0) {
+        cc = f.read_word();
+        parent->read_parent_properties(f, this, cc);
+      } else {
+        f.read_error("'parent_properties' must be followed by '{'");
+      }
+    } else {
+      f.read_error("Types using 'parent_properties' must have a parent");
+      f.read_word();  // skip the entire block (this should generate a warning)
+    }
   else
     f.read_error("Unknown property \"%s\"", c);
 }
+
+/** Write parent properties into the child property list.
+
+ Some widgets store information for every child they manage. For example,
+ Fl_Grid stores the row and column position of every child. This method stores
+ this information with the child, but it is read and written by the parent.
+
+ Parent properties solve several issues. A child will keep parent properties
+ if copied from on grid into another. The parent does not have to keep lists
+ of properties that may diverge from the actual order or number of children.
+ And lastly, properties are read when they are actually needed and don't have
+ to be stored in some temporary array.
+
+ Parent properties are written as their own block at the end of the child's
+ property list. The block starts with the `parent_properties` keyword, followed
+ by a list of property/value pairs. The order of properties is significant,
+ however individual properties can be left out.
+
+ To avoid writing the `parent_properties` block unnecessarily, this method
+ should only generate it if `encapsulate` is set *and* the contained
+ properties are not at their default.
+
+ Lastly, this method should call the super class to give it a chance to append
+ its own properties.
+
+ \see Fl_Grid_Type::write_parent_properties(Fd_Project_Writer &f, Fl_Type *child, bool encapsulate)
+
+ \param[in] f the project file writer
+ \param[in] child write properties for this child, make sure it has the correct type
+ \param[in] encapsulate write the `parent_properties {}` block if true before writing any properties
+ */
+void Fl_Type::write_parent_properties(Fd_Project_Writer &f, Fl_Type *child, bool encapsulate) {
+  (void)f; (void)child; (void)encapsulate;
+  // nothing to do here
+  // put the following code into your implementation of write_parent_properties
+  // if there are actual non-default properties to write
+  //  if (encapsulate) {
+  //    f.write_indent(level+2);
+  //    f.write_string("parent_properties {");
+  //  }
+  // now write your properties as name/value pairs
+  //  f.write_indent(level+3);
+  //  f.write_string("location {%d %d}", cell->row(), cell->col());
+  // give the super class a chance to write its properties as well
+  //  super::write_parent_properties(f, child, false);
+  // close the encapsulation
+  //  if (encapsulate) {
+  //    f.write_indent(level+2);
+  //    f.write_string("}");
+  //  }
+}
+
+/** Read parent per-child properties.
+
+ A parent widget can store properties for every child that it manages. This
+ method reads back those properties. The order of properties is significant,
+ but individual properties can be omitted.
+
+ \see Fl_Type::write_parent_properties(Fd_Project_Writer &f, Fl_Type *child, bool encapsulate)
+ \see Fl_Grid_Type::read_parent_properties(Fd_Project_Reader &f, Fl_Type *child, const char *property)
+
+ \param[in] f the project file writer
+ \param[in] child read properties for this child
+ \param[in] property the name of a property, or "}" when we reach the end of the list
+ */
+void Fl_Type::read_parent_properties(Fd_Project_Reader &f, Fl_Type *child, const char *property) {
+  (void)child;
+  for (;;) {
+    if (strcmp(property, "}")==0) break;
+    f.read_error("Unknown parent property \"%s\"", property);
+    f.read_word(); // ignore property value
+    property = f.read_word(); // read next property name
+  }
+}
+
 
 int Fl_Type::read_fdesign(const char*, const char*) {return 0;}
 
@@ -842,7 +951,7 @@ void Fl_Type::copy_properties() {
  */
 int Fl_Type::user_defined(const char* cbname) const {
   for (Fl_Type* p = Fl_Type::first; p ; p = p->next)
-    if (p->is_a(Fl_Type::ID_Function) && p->name() != 0)
+    if (p->is_a(ID_Function) && p->name() != 0)
       if (strncmp(p->name(), cbname, strlen(cbname)) == 0)
         if (p->name()[strlen(cbname)] == '(')
           return 1;
@@ -877,17 +986,16 @@ const char* Fl_Type::class_name(const int need_nest) const {
 }
 
 /**
- If this Type resides inside a class, this function returns the class type, or null.
+ Check if this is inside a Fl_Class_Type or Fl_Widget_Class_Type.
+ \return true if any of the parents is Fl_Class_Type or Fl_Widget_Class_Type
  */
-const Fl_Class_Type *Fl_Type::is_in_class() const {
+bool Fl_Type::is_in_class() const {
   Fl_Type* p = parent;
   while (p) {
-    if (p->is_class()) {
-      return (Fl_Class_Type*)p;
-    }
+    if (p->is_class()) return true;
     p = p->parent;
   }
-  return 0;
+  return false;
 }
 
 void Fl_Type::write_static(Fd_Code_Writer&) {

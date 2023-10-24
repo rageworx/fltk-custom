@@ -26,7 +26,7 @@
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Preferences.H>
 #include <FL/Fl_Menu_Bar.H>
-#include <FL/filename.H>
+#include "fluid_filename.h"
 #include "../src/flstring.h"
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
@@ -160,13 +160,14 @@ void undo_cb(Fl_Widget *, void *) {
 
 // Save current file to undo buffer
 void undo_checkpoint() {
-  int undo_item = main_menubar->find_index(undo_cb);
-  int redo_item = main_menubar->find_index(redo_cb);
   //  printf("undo_checkpoint(): undo_current=%d, undo_paused=%d, modflag=%d\n",
   //         undo_current, undo_paused, modflag);
 
   // Don't checkpoint if undo_suspend() has been called...
   if (undo_paused) return;
+
+  int undo_item = main_menubar->find_index(undo_cb);
+  int redo_item = main_menubar->find_index(redo_cb);
 
   // Save the current UI to a checkpoint file...
   const char *filename = undo_filename(undo_current);
