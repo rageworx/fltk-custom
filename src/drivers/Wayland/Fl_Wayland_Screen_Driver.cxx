@@ -46,6 +46,7 @@
 #include <string.h> // for strerror()
 extern "C" {
   bool libdecor_get_cursor_settings(char **theme, int *size);
+  void bind_to_gtk_shell(struct wl_registry *, uint32_t);
 }
 
 
@@ -122,7 +123,7 @@ static void do_set_cursor(struct Fl_Wayland_Screen_Driver::seat *seat,
   struct wl_buffer *buffer;
   const int scale = seat->pointer_scale;
 
-  if (!seat->cursor_theme)
+  if (!seat->cursor_theme || !seat->wl_pointer)
     return;
 
   if (!wl_cursor) wl_cursor = seat->default_cursor;
@@ -262,13 +263,6 @@ static void pointer_button(void *data,
   if (!win) return;
   win = win->top_window();
   wld_event_time = time;
-  if (button == BTN_LEFT && state == WL_POINTER_BUTTON_STATE_PRESSED &&
-      seat->pointer_focus == NULL &&
-      (fl_wl_xid(win))->kind == Fl_Wayland_Window_Driver::DECORATED) {
-    // click on titlebar
-    libdecor_frame_move(fl_wl_xid(win)->frame, seat->wl_seat, serial);
-    return;
-  }
   int b = 0;
   // Fl::e_state &= ~FL_BUTTONS;    // DO NOT reset the mouse button state!
   if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
@@ -654,7 +648,7 @@ void Fl_Wayland_Screen_Driver::compose_reset() {
   if (!Fl_Wayland_Screen_Driver::wl_registry) open_display();
   Fl::compose_state = 0;
   next_marked_length = 0;
-  xkb_compose_state_reset(seat->xkb_compose_state);
+  if (seat->xkb_compose_state) xkb_compose_state_reset(seat->xkb_compose_state);
 }
 
 
@@ -1073,8 +1067,8 @@ static void registry_handle_global(void *user_data, struct wl_registry *wl_regis
             id, &wl_shm_interface, 1);
 
   } else if (strcmp(interface, "wl_seat") == 0) {
-    if (version < 2) {
-      Fl::fatal("%s version 2 required but only version %i is available\n",
+    if (version < 3) {
+      Fl::fatal("%s version 3 required but only version %i is available\n",
                 interface, version);
     }
     if (!scr_driver->seat) scr_driver->seat =
@@ -1083,7 +1077,7 @@ static void registry_handle_global(void *user_data, struct wl_registry *wl_regis
 //fprintf(stderr, "registry_handle_global: seat=%p\n", scr_driver->seat);
     wl_list_init(&scr_driver->seat->pointer_outputs);
     scr_driver->seat->wl_seat = (wl_seat*)wl_registry_bind(wl_registry, id,
-                                                           &wl_seat_interface, 2);
+                                                           &wl_seat_interface, 3);
     scr_driver->seat->xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
     if (scr_driver->seat->xkb_context) {
       const char *locale = getenv("LC_ALL");
@@ -1153,6 +1147,9 @@ static void registry_handle_global(void *user_data, struct wl_registry *wl_regis
   } else if (strcmp(interface, "gtk_shell1") == 0) {
     Fl_Wayland_Screen_Driver::compositor = Fl_Wayland_Screen_Driver::MUTTER;
     //fprintf(stderr, "Running the Mutter compositor\n");
+    if ( version >= 5) {
+      bind_to_gtk_shell(wl_registry, id);
+    }
   } else if (strcmp(interface, "weston_desktop_shell") == 0) {
     Fl_Wayland_Screen_Driver::compositor = Fl_Wayland_Screen_Driver::WESTON;
     //fprintf(stderr, "Running the Weston compositor\n");
@@ -1262,6 +1259,13 @@ static const struct wl_callback_listener sync_listener = {
 };
 
 
+static void do_atexit() {
+  if (Fl_Wayland_Screen_Driver::wl_display) {
+    wl_display_roundtrip(Fl_Wayland_Screen_Driver::wl_display);
+  }
+}
+
+
 void Fl_Wayland_Screen_Driver::open_display_platform() {
   static bool beenHereDoneThat = false;
   if (beenHereDoneThat)
@@ -1286,10 +1290,19 @@ void Fl_Wayland_Screen_Driver::open_display_platform() {
   Fl::add_fd(wl_display_get_fd(wl_display), FL_READ, (Fl_FD_Handler)wayland_socket_callback,
              wl_display);
   fl_create_print_window();
+  /* This is useful to avoid crash of the Wayland compositor after
+   FLTK apps terminate in certain situations:
+   - gnome-shell version < 44 (e.g. version 42.9)
+   - focus set to "follow-mouse"
+   See issue #821 for details.
+  */
+  atexit(do_atexit);
 }
 
 
 void Fl_Wayland_Screen_Driver::close_display() {
+  if (!Fl_Wayland_Screen_Driver::wl_display) return;
+  wl_display_roundtrip(Fl_Wayland_Screen_Driver::wl_display);
   if (text_input_base) {
     disable_im();
     zwp_text_input_manager_v3_destroy(text_input_base);
@@ -1312,6 +1325,17 @@ void Fl_Wayland_Screen_Driver::close_display() {
     seat->cursor_theme = NULL;
   }
   wl_compositor_destroy(wl_compositor); wl_compositor = NULL;
+  // wl_shm-related data
+  if (Fl_Wayland_Graphics_Driver::current_pool) {
+    struct Fl_Wayland_Graphics_Driver::wld_shm_pool_data *pool_data =
+    (struct Fl_Wayland_Graphics_Driver::wld_shm_pool_data*)
+    wl_shm_pool_get_user_data(Fl_Wayland_Graphics_Driver::current_pool);
+    wl_shm_pool_destroy(Fl_Wayland_Graphics_Driver::current_pool);
+    Fl_Wayland_Graphics_Driver::current_pool = NULL;
+    /*int err = */munmap(pool_data->pool_memory, pool_data->pool_size);
+    //printf("close_display munmap(%p)->%d\n", pool_data->pool_memory, err);
+    free(pool_data);
+  }
   wl_shm_destroy(wl_shm); wl_shm = NULL;
   if (seat->wl_keyboard) {
     if (seat->xkb_state) {
@@ -1343,7 +1367,7 @@ void Fl_Wayland_Screen_Driver::close_display() {
   seat->data_device_manager = NULL;
   wl_seat_destroy(seat->wl_seat); seat->wl_seat = NULL;
   if (seat->name) free(seat->name);
-  delete seat; seat = NULL;
+  free(seat); seat = NULL;
   if (libdecor_context) {
     libdecor_unref(libdecor_context);
     libdecor_context = NULL;
@@ -1356,6 +1380,10 @@ void Fl_Wayland_Screen_Driver::close_display() {
   wl_registry_destroy(wl_registry); wl_registry = NULL;
   wl_display_disconnect(Fl_Wayland_Screen_Driver::wl_display);
   Fl_Wayland_Screen_Driver::wl_display = NULL;
+  delete Fl_Display_Device::display_device()->driver();
+  delete Fl_Display_Device::display_device();
+  delete Fl::system_driver();
+  delete this;
 }
 
 

@@ -59,7 +59,6 @@
           | +-- Fl_Output_Type
           +-+ Fl_Text_Display_Type
           | +-- Fl_Text_Editor+Type
-          | +-- Fl_Simple_Terminal_Type
           +-- Fl_Box_Type
           +-- Fl_Clock_Type
           +-- Fl_Progress_Type
@@ -71,6 +70,7 @@
           | +-- Fl_Table_Type
           | +-- Fl_Tabs_Type
           | +-- Fl_Scroll_Type
+          | +-- Fl_Terminal_Type
           | +-- Fl_Tile_Type
           | +-- Fl_Wizard_Type
           | +-+ Fl_Window_Type
@@ -123,8 +123,10 @@ Fl_Type *Fl_Type::first = NULL;
 Fl_Type *Fl_Type::last = NULL;
 Fl_Type *Fl_Type::current = NULL;
 Fl_Type *Fl_Type::current_dnd = NULL;
+int Fl_Type::allow_layout = 0;
 
 Fl_Type *in_this_only; // set if menu popped-up in window
+
 
 // ---- various functions
 
@@ -190,6 +192,7 @@ void earlier_cb(Fl_Widget*,void*) {
       if (g && g->level == f->level && !g->selected) {
         if (!mod) undo_checkpoint();
         f->move_before(g);
+        if (f->parent) f->parent->layout_widget();
         mod = 1;
       }
     }
@@ -214,6 +217,7 @@ void later_cb(Fl_Widget*,void*) {
       if (g && g->level == f->level && !g->selected) {
         if (!mod) undo_checkpoint();
         g->move_before(f);
+        if (f->parent) f->parent->layout_widget();
         mod = 1;
       }
     }
@@ -347,7 +351,17 @@ void update_visibility_flag(Fl_Type *p) {
 /**
  Constructor and base for any node in the widget tree.
  */
-Fl_Type::Fl_Type() {
+Fl_Type::Fl_Type() :
+uid_(0),
+code_static_start(-1), code_static_end(-1),
+code1_start(-1), code1_end(-1),
+code2_start(-1), code2_end(-1),
+header1_start(-1), header1_end(-1),
+header2_start(-1), header2_end(-1),
+header_static_start(-1), header_static_end(-1),
+proj1_start(-1), proj1_end(-1),
+proj2_start(-1), proj2_end(-1)
+{
   factory = 0;
   parent = 0;
   next = prev = 0;
@@ -360,8 +374,6 @@ Fl_Type::Fl_Type() {
   callback_ = 0;
   comment_ = 0;
   level = 0;
-  code_position = header_position = -1;
-  code_position_end = header_position_end = -1;
 }
 
 /**
@@ -494,6 +506,14 @@ void Fl_Type::add(Fl_Type *p, Strategy strategy) {
     last = end;
     prev = end->next = 0;
   }
+  { // make sure that we have no duplicate uid's
+    Fl_Type *tp = this;
+    do {
+      tp->set_uid(tp->uid_);
+      tp = tp->next;
+    } while (tp!=end && tp!=NULL);
+  }
+
   // tell this that it was added, so it can update itself
   if (p) p->add_child(this,0);
   open_ = 1;
@@ -544,6 +564,13 @@ void Fl_Type::insert(Fl_Type *g) {
   end->next = g;
   g->prev = end;
   update_visibility_flag(this);
+  { // make sure that we have no duplicate uid's
+    Fl_Type *tp = this;
+    do {
+      tp->set_uid(tp->uid_);
+      tp = tp->next;
+    } while (tp!=end && tp!=NULL);
+  }
   // tell parent that it has a new child, so it can update itself
   if (parent) parent->add_child(this, g);
   widget_browser->redraw();
@@ -669,6 +696,8 @@ void Fl_Type::move_before(Fl_Type* g) {
 
 // write a widget and all its children:
 void Fl_Type::write(Fd_Project_Writer &f) {
+  if (f.write_sourceview()) proj1_start = (int)ftell(f.file()) + 1;
+  if (f.write_sourceview()) proj2_start = (int)ftell(f.file()) + 1;
   f.write_indent(level);
   f.write_word(type_name());
 
@@ -679,21 +708,31 @@ void Fl_Type::write(Fd_Project_Writer &f) {
   }
 
   f.write_word(name());
-  f.write_open(level);
+  f.write_open();
   write_properties(f);
   if (parent) parent->write_parent_properties(f, this, true);
   f.write_close(level);
-  if (!is_parent()) return;
+  if (f.write_sourceview()) proj1_end = (int)ftell(f.file());
+  if (!is_parent()) {
+    if (f.write_sourceview()) proj2_end = (int)ftell(f.file());
+    return;
+  }
   // now do children:
-  f.write_open(level);
+  f.write_open();
   Fl_Type *child;
   for (child = next; child && child->level > level; child = child->next)
     if (child->level == level+1) child->write(f);
+  if (f.write_sourceview()) proj2_start = (int)ftell(f.file()) + 1;
   f.write_close(level);
+  if (f.write_sourceview()) proj2_end = (int)ftell(f.file());
 }
 
 void Fl_Type::write_properties(Fd_Project_Writer &f) {
   // repeat this for each attribute:
+  if (g_project.write_mergeback_data && uid_) {
+    f.write_word("uid");
+    f.write_string("%04x", uid_);
+  }
   if (label()) {
     f.write_indent(level+1);
     f.write_word("label");
@@ -723,7 +762,13 @@ void Fl_Type::write_properties(Fd_Project_Writer &f) {
 }
 
 void Fl_Type::read_property(Fd_Project_Reader &f, const char *c) {
-  if (!strcmp(c,"label"))
+  if (!strcmp(c,"uid")) {
+    const char *hex = f.read_word();
+    int x = 0;
+    if (hex)
+      x = sscanf(hex, "%04x", &x);
+    set_uid(x);
+  } else if (!strcmp(c,"label"))
     label(f.read_word());
   else if (!strcmp(c,"user_data"))
     user_data(f.read_word());
@@ -741,8 +786,11 @@ void Fl_Type::read_property(Fd_Project_Reader &f, const char *c) {
     if (parent) {
       const char *cc = f.read_word(1);
       if (strcmp(cc, "{")==0) {
-        cc = f.read_word();
-        parent->read_parent_properties(f, this, cc);
+        for (;;) {
+          cc = f.read_word();
+          if (!cc || cc[0]==0 || strcmp(cc, "}")==0) break;
+          parent->read_parent_property(f, this, cc);
+        }
       } else {
         f.read_error("'parent_properties' must be followed by '{'");
       }
@@ -805,27 +853,22 @@ void Fl_Type::write_parent_properties(Fd_Project_Writer &f, Fl_Type *child, bool
   //  }
 }
 
-/** Read parent per-child properties.
+/** Read one parent per-child property.
 
  A parent widget can store properties for every child that it manages. This
- method reads back those properties. The order of properties is significant,
- but individual properties can be omitted.
+ method reads back those properties. This function is virtual, so if a Type
+ does not support a property, it will propagate to its super class.
 
  \see Fl_Type::write_parent_properties(Fd_Project_Writer &f, Fl_Type *child, bool encapsulate)
- \see Fl_Grid_Type::read_parent_properties(Fd_Project_Reader &f, Fl_Type *child, const char *property)
+ \see Fl_Grid_Type::read_parent_property(Fd_Project_Reader &f, Fl_Type *child, const char *property)
 
  \param[in] f the project file writer
  \param[in] child read properties for this child
  \param[in] property the name of a property, or "}" when we reach the end of the list
  */
-void Fl_Type::read_parent_properties(Fd_Project_Reader &f, Fl_Type *child, const char *property) {
+void Fl_Type::read_parent_property(Fd_Project_Reader &f, Fl_Type *child, const char *property) {
   (void)child;
-  for (;;) {
-    if (strcmp(property, "}")==0) break;
-    f.read_error("Unknown parent property \"%s\"", property);
-    f.read_word(); // ignore property value
-    property = f.read_word(); // read next property name
-  }
+  f.read_error("Unknown parent property \"%s\"", property);
 }
 
 
@@ -1007,6 +1050,74 @@ void Fl_Type::write_code1(Fd_Code_Writer& f) {
 }
 
 void Fl_Type::write_code2(Fd_Code_Writer&) {
+}
+
+/** Set a uid that is unique within the project.
+
+ Try to set the given id as the unique id for this node. If the suggested id
+ is 0, or it is already taken inside this project, we try another random id
+ until we find one that is unique.
+
+ \param[in] suggested_uid the preferred uid for this node
+ \return the actualt uid that was given to the node
+ */
+unsigned short Fl_Type::set_uid(unsigned short suggested_uid) {
+  if (suggested_uid==0)
+    suggested_uid = (unsigned short)rand();
+  for (;;) {
+    Fl_Type *tp = Fl_Type::first;
+    for ( ; tp; tp = tp->next)
+      if (tp!=this && tp->uid_==suggested_uid)
+        break;
+    if (tp==NULL)
+      break;
+    suggested_uid = (unsigned short)rand();
+  }
+  uid_ = suggested_uid;
+  return suggested_uid;
+}
+
+/** Find a node by its unique id.
+
+ Every node in a type tree has an id that is unique for the current project.
+ Walk the tree and return the node with this uid.
+
+ \param[in] uid any number between 0 and 65535
+ \return the node with this uid, or NULL if not found
+ */
+Fl_Type *Fl_Type::find_by_uid(unsigned short uid) {
+  for (Fl_Type *tp = Fl_Type::first; tp; tp = tp->next) {
+    if (tp->uid_ == uid) return tp;
+  }
+  return NULL;
+}
+
+/** Find a type node by using the sourceview text positions.
+
+ \param[in] text_type 0=source file, 1=header, 2=.fl project file
+ \param[in] crsr cursor position in text
+ \return the node we found or NULL
+ */
+Fl_Type *Fl_Type::find_in_text(int text_type, int crsr) {
+  for (Fl_Type *node = first; node; node = node->next) {
+    switch (text_type) {
+      case 0:
+        if (crsr >= node->code1_start && crsr < node->code1_end) return node;
+        if (crsr >= node->code2_start && crsr < node->code2_end) return node;
+        if (crsr >= node->code_static_start && crsr < node->code_static_end) return node;
+        break;
+      case 1:
+        if (crsr >= node->header1_start && crsr < node->header1_end) return node;
+        if (crsr >= node->header2_start && crsr < node->header2_end) return node;
+        if (crsr >= node->header_static_start && crsr < node->header_static_end) return node;
+        break;
+      case 2:
+        if (crsr >= node->proj1_start && crsr < node->proj1_end) return node;
+        if (crsr >= node->proj2_start && crsr < node->proj2_end) return node;
+        break;
+    }
+  }
+  return 0;
 }
 
 /// \}

@@ -18,10 +18,33 @@
 #define _FLUID_FL_GRID_TYPE_H
 
 #include "Fl_Group_Type.h"
+#include <FL/Fl_Grid.H>
 
 // ---- Fl_Grid_Type --------------------------------------------------- MARK: -
 
 extern const char grid_type_name[];
+
+class Fl_Grid_Proxy : public Fl_Grid {
+protected:
+  typedef struct { Fl_Widget *widget; Cell *cell; } Cell_Widget_Pair;
+  Cell_Widget_Pair *transient_;
+  int num_transient_;
+  int cap_transient_;
+  void transient_make_room_(int n);
+  void transient_remove_(Fl_Widget *w);
+public:
+  Fl_Grid_Proxy(int X,int Y,int W,int H);
+  ~Fl_Grid_Proxy();
+  void resize(int,int,int,int) FL_OVERRIDE;
+  void draw() FL_OVERRIDE;
+  void draw_overlay();
+  void move_cell(Fl_Widget *child, int to_row, int to_col, int how = 0);
+  Cell* any_cell(Fl_Widget *widget) const;
+  Cell* transient_cell(Fl_Widget *widget) const;
+  Cell* transient_widget(Fl_Widget *wi, int row, int col, int row_span, int col_span, Fl_Grid_Align align = FL_GRID_FILL);
+  Cell* widget(Fl_Widget *wi, int row, int col, Fl_Grid_Align align = FL_GRID_FILL);
+  Cell* widget(Fl_Widget *wi, int row, int col, int rowspan, int colspan, Fl_Grid_Align align = FL_GRID_FILL);
+};
 
 class Fl_Grid_Type : public Fl_Group_Type
 {
@@ -37,16 +60,18 @@ public:
   void write_properties(Fd_Project_Writer &f) FL_OVERRIDE;
   void read_property(Fd_Project_Reader &f, const char *) FL_OVERRIDE;
   void write_parent_properties(Fd_Project_Writer &f, Fl_Type *child, bool encapsulate) FL_OVERRIDE;
-  void read_parent_properties(Fd_Project_Reader &f, Fl_Type *child, const char *property) FL_OVERRIDE;
+  void read_parent_property(Fd_Project_Reader &f, Fl_Type *child, const char *property) FL_OVERRIDE;
   void copy_properties() FL_OVERRIDE;
   void write_code1(Fd_Code_Writer& f) FL_OVERRIDE;
   void write_code2(Fd_Code_Writer& f) FL_OVERRIDE;
   void add_child(Fl_Type*, Fl_Type*) FL_OVERRIDE;
   void move_child(Fl_Type*, Fl_Type*) FL_OVERRIDE;
   void remove_child(Fl_Type*) FL_OVERRIDE;
+  void layout_widget() FL_OVERRIDE;
   void child_resized(Fl_Widget_Type *child);
   void insert_child_at(Fl_Widget *child, int x, int y);
-  void insert_child(Fl_Widget *child);
+  void insert_child_at_next_free_cell(Fl_Widget *child);
+  void keyboard_move_child(Fl_Widget_Type*, int key);
 
   static class Fl_Grid *selected();
 };

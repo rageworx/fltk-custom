@@ -266,6 +266,8 @@ Fl_Check_Button *guides_button=(Fl_Check_Button *)0;
 
 Fl_Check_Button *restricted_button=(Fl_Check_Button *)0;
 
+Fl_Check_Button *ghosted_outline_button=(Fl_Check_Button *)0;
+
 Fl_Group *w_settings_project_tab=(Fl_Group *)0;
 
 static void cb_w_settings_project_tab(Fl_Group* o, void* v) {
@@ -396,6 +398,19 @@ static void cb_avoid_early_includes_button(Fl_Check_Button* o, void* v) {
     if (g_project.avoid_early_includes != o->value()) {
       set_modflag(1);
       g_project.avoid_early_includes = o->value();
+    }
+  }
+}
+
+Fl_Check_Button *w_proj_mergeback=(Fl_Check_Button *)0;
+
+static void cb_w_proj_mergeback(Fl_Check_Button* o, void* v) {
+  if (v == LOAD) {
+    o->value(g_project.write_mergeback_data);
+  } else {
+    if (g_project.write_mergeback_data != o->value()) {
+      set_modflag(1);
+      g_project.write_mergeback_data = o->value();
     }
   }
 }
@@ -2250,6 +2265,14 @@ ps");
           restricted_button->callback((Fl_Callback*)toggle_restricted_cb);
           o->value(show_restricted);
         } // Fl_Check_Button* restricted_button
+        { Fl_Check_Button* o = ghosted_outline_button = new Fl_Check_Button(120, 340, 200, 20, "Show Ghosted Group Outlines");
+          ghosted_outline_button->tooltip("groups with no box type or flat boxtypes without contrast will be rendered wi\
+th a dim outline in the editing window only");
+          ghosted_outline_button->down_box(FL_DOWN_BOX);
+          ghosted_outline_button->labelsize(11);
+          ghosted_outline_button->callback((Fl_Callback*)toggle_ghosted_outline_cb);
+          o->value(show_ghosted_outline);
+        } // Fl_Check_Button* ghosted_outline_button
         { Fl_Box* o = new Fl_Box(120, 530, 200, 10);
           o->hide();
           Fl_Group::current()->resizable(o);
@@ -2294,17 +2317,17 @@ ps");
           code_file_input->callback((Fl_Callback*)cb_code_file_input, (void*)(1));
           code_file_input->when(FL_WHEN_CHANGED);
         } // Fl_Input* code_file_input
-        { Fl_Box* o = new Fl_Box(100, 205, 0, 20, "Options: ");
-          o->labelfont(1);
-          o->labelsize(11);
-          o->align(Fl_Align(FL_ALIGN_LEFT));
-        } // Fl_Box* o
         { include_H_from_C_button = new Fl_Check_Button(100, 162, 220, 20, "Include Header from Code");
           include_H_from_C_button->tooltip("Include the header file from the code file.");
           include_H_from_C_button->down_box(FL_DOWN_BOX);
           include_H_from_C_button->labelsize(11);
           include_H_from_C_button->callback((Fl_Callback*)cb_include_H_from_C_button);
         } // Fl_Check_Button* include_H_from_C_button
+        { Fl_Box* o = new Fl_Box(100, 205, 0, 20, "Options: ");
+          o->labelfont(1);
+          o->labelsize(11);
+          o->align(Fl_Align(FL_ALIGN_LEFT));
+        } // Fl_Box* o
         { use_FL_COMMAND_button = new Fl_Check_Button(100, 205, 220, 20, "Menu shortcuts use FL_COMMAND");
           use_FL_COMMAND_button->tooltip("Replace FL_CTRL and FL_META with FL_COMMAND when generating menu shortcuts");
           use_FL_COMMAND_button->down_box(FL_DOWN_BOX);
@@ -2325,6 +2348,22 @@ ped using octal notation `\\0123`. If this option is checked, Fluid will write\
           avoid_early_includes_button->labelsize(11);
           avoid_early_includes_button->callback((Fl_Callback*)cb_avoid_early_includes_button);
         } // Fl_Check_Button* avoid_early_includes_button
+        { Fl_Box* o = new Fl_Box(100, 283, 0, 20, "Experimental: ");
+          o->labelfont(1);
+          o->labelsize(11);
+          o->align(Fl_Align(FL_ALIGN_LEFT));
+          o->hide();
+        } // Fl_Box* o
+        { // // Matt: disabled
+          w_proj_mergeback = new Fl_Check_Button(100, 283, 220, 20, "generate MergeBack data");
+          w_proj_mergeback->tooltip("MergeBack is a feature under construction that allows changes in code files t\
+o be merged back into the project file. Checking this option will generate add\
+itional data in code and project files.");
+          w_proj_mergeback->down_box(FL_DOWN_BOX);
+          w_proj_mergeback->labelsize(11);
+          w_proj_mergeback->callback((Fl_Callback*)cb_w_proj_mergeback);
+          w_proj_mergeback->hide();
+        } // Fl_Check_Button* w_proj_mergeback
         { Fl_Box* o = new Fl_Box(100, 530, 220, 10);
           o->hide();
           Fl_Group::current()->resizable(o);
@@ -2663,7 +2702,7 @@ ped using octal notation `\\0123`. If this option is checked, Fluid will write\
         w_settings_shell_tab->hide();
         { Fl_Group* o = new Fl_Group(10, 90, 320, 132);
           o->callback((Fl_Callback*)propagate_load);
-          { w_settings_shell_list = new Fl_Browser(100, 90, 220, 110, "Shell \ncommand \nlist:");
+          { w_settings_shell_list = new Fl_Browser(100, 90, 220, 110, "Shell\ncommand\nlist:");
             w_settings_shell_list->type(3);
             w_settings_shell_list->labelfont(1);
             w_settings_shell_list->labelsize(11);
@@ -2990,10 +3029,10 @@ le FLTK_GETTEXT_FOUND");
 
 Fl_Double_Window *shell_run_window=(Fl_Double_Window *)0;
 
-Fl_Simple_Terminal *shell_run_terminal=(Fl_Simple_Terminal *)0;
+Fl_Terminal *shell_run_terminal=(Fl_Terminal *)0;
 
 static void cb_Clear(Fl_Button*, void*) {
-  shell_run_terminal->clear();
+  shell_run_terminal->append("\033[2J\033[H");
 }
 
 Fl_Return_Button *shell_run_button=(Fl_Return_Button *)0;
@@ -3010,10 +3049,11 @@ static void cb_shell_run_button(Fl_Return_Button*, void*) {
 Fl_Double_Window* make_shell_window() {
   { shell_run_window = new Fl_Double_Window(555, 430, "Shell Command Output");
     shell_run_window->align(Fl_Align(FL_ALIGN_CLIP|FL_ALIGN_INSIDE));
-    { shell_run_terminal = new Fl_Simple_Terminal(10, 10, 535, 375);
-      Fl_Group::current()->resizable(shell_run_terminal);
+    { shell_run_terminal = new Fl_Terminal(10, 10, 535, 375);
       shell_run_terminal->ansi(1);
-    } // Fl_Simple_Terminal* shell_run_terminal
+      shell_run_terminal->end();
+      Fl_Group::current()->resizable(shell_run_terminal);
+    } // Fl_Terminal* shell_run_terminal
     { Fl_Group* o = new Fl_Group(10, 395, 535, 25);
       { Fl_Button* o = new Fl_Button(10, 395, 94, 25, "Clear");
         o->callback((Fl_Callback*)cb_Clear);

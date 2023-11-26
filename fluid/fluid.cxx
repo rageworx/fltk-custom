@@ -27,6 +27,7 @@
 #include "undo.h"
 #include "file.h"
 #include "code.h"
+#include "mergeback.h"
 
 #include "alignment_panel.h"
 #include "function_panel.h"
@@ -83,6 +84,10 @@ int show_guides = 1;
 /// of their parent's bounds (except children of Scroll groups), and areas
 /// within an Fl_Tile that are not covered by children.
 int show_restricted = 1;
+
+/// Show a ghosted outline for groups that have very little contrast.
+/// This makes groups with NO_BOX or FLAT_BOX better editable.
+int show_ghosted_outline = 1;
 
 /// Show widget comments in the browser, saved in app preferences.
 int show_comments = 1;
@@ -285,6 +290,7 @@ Fluid_Project::Fluid_Project() :
   avoid_early_includes(0),
   header_file_set(0),
   code_file_set(0),
+  write_mergeback_data(0),
   header_file_name(".h"),
   code_file_name(".cxx")
 { }
@@ -314,6 +320,7 @@ void Fluid_Project::reset() {
   code_file_set = 0;
   header_file_name = ".h";
   code_file_name = ".cxx";
+  write_mergeback_data = 0;
 }
 
 void Fluid_Project::update_settings_dialog() {
@@ -701,10 +708,10 @@ void save_template_cb(Fl_Widget *, void *) {
   if (!c || !*c) return;
 
   // Convert template name to filename_with_underscores
-  char safename[FL_PATH_MAX], *safeptr;
-  strlcpy(safename, c, sizeof(safename));
-  for (safeptr = safename; *safeptr; safeptr ++) {
-    if (isspace(*safeptr)) *safeptr = '_';
+  char savename[FL_PATH_MAX], *saveptr;
+  strlcpy(savename, c, sizeof(savename));
+  for (saveptr = savename; *saveptr; saveptr ++) {
+    if (isspace(*saveptr)) *saveptr = '_';
   }
 
   // Find the templates directory...
@@ -712,10 +719,10 @@ void save_template_cb(Fl_Widget *, void *) {
   fluid_prefs.getUserdataPath(filename, sizeof(filename));
 
   strlcat(filename, "templates", sizeof(filename));
-  if (fl_access(filename, 0)) fl_mkdir(filename, 0777);
+  if (fl_access(filename, 0)) fl_make_path(filename);
 
   strlcat(filename, "/", sizeof(filename));
-  strlcat(filename, safename, sizeof(filename));
+  strlcat(filename, savename, sizeof(filename));
 
   char *ext = filename + strlen(filename);
   if (ext >= (filename + sizeof(filename) - 5)) {
@@ -826,6 +833,7 @@ void exit_cb(Fl_Widget *,void *) {
     svp.set("autorefresh", sv_autorefresh->value());
     svp.set("autoposition", sv_autoposition->value());
     svp.set("tab", sv_tab->find(sv_tab->value()));
+    svp.set("code_choice", sv_code_choice);
     save_position(sourceview_panel,"sourceview_pos");
     delete sourceview_panel;
     sourceview_panel = 0;
@@ -938,7 +946,7 @@ bool new_project_from_template() {
       char line[1024], *ptr, *next;
       FILE *infile, *outfile;
 
-      if ((infile = fl_fopen(tname, "r")) == NULL) {
+      if ((infile = fl_fopen(tname, "rb")) == NULL) {
         fl_alert("Error reading template file \"%s\":\n%s", tname,
                  strerror(errno));
         set_modflag(0);
@@ -946,7 +954,7 @@ bool new_project_from_template() {
         return false;
       }
 
-      if ((outfile = fl_fopen(cutfname(1), "w")) == NULL) {
+      if ((outfile = fl_fopen(cutfname(1), "wb")) == NULL) {
         fl_alert("Error writing buffer file \"%s\":\n%s", cutfname(1),
                  strerror(errno));
         fclose(infile);
@@ -1019,7 +1027,7 @@ Fl_String open_project_filechooser(const Fl_String &title) {
 
  If no filename is given, FLUID will open a file chooser dialog.
 
- \param[in] new_filename path and name of the new project file
+ \param[in] filename_arg path and name of the new project file
  \return false if the operation failed
  */
 bool merge_project_file(const Fl_String &filename_arg) {
@@ -1266,6 +1274,52 @@ int write_code_files(bool dont_show_completion_dialog)
 void write_cb(Fl_Widget *, void *) {
     write_code_files();
 }
+
+#if 0
+// Matt: disabled
+/**
+ Merge the possibly modified content of code files back into the project.
+ */
+int mergeback_code_files()
+{
+  flush_text_widgets();
+  if (!filename) return 1;
+  if (!g_project.write_mergeback_data) {
+    fl_message("MergeBack is not enabled for this project.\n"
+               "Please enable MergeBack in the project settings\n"
+               "dialog and re-save the project file and the code.");
+    return 0;
+  }
+
+  Fl_String proj_filename = g_project.projectfile_path() + g_project.projectfile_name();
+  Fl_String code_filename;
+#if 1
+  if (!batch_mode) {
+    Fl_Preferences build_records(Fl_Preferences::USER_L, "fltk.org.build", "fluid");
+    Fl_Preferences path(build_records, proj_filename.c_str());
+    int i, n = proj_filename.size();
+    for (i=0; i<n; i++) if (proj_filename[i]=='\\') proj_filename[i] = '/';
+    preferences_get(path, "code", code_filename, "");
+  }
+#endif
+  if (code_filename.empty())
+    code_filename = g_project.codefile_path() + g_project.codefile_name();
+  if (!batch_mode) enter_project_dir();
+  int c = merge_back(code_filename, proj_filename, FD_MERGEBACK_INTERACTIVE);
+  if (!batch_mode) leave_project_dir();
+
+  if (c==0) fl_message("Comparing\n  \"%s\"\nto\n  \"%s\"\n\n"
+                       "MergeBack found no external modifications\n"
+                       "in the source code.",
+                       code_filename.c_str(), proj_filename.c_str());
+  if (c==-2) fl_message("No corresponding source code file found.");
+  return c;
+}
+
+void mergeback_cb(Fl_Widget *, void *) {
+  mergeback_code_files();
+}
+#endif
 
 /**
  Write the strings that are used in i18n.
@@ -1617,8 +1671,9 @@ Fl_Menu_Item Main_Menu[] = {
   {"New &From Template...", FL_COMMAND+'N', menu_file_new_from_template_cb, 0},
   {"Save As &Template...", 0, save_template_cb, 0, FL_MENU_DIVIDER},
   {"&Print...", FL_COMMAND+'p', print_menu_cb},
-  {"Write &Code...", FL_COMMAND+FL_SHIFT+'c', write_cb, 0},
-  {"&Write Strings...", FL_COMMAND+FL_SHIFT+'w', write_strings_cb, 0, FL_MENU_DIVIDER},
+  {"Write &Code", FL_COMMAND+FL_SHIFT+'c', write_cb, 0},
+// Matt: disabled {"MergeBack Code", FL_COMMAND+FL_SHIFT+'m', mergeback_cb, 0},
+  {"&Write Strings", FL_COMMAND+FL_SHIFT+'w', write_strings_cb, 0, FL_MENU_DIVIDER},
   {relative_history[0], FL_COMMAND+'1', menu_file_open_history_cb, absolute_history[0]},
   {relative_history[1], FL_COMMAND+'2', menu_file_open_history_cb, absolute_history[1]},
   {relative_history[2], FL_COMMAND+'3', menu_file_open_history_cb, absolute_history[2]},
@@ -1804,6 +1859,7 @@ void make_main_window() {
   if (!batch_mode) {
     fluid_prefs.get("show_guides", show_guides, 1);
     fluid_prefs.get("show_restricted", show_restricted, 1);
+    fluid_prefs.get("show_ghosted_outline", show_ghosted_outline, 0);
     fluid_prefs.get("show_comments", show_comments, 1);
     make_shell_window();
   }
@@ -2098,9 +2154,10 @@ int main(int argc,char **argv) {
   setlocale(LC_NUMERIC, "C"); // make sure numeric values are written correctly
   g_launch_path = end_with_slash(fl_getcwd()); // store the current path at launch
 
-  if (   (Fl::args(argc,argv,i,arg) == 0)   // unsupported argument found
-      || (batch_mode && (i != argc-1))      // .fl filename missing
-      || (!batch_mode && (i < argc-1)) ) {  // more than one filename found
+  if (   (Fl::args(argc,argv,i,arg) == 0)     // unsupported argument found
+      || (batch_mode && (i != argc-1))        // .fl filename missing
+      || (!batch_mode && (i < argc-1))        // more than one filename found
+      || (argv[i] && (argv[i][0] == '-'))) {  // unknown option
     static const char *msg =
       "usage: %s <switches> name.fl\n"
       " -u : update .fl file and exit (may be combined with '-c' or '-cs')\n"

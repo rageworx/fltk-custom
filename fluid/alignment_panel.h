@@ -67,6 +67,8 @@ extern void toggle_guides_cb(Fl_Check_Button*, void*);
 extern Fl_Check_Button *guides_button;
 extern void toggle_restricted_cb(Fl_Check_Button*, void*);
 extern Fl_Check_Button *restricted_button;
+extern void toggle_ghosted_outline_cb(Fl_Check_Button*, void*);
+extern Fl_Check_Button *ghosted_outline_button;
 extern Fl_Group *w_settings_project_tab;
 extern Fl_Input *header_file_input;
 extern Fl_Input *code_file_input;
@@ -74,6 +76,7 @@ extern Fl_Check_Button *include_H_from_C_button;
 extern Fl_Check_Button *use_FL_COMMAND_button;
 extern Fl_Check_Button *utf8_in_src_button;
 extern Fl_Check_Button *avoid_early_includes_button;
+extern Fl_Check_Button *w_proj_mergeback;
 extern Fl_Group *w_settings_layout_tab;
 #include <FL/Fl_Choice.H>
 extern Fl_Choice *layout_choice;
@@ -127,8 +130,8 @@ extern Fl_Menu_Item menu_Condition[];
 extern Fl_Menu_Item menu_w_settings_shell_text_macros[];
 extern Fl_Menu_Item menu_i18n_type_chooser[];
 extern Fl_Double_Window *shell_run_window;
-#include <FL/Fl_Simple_Terminal.H>
-extern Fl_Simple_Terminal *shell_run_terminal;
+#include <FL/Fl_Terminal.H>
+extern Fl_Terminal *shell_run_terminal;
 extern Fl_Return_Button *shell_run_button;
 Fl_Double_Window* make_shell_window();
 #endif

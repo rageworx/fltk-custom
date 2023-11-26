@@ -27,6 +27,7 @@
 #include "alignment_panel.h"
 #include "widget_panel.h"
 #include "undo.h"
+#include "mergeback.h"
 
 #include <FL/Fl.H>
 #include <FL/Fl_Group.H>
@@ -83,9 +84,9 @@ Fl_Widget_Type::ideal_size(int &w, int &h) {
 Fl_Type *Fl_Widget_Type::make(Strategy strategy) {
   // Find the current widget, or widget to copy:
   Fl_Type *qq = Fl_Type::current;
-  while (qq && !qq->is_true_widget()) qq = qq->parent;
+  while (qq && (!qq->is_true_widget() || !qq->is_parent())) qq = qq->parent;
   if (!qq) {
-    fl_message("Please select a widget");
+    fl_message("Please select a group widget or window");
     return 0;
   }
   Fl_Widget_Type* q = (Fl_Widget_Type*)qq;
@@ -267,6 +268,7 @@ Fl_Type *sort(Fl_Type *parent) {
     }
     if (g != f) f->move_before(g);
   }
+  parent->layout_widget();
 }
 
 ////////////////////////////////////////////////////////////////
@@ -2631,7 +2633,7 @@ void live_mode_cb(Fl_Button*o,void *) {
 }
 
 // update the panel according to current widget set:
-static void load_panel() {
+void load_panel() {
   if (!the_panel) return;
 
   // find all the Fl_Widget subclasses currently selected:
@@ -2846,6 +2848,7 @@ void Fl_Widget_Type::write_static(Fd_Code_Writer& f) {
     f.write_c(", %s", ut);
     if (use_v) f.write_c(" v");
     f.write_c(") {\n");
+    // Matt: disabled f.tag(FD_TAG_GENERIC, 0);
     f.write_c_indented(callback(), 1, 0);
     if (*(d-1) != ';' && *(d-1) != '}') {
       const char *p = strrchr(callback(), '\n');
@@ -2855,7 +2858,9 @@ void Fl_Widget_Type::write_static(Fd_Code_Writer& f) {
       // statement...
       if (*p != '#' && *p) f.write_c(";");
     }
-    f.write_c("\n}\n");
+    f.write_c("\n");
+    // Matt: disabled f.tag(FD_TAG_WIDGET_CALLBACK, get_uid());
+    f.write_c("}\n");
     if (k) {
       f.write_c("void %s::%s(%s* o, %s v) {\n", k, cn, t, ut);
       f.write_c("%s((%s*)(o", f.indent(1), k);

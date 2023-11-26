@@ -140,7 +140,7 @@ const Fl_Grid_Align  FL_GRID_BOTTOM_RIGHT    =  FL_GRID_BOTTOM |  FL_GRID_RIGHT;
   \image html  Fl_Grid.png
   \image latex Fl_Grid.png "Simple 3x3 Fl_Grid" width=7cm
 */
-class Fl_Grid : public Fl_Group {
+class FL_EXPORT Fl_Grid : public Fl_Group {
   friend class Fl_Grid_Type;
 
 public:
@@ -159,10 +159,10 @@ public:
 
   public:
 
-    Cell(int row, int col) {
+    void Cell_() {
       next_ = NULL;
-      row_ = row;
-      col_ = col;
+      row_ = 0;
+      col_ = 0;
       rowspan_ = 1;
       colspan_ = 1;
       widget_ = NULL;
@@ -171,9 +171,22 @@ public:
       align_ = 0;
     }
 
+    Cell(int row, int col) {
+      Cell_();
+      row_ = row;
+      col_ = col;
+    }
+
+    Cell(Fl_Widget *w, int row, int col) {
+      Cell_();
+      widget_ = w;
+      row_ = row;
+      col_ = col;
+    }
+
     ~Cell() {}
 
-    Fl_Widget *widget() { return widget_; }
+    Fl_Widget *widget() const { return widget_; }
 
     short row() const { return row_; }
     short col() const { return col_; }
@@ -211,7 +224,7 @@ protected:
   Fl_Color grid_color;        // color for drawing the grid lines (design helper)
   bool draw_grid_;            // draw the grid for testing / design
 
-private:
+protected:
   void init();
   Cell *add_cell(int row, int col);
   void remove_cell(int row, int col);

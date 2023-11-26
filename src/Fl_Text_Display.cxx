@@ -228,6 +228,7 @@ void Fl_Text_Display::linenumber_width(int width) {
   if (width < 0) return;
   mLineNumWidth = width;
   recalc_display();             // recalc line#s        // resize(x(), y(), w(), h());
+  if (width > 0) reset_absolute_top_line_number();
 }
 
 /**
@@ -1899,7 +1900,7 @@ int Fl_Text_Display::get_absolute_top_line_number() const {
   Does nothing if the absolute top line number is not being maintained.
 */
 void Fl_Text_Display::absolute_top_line_number(int oldFirstChar) {
-  if (maintaining_absolute_top_line_number()) {
+  if (maintaining_absolute_top_line_number() && buffer()) {
     if (mFirstChar < oldFirstChar)
       mAbsTopLineNum -= buffer()->count_lines(mFirstChar, oldFirstChar);
     else

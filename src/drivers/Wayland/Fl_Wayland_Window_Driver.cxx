@@ -18,7 +18,6 @@
 #include "Fl_Wayland_Window_Driver.H"
 #include "Fl_Wayland_Screen_Driver.H"
 #include "Fl_Wayland_Graphics_Driver.H"
-#include "Fl_Wayland_Image_Surface_Driver.H"
 #include <FL/filename.H>
 #include <wayland-cursor.h>
 #include "../../../libdecor/src/libdecor.h"
@@ -45,6 +44,7 @@ struct cursor_image { // as in wayland-cursor.c of the Wayland project source co
 extern "C" {
 # include "../../../libdecor/src/libdecor-plugin.h"
   uchar *fl_libdecor_titlebar_buffer(struct libdecor_frame *frame, int *w, int *h, int *stride);
+  void use_FLTK_pointer_button(struct libdecor_frame *);
 }
 
 #define fl_max(a,b) ((a) > (b) ? (a) : (b))
@@ -194,7 +194,15 @@ void Fl_Wayland_Window_Driver::flush_overlay()
   }
   if (erase_overlay) fl_clip_region(0);
   if (other_xid) {
-    fl_copy_offscreen(0, 0, oWindow->w(), oWindow->h(), other_xid->offscreen(), 0, 0);
+    struct Fl_Wayland_Graphics_Driver::draw_buffer *buffer =
+      Fl_Wayland_Graphics_Driver::offscreen_buffer(other_xid->offscreen());
+    struct wld_window *xid = fl_wl_xid(pWindow);
+    struct Fl_Wayland_Graphics_Driver::wld_buffer *wbuffer = xid->buffer;
+    if (wbuffer->draw_buffer.data_size != buffer->data_size) {
+      fl_copy_offscreen(0, 0, oWindow->w(), oWindow->h(), other_xid->offscreen(), 0, 0);
+    } else {
+      memcpy(wbuffer->draw_buffer.buffer, buffer->buffer, wbuffer->draw_buffer.data_size);
+    }
   }
   if (overlay() == oWindow) oWindow->draw_overlay();
 }
@@ -435,9 +443,11 @@ static void destroy_surface_caution_pointer_focus(struct wl_surface *surface,
 
 void Fl_Wayland_Window_Driver::hide() {
   if (pWindow == Fl_Screen_Driver::transient_scale_parent) {
-    // Don't hide the parent of a running transient scale window
-    // because the transient is a popup and MUST be deleted first.
-    return;
+    // Delete also the running transient scale window
+    // because the transient is a popup and MUST be deleted
+    // before its parent.
+    Fl::remove_timeout(Fl_Screen_Driver::del_transient_window);
+    Fl_Screen_Driver::del_transient_window(NULL);
   }
   Fl_X* ip = Fl_X::flx(pWindow);
   if (hide_common()) return;
@@ -843,7 +853,7 @@ static void handle_configure(struct libdecor_frame *frame,
 #ifdef LIBDECOR_MR131
   if (is_1st_run) use_FLTK_toplevel_configure_cb(frame);
 #endif
-
+  use_FLTK_pointer_button(frame);
   struct wl_output *wl_output = NULL;
   if (window->fl_win->fullscreen_active()) {
     if (!(window->state & LIBDECOR_WINDOW_STATE_FULLSCREEN)) {
@@ -931,6 +941,8 @@ static void handle_configure(struct libdecor_frame *frame,
     }
   }
 
+  if (window->fl_win->border())
+    driver->is_maximized(window_state & LIBDECOR_WINDOW_STATE_MAXIMIZED);
   if (window_state & LIBDECOR_WINDOW_STATE_MAXIMIZED) state = libdecor_state_new(width,
                                                                                  height);
   else state = libdecor_state_new(int(ceil(width/f)*f), int(ceil(height/f)*f));
@@ -1803,9 +1815,6 @@ void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
   if (fl_win && fl_win->kind == DECORATED && !xdg_toplevel()) {
     pWindow->wait_for_expose();
   }
-  // toplevel, non-popup windows must have origin at 0,0
-  if (!pWindow->parent() &&
-      !(pWindow->menu_window() || pWindow->tooltip_window())) X = Y = 0;
   int is_a_move = (X != x() || Y != y());
   bool true_rescale = Fl_Window::is_a_rescale();
   if (fl_win && fl_win->buffer) {
@@ -1823,6 +1832,9 @@ void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
       if (W < 1) W = 1;
       if (H < 1) H = 1;
     }
+    // toplevel, non-popup windows must have origin at 0,0
+    if (!pWindow->parent() &&
+        !(pWindow->menu_window() || pWindow->tooltip_window())) X = Y = 0;
     pWindow->Fl_Group::resize(X,Y,W,H);
 //fprintf(stderr, "resize: win=%p to %dx%d\n", pWindow, W, H);
     if (shown()) {pWindow->redraw();}
@@ -1840,6 +1852,9 @@ void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
   if (shown()) {
     float f = Fl::screen_scale(pWindow->screen_num());
     if (is_a_resize) {
+      if (pWindow->as_overlay_window() && other_xid) {
+        destroy_double_buffer();
+      }
       if (fl_win->kind == DECORATED) { // a decorated window
         if (fl_win->buffer) {
           Fl_Wayland_Graphics_Driver::buffer_release(fl_win);
@@ -1884,7 +1899,9 @@ void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
         // Wayland doesn't seem to provide a reliable way for the app to set the
         // window position on screen. This is functional when the move is mouse-driven.
         Fl_Wayland_Screen_Driver *scr_driver = (Fl_Wayland_Screen_Driver*)Fl::screen_driver();
-        xdg_toplevel_move(xdg_toplevel(), scr_driver->seat->wl_seat, scr_driver->seat->serial);
+        if (Fl::e_state == FL_BUTTON1) {
+          xdg_toplevel_move(xdg_toplevel(), scr_driver->seat->wl_seat, scr_driver->seat->serial);
+        }
       } else if (fl_win->kind == SUBWINDOW && fl_win->subsurface) {
         wl_subsurface_set_position(fl_win->subsurface, pWindow->x() * f, pWindow->y() * f);
       }
@@ -2121,4 +2138,16 @@ Fl_Wayland_Plugin *Fl_Wayland_Window_Driver::gl_plugin() {
     plugin = (Fl_Wayland_Plugin*)pm.plugin("gl.wayland.fltk.org");
   }
   return plugin;
+}
+
+
+void Fl_Wayland_Window_Driver::maximize() {
+  struct wld_window *xid = (struct wld_window *)Fl_X::flx(pWindow)->xid;
+  if (xid->kind == DECORATED) libdecor_frame_set_maximized(xid->frame);
+}
+
+
+void Fl_Wayland_Window_Driver::un_maximize() {
+  struct wld_window *xid = (struct wld_window *)Fl_X::flx(pWindow)->xid;
+  if (xid->kind == DECORATED) libdecor_frame_unset_maximized(xid->frame);
 }

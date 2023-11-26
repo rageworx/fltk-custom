@@ -43,36 +43,6 @@ decl {\#include "custom_widgets.h"} {public global
 decl {extern void set_modflag(int mf, int mfc=-1);} {private local
 }
 
-Function {make_window()} {open
-} {
-  Fl_Window {} {open
-    xywh {867 441 480 320} type Double visible
-  } {
-    Fl_Grid {} {open
-      xywh {25 25 262 160} labelsize 11
-      dimensions {4 4} margin {10 10 16 12}
-      colwidths { 0 100 0 0 }
-      colweights { 50 40 50 50 }
-    } {
-      Fl_Button {} {
-        label Button
-        xywh {70 63 129 50} labelsize 11
-        parent_properties {
-          location {1 1}
-        }
-      }
-      Fl_Group {} {open
-        xywh {224 115 40 45} box BORDER_BOX color 11 labelsize 11
-      } {
-        Fl_Button {} {
-          label Button
-          xywh {234 120 24 20} labelsize 11
-        }
-      }
-    }
-  }
-}
-
 Function {make_widget_panel()} {
   comment {Create a panel that can be used with all known widgets} open
 } {
@@ -870,7 +840,7 @@ wCallback->do_callback(wCallback, v);} open
         Fl_Group {} {
           label {Location:}
           callback propagate_load open
-          xywh {95 60 315 20} labelfont 1 labelsize 11 align 4
+          xywh {95 60 315 20} box FLAT_BOX labelfont 1 labelsize 11 align 4
         } {
           Fl_Input widget_grid_row_input {
             label {Row:}
@@ -896,7 +866,7 @@ wCallback->do_callback(wCallback, v);} open
           }
           Fl_Input widget_grid_col_input {
             label {Column:}
-            callback grid_set_col_cb selected
+            callback grid_set_col_cb
             xywh {175 60 40 20} labelsize 11 align 5 textsize 11
             class Fluid_Coord_Input
           }
@@ -919,54 +889,46 @@ wCallback->do_callback(wCallback, v);} open
           Fl_Box {} {
             xywh {395 60 1 20} hide resizable
           }
+          Fl_Box widget_grid_transient {
+            label TRANSIENT
+            callback {if (v==LOAD) {
+  Fl_Widget *child = ((Fl_Widget_Type*)current_widget)->o;
+  Fl_Grid_Proxy *g = ((Fl_Grid_Proxy*)((Fl_Widget_Type*)current_widget->parent)->o);
+//  Fl_Grid::Cell *cell = g->cell(child);
+//  Fl_Grid::Cell *tcell = g->transient_cell(child);
+  widget_grid_transient->hide();
+  widget_grid_unlinked->hide();
+  if (g->transient_cell(child)) {
+    widget_grid_transient->show();
+  } else if (!g->cell(child)) {
+    widget_grid_unlinked->show();
+  }
+}} selected
+            xywh {250 60 80 20} labelsize 11 labelcolor 1
+          }
+          Fl_Box widget_grid_unlinked {
+            label UNLINKED
+            xywh {250 60 80 20} labelsize 11 labelcolor 1 hide
+          }
         }
         Fl_Group {} {
           label {Align:}
           callback propagate_load open
-          xywh {95 90 315 20} labelfont 1 labelsize 11 align 4
+          xywh {95 90 315 30} labelfont 1 labelsize 11 align 4
         } {
           Fl_Choice {} {
-            callback grid_align_cb
-            xywh {95 90 160 20} down_box BORDER_BOX labelsize 11 align 5 textsize 11
+            label Horizontal
+            callback grid_align_horizontal_cb open
+            xywh {95 100 115 20} down_box BORDER_BOX labelsize 11 align 5 textsize 11
           } {
-            MenuItem {} {
-              label GRID_CENTER
-              user_data FL_GRID_CENTER user_data_type long
-              xywh {10 10 31 20} labelsize 11
-            }
-            MenuItem {} {
-              label GRID_FILL
-              user_data FL_GRID_FILL user_data_type long
-              xywh {10 10 31 20} labelsize 11
-            }
-            MenuItem {} {
-              label GRID_HORIZONTAL
-              user_data FL_GRID_HORIZONTAL user_data_type long
-              xywh {10 10 31 20} labelsize 11
-            }
-            MenuItem {} {
-              label GRID_VERTICAL
-              user_data FL_GRID_VERTICAL user_data_type long
-              xywh {10 10 31 20} labelsize 11
-            }
             MenuItem {} {
               label GRID_LEFT
               user_data FL_GRID_LEFT user_data_type long
               xywh {10 10 31 20} labelsize 11
             }
             MenuItem {} {
-              label GRID_TOP_LEFT
-              user_data FL_GRID_TOP_LEFT user_data_type long
-              xywh {10 10 31 20} labelsize 11
-            }
-            MenuItem {} {
-              label GRID_TOP
-              user_data FL_GRID_TOP user_data_type long
-              xywh {10 10 31 20} labelsize 11
-            }
-            MenuItem {} {
-              label GRID_TOP_RIGHT
-              user_data FL_GRID_TOP_RIGHT user_data_type long
+              label GRID_CENTER
+              user_data FL_GRID_CENTER user_data_type long
               xywh {10 10 31 20} labelsize 11
             }
             MenuItem {} {
@@ -975,8 +937,24 @@ wCallback->do_callback(wCallback, v);} open
               xywh {10 10 31 20} labelsize 11
             }
             MenuItem {} {
-              label GRID_BOTTOM_LEFT
-              user_data FL_GRID_BOTTOM_LEFT user_data_type long
+              label GRID_FILL
+              user_data FL_GRID_HORIZONTAL user_data_type long
+              xywh {10 10 31 20} labelsize 11
+            }
+          }
+          Fl_Choice {} {
+            label Vertical
+            callback grid_align_vertical_cb open
+            xywh {215 100 115 20} down_box BORDER_BOX labelsize 11 align 5 textsize 11
+          } {
+            MenuItem {} {
+              label GRID_TOP
+              user_data FL_GRID_TOP user_data_type long
+              xywh {10 10 31 20} labelsize 11
+            }
+            MenuItem {} {
+              label GRID_CENTER
+              user_data FL_GRID_CENTER user_data_type long
               xywh {10 10 31 20} labelsize 11
             }
             MenuItem {} {
@@ -985,8 +963,8 @@ wCallback->do_callback(wCallback, v);} open
               xywh {10 10 31 20} labelsize 11
             }
             MenuItem {} {
-              label GRID_BOTTOM_RIGHT
-              user_data FL_GRID_BOTTOM_RIGHT user_data_type long
+              label GRID_FILL
+              user_data FL_GRID_VERTICAL user_data_type long
               xywh {10 10 31 20} labelsize 11
             }
           }
@@ -997,18 +975,18 @@ wCallback->do_callback(wCallback, v);} open
         Fl_Group {} {
           label {Min. Size:}
           callback propagate_load open
-          xywh {95 125 315 20} labelfont 1 labelsize 11 align 4
+          xywh {95 125 315 30} labelfont 1 labelsize 11 align 4
         } {
           Fl_Input {} {
             label {Width:}
             callback grid_set_min_wdt_cb
-            xywh {95 125 55 20} labelsize 11 align 5 textsize 11
+            xywh {95 135 55 20} labelsize 11 align 5 textsize 11
             class Fluid_Coord_Input
           }
           Fl_Input {} {
             label {Height:}
             callback grid_set_min_hgt_cb
-            xywh {155 125 55 20} labelsize 11 align 5 textsize 11
+            xywh {155 135 55 20} labelsize 11 align 5 textsize 11
             class Fluid_Coord_Input
           }
           Fl_Box {} {
@@ -1018,49 +996,49 @@ wCallback->do_callback(wCallback, v);} open
         Fl_Group {} {
           label {Span:}
           callback propagate_load open
-          xywh {95 160 315 20} labelfont 1 labelsize 11 align 4
+          xywh {95 160 315 30} labelfont 1 labelsize 11 align 4
         } {
           Fl_Input widget_grid_rowspan_input {
             label {Row Span:}
             callback grid_set_rowspan_cb
-            xywh {95 160 40 20} labelsize 11 align 5 textsize 11
+            xywh {95 170 40 20} labelsize 11 align 5 textsize 11
             class Fluid_Coord_Input
           }
           Fl_Group {} {open
-            xywh {135 160 30 20}
+            xywh {135 170 30 20}
           } {
             Fl_Button {} {
               label {-}
               callback grid_dec_rowspan_cb
-              xywh {135 160 15 20} labelsize 11
+              xywh {135 170 15 20} labelsize 11
               code0 {o->clear_visible_focus();} compact 1
             }
             Fl_Button {} {
               label {+}
               callback grid_inc_rowspan_cb
-              xywh {150 160 15 20} labelsize 11
+              xywh {150 170 15 20} labelsize 11
               code0 {o->clear_visible_focus();} compact 1
             }
           }
           Fl_Input widget_grid_colspan_input {
             label {Col. Span:}
             callback grid_set_colspan_cb
-            xywh {175 160 40 20} labelsize 11 align 5 textsize 11
+            xywh {175 170 40 20} labelsize 11 align 5 textsize 11
             class Fluid_Coord_Input
           }
           Fl_Group {} {open
-            xywh {215 160 30 20}
+            xywh {215 170 30 20}
           } {
             Fl_Button {} {
               label {-}
               callback grid_dec_colspan_cb
-              xywh {215 160 15 20} labelsize 11
+              xywh {215 170 15 20} labelsize 11
               code0 {o->clear_visible_focus();} compact 1
             }
             Fl_Button {} {
               label {+}
               callback grid_inc_colspan_cb
-              xywh {230 160 15 20} labelsize 11
+              xywh {230 170 15 20} labelsize 11
               code0 {o->clear_visible_focus();} compact 1
             }
           }
@@ -1197,13 +1175,14 @@ if (v == LOAD) {
 if (!grid) return;
 int m = 0;
 if (v == LOAD) {
-  grid->margin(&m, NULL, NULL, NULL); 
+  grid->margin(&m, NULL, NULL, NULL);
   o->value(m);
 } else {
   int m = (int)o->value(), old_m;
-  grid->margin(&old_m, NULL, NULL, NULL); 
+  grid->margin(&old_m, NULL, NULL, NULL);
   if (m != old_m) {
-    grid->margin(m, -1, -1, -1); 
+    undo_checkpoint();
+    grid->margin(m, -1, -1, -1);
     grid->need_layout(true);
     set_modflag(1);
   }
@@ -1216,13 +1195,14 @@ if (v == LOAD) {
 if (!grid) return;
 int m = 0;
 if (v == LOAD) {
-  grid->margin(NULL, &m, NULL, NULL); 
+  grid->margin(NULL, &m, NULL, NULL);
   o->value(m);
 } else {
   int m = (int)o->value(), old_m;
-  grid->margin(NULL, &old_m, NULL, NULL); 
+  grid->margin(NULL, &old_m, NULL, NULL);
   if (m != old_m) {
-    grid->margin(-1, m, -1, -1); 
+    undo_checkpoint();
+    grid->margin(-1, m, -1, -1);
     grid->need_layout(true);
     set_modflag(1);
   }
@@ -1235,13 +1215,14 @@ if (v == LOAD) {
 if (!grid) return;
 int m = 0;
 if (v == LOAD) {
-  grid->margin(NULL, NULL, &m, NULL); 
+  grid->margin(NULL, NULL, &m, NULL);
   o->value(m);
 } else {
   int m = (int)o->value(), old_m;
-  grid->margin(NULL, NULL, &old_m, NULL); 
+  grid->margin(NULL, NULL, &old_m, NULL);
   if (m != old_m) {
-    grid->margin(-1, -1, m, -1); 
+    undo_checkpoint();
+    grid->margin(-1, -1, m, -1);
     grid->need_layout(true);
     set_modflag(1);
   }
@@ -1260,6 +1241,7 @@ if (v == LOAD) {
   int m = (int)o->value(), old_m;
   grid->margin(NULL, NULL, NULL, &old_m);
   if (m != old_m) {
+    undo_checkpoint();
     grid->margin(-1, -1, -1, m);
     grid->need_layout(true);
     set_modflag(1);
@@ -1288,6 +1270,7 @@ if (v == LOAD) {
   int m = (int)o->value(), old_m, m2;
   grid->gap(&old_m, &m2);
   if (m != old_m) {
+    undo_checkpoint();
     grid->gap(m, m2);
     grid->need_layout(true);
     set_modflag(1);
@@ -1307,6 +1290,7 @@ if (v == LOAD) {
   int m = (int)o->value(), old_m, m2;
   grid->gap(&m2, &old_m);
   if (m != old_m) {
+    undo_checkpoint();
     grid->gap(m2, m);
     grid->need_layout(true);
     set_modflag(1);
@@ -1388,6 +1372,7 @@ if (v == LOAD) {
   int h = o->value(), old_h = grid->row_height(r);
   if (h < 0) h = 0;
   if (h != old_h) {
+    undo_checkpoint();
     grid->row_height(r, h);
     grid->need_layout(true);
     set_modflag(1);
@@ -1407,9 +1392,10 @@ if (v == LOAD) {
   int h = o->value(), old_h = grid->row_weight(r);
   if (h < 0) h = 0;
   if (h != old_h) {
+    undo_checkpoint();
     grid->row_weight(r, h);
     grid->need_layout(true);
-    set_modflag(1); 
+    set_modflag(1);
   }
 }}
               xywh {240 175 55 20} labelsize 11 align 5 textsize 11
@@ -1426,6 +1412,7 @@ if (v == LOAD) {
   int h = o->value(), old_h = grid->row_gap(r);
   if (h < -1) h = -1;
   if (h != old_h) {
+    undo_checkpoint();
     grid->row_gap(r, h);
     grid->need_layout(true);
     set_modflag(1);
@@ -1501,6 +1488,7 @@ if (v == LOAD) {
   int h = o->value(), old_h = grid->col_width(c);
   if (h < 0) h = 0;
   if (h != old_h) {
+    undo_checkpoint();
     grid->col_width(c, h);
     grid->need_layout(true);
     set_modflag(1);
@@ -1520,6 +1508,7 @@ if (v == LOAD) {
   int h = o->value(), old_h = grid->col_weight(c);
   if (h < 0) h = 0;
   if (h != old_h) {
+    undo_checkpoint();
     grid->col_weight(c, h);
     grid->need_layout(true);
     set_modflag(1);
@@ -1539,6 +1528,7 @@ if (v == LOAD) {
   int h = o->value(), old_h = grid->col_gap(c);
   if (h < -1) h = -1;
   if (h != old_h) {
+    undo_checkpoint();
     grid->col_gap(c, h);
     grid->need_layout(true);
     set_modflag(1);

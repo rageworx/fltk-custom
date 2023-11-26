@@ -60,6 +60,7 @@ extern Fl_Window *main_window;
 
 extern int show_guides;
 extern int show_restricted;
+extern int show_ghosted_outline;
 extern int show_comments;
 
 extern int G_use_external_editor;
@@ -133,6 +134,7 @@ public:
   int avoid_early_includes;
   int header_file_set;
   int code_file_set;
+  int write_mergeback_data;
   Fl_String header_file_name;
   Fl_String code_file_name;
 };

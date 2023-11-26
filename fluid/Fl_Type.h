@@ -54,7 +54,7 @@ enum ID {
   ID_Dial, ID_Roller, ID_Value_Input, ID_Value_Output,
   // text
   ID_Input, ID_Output, ID_Text_Editor,
-  ID_Text_Display, ID_File_Input, ID_Simple_Terminal,
+  ID_Text_Display, ID_File_Input, ID_Terminal,
   // menus
   ID_Menu_Bar, ID_Menu_Button, ID_Choice,
   ID_Input_Choice, ID_Submenu, ID_Menu_Item,
@@ -121,6 +121,8 @@ protected:
   /** Optional comment for every node in the graph. Visible in browser and
    panels, and will also be copied to the source code. */
   const char *comment_;
+  /** a unique ID within the project */
+  unsigned short uid_;
 
 public: // things that should not be public:
 
@@ -144,8 +146,15 @@ public: // things that should not be public:
   Fl_Type *factory;
   const char *callback_name(Fd_Code_Writer& f);
 
-  int code_position, header_position;
-  int code_position_end, header_position_end;
+  // text positions of this type in code, header, and project file (see SourceView)
+  int code_static_start, code_static_end;
+  int code1_start, code1_end;
+  int code2_start, code2_end;
+  int header1_start, header1_end;
+  int header2_start, header2_end;
+  int header_static_start, header_static_end;
+  int proj1_start, proj1_end;
+  int proj2_start, proj2_end;
 
 protected:
   int user_defined(const char* cbname) const;
@@ -181,10 +190,17 @@ public:
   void comment(const char *);
 
   virtual Fl_Type* click_test(int,int) { return NULL; }
-  
+
   virtual void add_child(Fl_Type*, Fl_Type* beforethis) { }
   virtual void move_child(Fl_Type*, Fl_Type* beforethis) { }
   virtual void remove_child(Fl_Type*) { }
+
+  /** Give widgets a change to arrange their children after all children were add.
+   If adding individual children, this is called immediately, but if children
+   are read via a project file, we wait until all children are read and then
+   lay out the group.
+   */
+  virtual void layout_widget() { }
 
   static Fl_Type *current;  // most recently picked object
   static Fl_Type *current_dnd;
@@ -196,7 +212,7 @@ public:
   virtual void write_properties(Fd_Project_Writer &f);
   virtual void read_property(Fd_Project_Reader &f, const char *);
   virtual void write_parent_properties(Fd_Project_Writer &f, Fl_Type *child, bool encapsulate);
-  virtual void read_parent_properties(Fd_Project_Reader &f, Fl_Type *child, const char *property);
+  virtual void read_parent_property(Fd_Project_Reader &f, Fl_Type *child, const char *property);
   virtual int read_fdesign(const char*, const char*);
   virtual void postprocess_read() { }
 
@@ -241,6 +257,15 @@ public:
   bool is_in_class() const;
 
   int has_function(const char*, const char*) const;
+
+  unsigned short set_uid(unsigned short suggested_uid=0);
+  unsigned short get_uid() { return uid_; }
+  static Fl_Type *find_by_uid(unsigned short uid);
+
+  static Fl_Type *find_in_text(int text_type, int crsr);
+
+  /// If this is greater zero, widgets will be allowed to lay out their children.
+  static int allow_layout;
 };
 
 #endif // _FLUID_FL_TYPE_H

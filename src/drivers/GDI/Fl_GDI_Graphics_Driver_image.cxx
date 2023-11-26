@@ -552,25 +552,22 @@ HBITMAP Fl_GDI_Graphics_Driver::create_alphamask(int w, int h, int d, int ld, co
 void Fl_GDI_Graphics_Driver::cache(Fl_RGB_Image *img)
 {
   Fl_Image_Surface *surface = new Fl_Image_Surface(img->data_w(), img->data_h());
-  if ( surface != NULL )
-  {
-    Fl_Surface_Device::push_current(surface);
-    if ((img->d() == 2 || img->d() == 4) && fl_can_do_alpha_blending()) {
-      fl_draw_image(img->array, 0, 0, img->data_w(), img->data_h(), img->d()|FL_IMAGE_WITH_ALPHA, img->ld());
-    } else {
-      fl_draw_image(img->array, 0, 0, img->data_w(), img->data_h(), img->d(), img->ld());
-      if (img->d() == 2 || img->d() == 4) {
-        *Fl_Graphics_Driver::mask(img) = (fl_uintptr_t)create_alphamask(img->data_w(), img->data_h(), img->d(), img->ld(), img->array);
-      }
+  Fl_Surface_Device::push_current(surface);
+  if ((img->d() == 2 || img->d() == 4) && fl_can_do_alpha_blending()) {
+    fl_draw_image(img->array, 0, 0, img->data_w(), img->data_h(), img->d()|FL_IMAGE_WITH_ALPHA, img->ld());
+  } else {
+    fl_draw_image(img->array, 0, 0, img->data_w(), img->data_h(), img->d(), img->ld());
+    if (img->d() == 2 || img->d() == 4) {
+      *Fl_Graphics_Driver::mask(img) = (fl_uintptr_t)create_alphamask(img->data_w(), img->data_h(), img->d(), img->ld(), img->array);
     }
-    Fl_Surface_Device::pop_current();
-    Fl_Offscreen offs = Fl_Graphics_Driver::get_offscreen_and_delete_image_surface(surface);
-    int *pw, *ph;
-    cache_w_h(img, pw, ph);
-    *pw = img->data_w();
-    *ph = img->data_h();
-    *Fl_Graphics_Driver::id(img) = (fl_uintptr_t)offs;
   }
+  Fl_Surface_Device::pop_current();
+  Fl_Offscreen offs = Fl_Graphics_Driver::get_offscreen_and_delete_image_surface(surface);
+  int *pw, *ph;
+  cache_w_h(img, pw, ph);
+  *pw = img->data_w();
+  *ph = img->data_h();
+  *Fl_Graphics_Driver::id(img) = (fl_uintptr_t)offs;
 }
 
 
@@ -619,55 +616,12 @@ void Fl_GDI_Graphics_Driver::draw_rgb(Fl_RGB_Image *rgb, int XP, int YP, int WP,
   HDC new_gc = CreateCompatibleDC(gc_);
   int save = SaveDC(new_gc);
   SelectObject(new_gc, (HBITMAP)*Fl_Graphics_Driver::id(rgb));
-#ifdef FLTK_EXT_VERSION
-  int sclsucc = 0;
-  Fl_Image_UserScale_p usrscl = Fl_Image::user_scaling_algorithm();
-  if ( (Fl_Image::scaling_algorithm() == FL_RGB_SCALING_USER) && (usrscl != NULL ) ) {
-    Fl_RGB_Image* sclrgb = NULL;    
-    usrscl( rgb, this->floor(XP), this->floor(YP), WP, HP, &sclrgb );
-    if ( sclrgb != NULL ) {
-      // Need to double check for sclrgb image array has pointer.
-      if ( sclrgb->array != NULL ) {
-        // cache sclrgb for temporary to draw HBITMAP.
-        cache(sclrgb);
-        SelectObject(new_gc, (HBITMAP)*Fl_Graphics_Driver::id(sclrgb));
-        if ( (sclrgb->d() % 2) == 0 ) {
-          alpha_blend_(this->floor(XP), this->floor(YP), WP, HP, new_gc, 0, 0, sclrgb->data_w(), sclrgb->data_h());
-        } else {
-          SetStretchBltMode(gc_, HALFTONE);
-          StretchBlt(gc_, this->floor(XP), this->floor(YP), WP, HP, new_gc, 0, 0, sclrgb->data_w(), sclrgb->data_h(), SRCCOPY);
-        }
-        // delete HBITMAP cache image.
-        DeleteObject((HBITMAP)*Fl_Graphics_Driver::id(sclrgb));
-        if (!*Fl_Graphics_Driver::mask(sclrgb))
-          DeleteObject((HBITMAP)*Fl_Graphics_Driver::mask(sclrgb));
-        *Fl_Graphics_Driver::id(sclrgb) = 0;
-        // delete by user space ...
-        usrscl( NULL, 0, 0, 0, 0, &sclrgb );
-        
-        sclsucc = 1;
-      }
-      else
-      {
-        // delete by user space ...
-        usrscl( NULL, 0, 0, 0, 0, &sclrgb );
-      }
-    }
+  if ( (rgb->d() % 2) == 0 ) {
+    alpha_blend_(this->floor(XP), this->floor(YP), WP, HP, new_gc, 0, 0, rgb->data_w(), rgb->data_h());
+  } else {
+    SetStretchBltMode(gc_, HALFTONE);
+    StretchBlt(gc_, this->floor(XP), this->floor(YP), WP, HP, new_gc, 0, 0, rgb->data_w(), rgb->data_h(), SRCCOPY);
   }
-  
-  if (sclsucc == 0)
-  {
-#endif /// of FLTK_EXT_VERSION
-    if ( (rgb->d() % 2) == 0 ) {
-      alpha_blend_(this->floor(XP), this->floor(YP), WP, HP, new_gc, 0, 0, rgb->data_w(), rgb->data_h());
-    } else {
-      SetStretchBltMode(gc_, HALFTONE);
-      StretchBlt(gc_, this->floor(XP), this->floor(YP), WP, HP, new_gc, 0, 0, rgb->data_w(), rgb->data_h(), SRCCOPY);
-    }
-#ifdef FLTK_EXT_VERSION  
-  }
-#endif /// of FLTK_EXT_VERSION
-  
   RestoreDC(new_gc, save);
   DeleteDC(new_gc);
   pop_clip();

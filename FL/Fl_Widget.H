@@ -180,7 +180,7 @@ protected:
         IMAGE_BOUND     = 1<<21,  ///< binding the image to the widget will transfer ownership, so that the widget will delete the image when it is no longer needed
         DEIMAGE_BOUND   = 1<<22,  ///< bind the inactive image to the widget, so the widget deletes the image when it is no longer needed
         AUTO_DELETE_USER_DATA = 1<<23, ///< automatically call `delete` on the user_data pointer when destroying this widget; if set, user_data must point to a class derived from the class Fl_Callback_User_Data
-
+        MAXIMIZED       = 1<<24,  ///< a maximized Fl_Window
         // Note to devs: add new FLTK core flags above this line (up to 1<<28).
 
         // Three more flags, reserved for user code
@@ -258,6 +258,19 @@ public:
       Most of the time, you want to call the inherited handle() method in
       your overridden method so that you don't short-circuit events that you
       don't handle. In this last case you should return the callee retval.
+
+      One exception to the rule in the previous paragraph is if you really
+      want to \e override the behavior of the base class. This requires
+      knowledge of the details of the inherited class.
+
+      In rare cases you may want to return 1 from your handle() method
+      although you don't really handle the event. The effect would be to
+      \e filter event processing, for instance if you want to dismiss
+      non-numeric characters (keypresses) in a numeric input widget. You
+      may "ring the bell" or show another visual indication or drop the
+      event silently. In such a case you must not call the handle() method
+      of the base class and tell FLTK that you \e consumed the event by
+      returning 1 even if you didn't \e do anything with it.
 
       \param[in] event the kind of event received
       \retval 0 if the event was not used or understood

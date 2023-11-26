@@ -44,6 +44,15 @@ decl {char *sv_header_filename = NULL;} {private local
 decl {char *sv_design_filename = NULL;} {private local
 }
 
+decl {int sv_code_choice;} {public local
+}
+
+decl {extern void select_only(Fl_Type *o);} {private global
+}
+
+decl {extern void reveal_in_browser(Fl_Type *t);} {private global
+}
+
 Function {update_sourceview_position()} {
   comment {Update the header and source code highlighting depending on the
 currently selected object
@@ -58,27 +67,89 @@ file.} open return_type void
   if (sv_autoposition->value()==0)
     return;
   if (sourceview_panel && sourceview_panel->visible() && Fl_Type::current) {
-    int pos0, pos1;
+    int pos0 = 0, pos1 = 0;
     if (sv_source->visible_r()) {
-      pos0 = Fl_Type::current->code_position;
-      pos1 = Fl_Type::current->code_position_end;
+      switch (sv_code_choice) {
+        case 0: // prolog: not yet (include statements)
+          pos0 = Fl_Type::current->code1_start;
+          pos1 = Fl_Type::current->code2_end;
+          break;
+        case 1: // static: callbacks, menu declarations
+          pos0 = Fl_Type::current->code_static_start;
+          pos1 = Fl_Type::current->code_static_end;
+          break;
+        case 2: // code: entire implementation block including children
+          pos0 = Fl_Type::current->code1_start;
+          pos1 = Fl_Type::current->code2_end;
+          break;
+        case 3: // code1: all implementation code before the children
+          pos0 = Fl_Type::current->code1_start;
+          pos1 = Fl_Type::current->code1_end;
+          break;
+        case 4: // code1: all implementation code before the children
+          pos0 = Fl_Type::current->code2_start;
+          pos1 = Fl_Type::current->code2_end;
+          break;
+      }
       if (pos0>=0) {
         if (pos1<pos0)
-          pos1 = pos0;
+          pos1 = sv_source->buffer()->line_end(pos0);
         sv_source->buffer()->highlight(pos0, pos1);
         int line = sv_source->buffer()->count_lines(0, pos0);
         sv_source->scroll(line, 0);
       }
     }
     if (sv_header->visible_r()) {
-      pos0 = Fl_Type::current->header_position;
-      pos1 = Fl_Type::current->header_position_end;
+      switch (sv_code_choice) {
+        case 0: // prolog: not yet (include statements)
+        case 1: // static: callbacks, menu declarations
+          pos0 = Fl_Type::current->header_static_start;
+          pos1 = Fl_Type::current->header_static_end;
+          break;
+        case 2: // code: entire implementation block including children
+          pos0 = Fl_Type::current->header1_start;
+          pos1 = Fl_Type::current->header2_end;
+          break;
+        case 3: // code1: all implementation code before the children
+          pos0 = Fl_Type::current->header1_start;
+          pos1 = Fl_Type::current->header1_end;
+          break;
+        case 4: // code1: all implementation code before the children
+          pos0 = Fl_Type::current->header2_start;
+          pos1 = Fl_Type::current->header2_end;
+          break;
+      }
       if (pos0>=0) {
         if (pos1<pos0)
-          pos1 = pos0;
+          pos1 = sv_header->buffer()->line_end(pos0);
         sv_header->buffer()->highlight(pos0, pos1);
         int line = sv_header->buffer()->count_lines(0, pos0);
         sv_header->scroll(line, 0);
+      }
+    }
+    if (sv_project->visible_r()) {
+      switch (sv_code_choice) {
+        case 0: // prolog: not yet (include statements)
+        case 1: // static: callbacks, menu declarations
+        case 2: // code: entire implementation block including children
+          pos0 = Fl_Type::current->proj1_start;
+          pos1 = Fl_Type::current->proj2_end;
+          break;
+        case 3: // code1: all implementation code before the children
+          pos0 = Fl_Type::current->proj1_start;
+          pos1 = Fl_Type::current->proj1_end;
+          break;
+        case 4: // code1: all implementation code before the children
+          pos0 = Fl_Type::current->proj2_start;
+          pos1 = Fl_Type::current->proj2_end;
+          break;
+      }
+      if (pos0>=0) {
+        if (pos1<pos0)
+          pos1 = sv_project->buffer()->line_end(pos0);
+        sv_project->buffer()->highlight(pos0, pos1);
+        int line = sv_project->buffer()->count_lines(0, pos0);
+        sv_project->scroll(line, 0);
       }
     }
   }} {}
@@ -117,7 +188,7 @@ and load those into the Code Viewer widgets.} open return_type void
   }
 
   if (sv_project->visible_r()) {
-    write_file(sv_design_filename);
+    write_file(sv_design_filename, false, true);
     int top = sv_project->top_line();
     sv_project->buffer()->loadfile(sv_design_filename);
     sv_project->scroll(top, 0);
@@ -156,8 +227,7 @@ and load those into the Code Viewer widgets.} open return_type void
 
     g_project.code_file_name = code_file_name_bak;
     g_project.header_file_name = header_file_name_bak;
-  }} {selected
-  }
+  }} {}
 }
 
 Function {update_sourceview_timer(void*)} {
@@ -194,6 +264,8 @@ The state is stored in the app preferences.
     int tab;
     svp.get("tab", tab, 0);
     if (tab>=0 && tab<sv_tab->children()) sv_tab->value(sv_tab->child(tab));
+    svp.get("code_choice", sv_code_choice, 2);
+    sv_code_choice_w->value(sv_code_choice_w->find_item_with_argument(sv_code_choice));
     if (!position_window(sourceview_panel,"sourceview_pos", 0, 320, 120, 550, 500)) return;
   }
 
@@ -212,7 +284,7 @@ Function {make_sourceview()} {open
   Fl_Window sourceview_panel {
     label {Code View}
     callback toggle_sourceview_cb open
-    xywh {400 569 520 490} type Double align 80 resizable size_range {384 120 0 0} visible
+    xywh {389 507 520 515} type Double align 80 resizable size_range {384 120 0 0} visible
   } {
     Fl_Tabs sv_tab {
       callback update_sourceview_position_cb open
@@ -223,7 +295,7 @@ Function {make_sourceview()} {open
         xywh {10 35 500 415} labelsize 13 resizable
       } {
         Fl_Text_Editor sv_source {
-          xywh {20 50 480 390} textfont 4 textsize 11 resizable
+          xywh {10 40 500 410} textfont 4 textsize 11 resizable
           code0 {\#include "CodeEditor.h"}
           code1 {o->linenumber_width(60);}
           code2 {o->linenumber_size(o->Fl_Text_Display::textsize());}
@@ -235,7 +307,7 @@ Function {make_sourceview()} {open
         xywh {10 35 500 415} labelsize 13 hide
       } {
         Fl_Text_Editor sv_header {
-          xywh {20 50 480 390} textfont 4 textsize 11 resizable
+          xywh {10 40 500 410} textfont 4 textsize 11 resizable
           code0 {\#include "CodeEditor.h"}
           code1 {o->linenumber_width(60);}
           code2 {o->linenumber_size(o->Fl_Text_Display::textsize());}
@@ -247,7 +319,7 @@ Function {make_sourceview()} {open
         xywh {10 35 500 415} labelsize 13 hide
       } {
         Fl_Text_Display sv_strings {
-          xywh {20 50 480 390} textfont 4 textsize 11 resizable
+          xywh {10 40 500 410} textfont 4 textsize 11 resizable
           code1 {o->linenumber_width(60);}
           code2 {o->linenumber_size(o->Fl_Text_Display::textsize());}
           class TextViewer
@@ -258,7 +330,7 @@ Function {make_sourceview()} {open
         xywh {10 35 500 415} labelsize 13 hide
       } {
         Fl_Text_Display sv_project {
-          xywh {20 50 480 390} textfont 4 textsize 11 resizable
+          xywh {10 40 500 410} textfont 4 textsize 11 resizable
           code1 {o->linenumber_width(60);}
           code2 {o->linenumber_size(o->Fl_Text_Display::textsize());}
           class TextViewer
@@ -268,27 +340,162 @@ Function {make_sourceview()} {open
     Fl_Group {} {open
       xywh {10 460 500 20}
     } {
+      Fl_Button sv_find_text_case {
+        label aA
+        xywh {244 460 25 20} type Toggle labelsize 11
+      }
+      Fl_Input sv_find_text {
+        label {Find:}
+        callback {Fl_Text_Display *e = NULL;
+if (sv_source->visible_r()) {
+  e = sv_source;
+} else if (sv_header->visible_r()) {
+  e = sv_header;
+} else if (sv_project->visible_r()) {
+  e = sv_project;
+}
+if (e) {
+  Fl_Text_Buffer *b = e->buffer();
+  int pos = e->insert_position();
+  int found = b->search_forward(pos, o->value(), &pos, sv_find_text_case->value());
+  if (found) {
+    b->select(pos, pos + (int)strlen(o->value()));
+    e->insert_position(pos);
+    e->show_insert_position();
+  }
+}}
+        xywh {40 460 200 20} labelsize 11 when 15 textsize 11
+      }
+      Fl_Button {} {
+        label {<<}
+        callback {Fl_Text_Display *e = NULL;
+if (sv_source->visible_r()) {
+  e = sv_source;
+} else if (sv_header->visible_r()) {
+  e = sv_header;
+} else if (sv_project->visible_r()) {
+  e = sv_project;
+}
+if (e) {
+  const char *needle = sv_find_text->value();
+  Fl_Text_Buffer *b = e->buffer();
+  int pos = e->insert_position()-1;
+  if (pos < 0) pos = b->length()-1;
+  int found = b->search_backward(pos, needle, &pos, sv_find_text_case->value());
+  if (!found)
+    found = b->search_backward(b->length()-1, needle, &pos, sv_find_text_case->value());
+  if (found) {
+    b->select(pos, pos + (int)strlen(needle));
+    e->insert_position(pos);
+    e->show_insert_position();
+  }
+}} selected
+        xywh {273 460 25 20} labelsize 11
+      }
+      Fl_Button {} {
+        label {>>}
+        callback {Fl_Text_Display *e = NULL;
+if (sv_source->visible_r()) {
+  e = sv_source;
+} else if (sv_header->visible_r()) {
+  e = sv_header;
+} else if (sv_project->visible_r()) {
+  e = sv_project;
+}
+if (e) {
+  const char *needle = sv_find_text->value();
+  Fl_Text_Buffer *b = e->buffer();
+  int pos = e->insert_position() + 1;
+  if (pos+1 >= b->length()) pos = 0;
+  int found = b->search_forward(pos, needle, &pos, sv_find_text_case->value());
+  if (!found && (pos > 0))
+    found = b->search_forward(0, needle, &pos, sv_find_text_case->value());
+  if (found) {
+    b->select(pos, pos + (int)strlen(needle));
+    e->insert_position(pos);
+    e->show_insert_position();
+  }
+}}
+        xywh {298 460 25 20} labelsize 11
+      }
+      Fl_Button {} {
+        label Reveal
+        callback {if (sourceview_panel && sourceview_panel->visible()) {
+  Fl_Type *node = NULL;
+  if (sv_source->visible_r())
+    node = Fl_Type::find_in_text(0, sv_source->insert_position());
+  else if (sv_header->visible_r())
+    node = Fl_Type::find_in_text(1, sv_header->insert_position());
+  else if (sv_project->visible_r())
+    node = Fl_Type::find_in_text(2, sv_project->insert_position());
+  if (node) {
+    select_only(node);
+    reveal_in_browser(node);
+    if (Fl::event_clicks()==1) // double click
+      node->open();
+  }
+}}
+        xywh {327 460 61 20} labelsize 11
+      }
+      Fl_Box {} {
+        xywh {490 460 20 20} resizable
+      }
+    }
+    Fl_Group {} {open
+      xywh {10 485 500 20}
+    } {
       Fl_Button {} {
         label Refresh
         callback update_sourceview_cb
-        xywh {10 460 61 20} labelsize 11
+        xywh {10 485 61 20} labelsize 11
       }
       Fl_Light_Button sv_autorefresh {
         label {Auto-Refresh}
-        xywh {76 460 91 20} labelsize 11
+        xywh {77 485 91 20} labelsize 11
         code0 {o->callback((Fl_Callback*)update_sourceview_cb);}
       }
       Fl_Light_Button sv_autoposition {
         label {Auto-Position}
-        xywh {172 460 89 20} labelsize 11
+        xywh {172 485 89 20} labelsize 11
+      }
+      Fl_Choice sv_code_choice_w {
+        callback {sv_code_choice = (int)o->mvalue()->argument();
+update_sourceview_position();} open
+        xywh {265 485 70 20} down_box BORDER_BOX labelsize 11 textsize 11
+      } {
+        MenuItem {} {
+          label prolog
+          user_data 0 user_data_type long
+          tooltip {Include statements in header or source code} xywh {0 0 100 20} labelsize 11 hide
+        }
+        MenuItem {} {
+          label static
+          user_data 1 user_data_type long
+          tooltip {static declarations in source code} xywh {10 10 100 20} labelsize 11
+        }
+        MenuItem {} {
+          label code
+          user_data 2 user_data_type long
+          tooltip {widget code block including children} xywh {20 20 100 20} labelsize 11
+        }
+        MenuItem {} {
+          label {code 1}
+          user_data 3 user_data_type long
+          tooltip {widget code block before children} xywh {30 30 100 20} labelsize 11
+        }
+        MenuItem {} {
+          label {code 2}
+          user_data 4 user_data_type long
+          tooltip {widget code block after children} xywh {40 40 100 20} labelsize 11
+        }
+      }
+      Fl_Box {} {
+        xywh {375 485 80 20} resizable
       }
       Fl_Button {} {
         label Close
         callback toggle_sourceview_b_cb
-        xywh {460 460 50 20} labelsize 11
-      }
-      Fl_Box {} {
-        xywh {265 460 190 20} resizable
+        xywh {460 485 50 20} labelsize 11
       }
     }
   }

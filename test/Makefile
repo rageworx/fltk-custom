@@ -30,7 +30,7 @@ CPPUNITTEST = \
 	unittest_viewport.cxx \
 	unittest_scrollbarsize.cxx \
 	unittest_schemes.cxx \
-	unittest_simple_terminal.cxx \
+	unittest_terminal.cxx \
 	unittest_core.cxx
 
 OBJUNITTEST = \
@@ -78,6 +78,7 @@ CPPFILES =\
 	glut_test.cxx \
 	grid_alignment \
 	grid_buttons \
+	grid_dialog \
 	grid_login \
 	hello.cxx \
 	help_dialog.cxx \
@@ -125,6 +126,7 @@ CPPFILES =\
 	symbols.cxx \
 	table.cxx \
 	tabs.cxx \
+	terminal.cxx \
 	threads.cxx \
 	tile.cxx \
 	tiled_image.cxx \
@@ -133,6 +135,7 @@ CPPFILES =\
 	utf8.cxx \
 	valuators.cxx \
 	windowfocus.cxx \
+	wizard.cxx \
 	$(CPPUNITTEST)
 
 ALL =	\
@@ -166,6 +169,7 @@ ALL =	\
 	forms$(EXEEXT) \
 	grid_alignment$(EXEEXT) \
 	grid_buttons$(EXEEXT) \
+	grid_dialog$(EXEEXT) \
 	grid_login$(EXEEXT) \
 	hello$(EXEEXT) \
 	help_dialog$(EXEEXT) \
@@ -206,12 +210,14 @@ ALL =	\
 	sudoku$(EXEEXT) \
 	symbols$(EXEEXT) \
 	table$(EXEEXT) \
+	terminal$(EXEEXT) \
 	$(THREADS) \
 	tile$(EXEEXT) \
 	tiled_image$(EXEEXT) \
 	twowin$(EXEEXT) \
 	utf8$(EXEEXT) \
-	windowfocus$(EXEEXT)
+	windowfocus$(EXEEXT) \
+	wizard$(EXEEXT)
 
 ALLFLUID = \
 	checkers$(EXEEXT) \
@@ -268,6 +274,7 @@ clean:
 	$(RM) radio.cxx radio.h
 	$(RM) resize.cxx resize.h
 	$(RM) tabs.cxx tabs.h
+	$(RM) terminal.cxx terminal.h
 	$(RM) tree.cxx tree.h
 	$(RM) valuators.cxx valuators.h
 
@@ -447,6 +454,8 @@ grid_alignment$(EXEEXT): grid_alignment.o
 
 grid_buttons$(EXEEXT): grid_buttons.o
 
+grid_dialog$(EXEEXT): grid_dialog.o
+
 grid_login$(EXEEXT): grid_login.o
 
 hello$(EXEEXT): hello.o
@@ -617,6 +626,9 @@ table$(EXEEXT): table.o
 
 tabs$(EXEEXT): tabs.o
 tabs.cxx:	tabs.fl ../fluid/fluid$(EXEEXT)
+
+terminal$(EXEEXT): terminal.o
+terminal.cxx:	terminal.fl ../fluid/fluid$(EXEEXT)
 
 threads$(EXEEXT): threads.o
 # This ensures that we have this dependency even if threads are not

@@ -19,6 +19,7 @@
 #ifndef sourceview_panel_h
 #define sourceview_panel_h
 #include <FL/Fl.H>
+extern int sv_code_choice;
 void update_sourceview_position();
 void update_sourceview_position_cb(class Fl_Tabs*, void*);
 void update_sourceview_cb(class Fl_Button*, void*);
@@ -37,12 +38,18 @@ extern CodeViewer *sv_header;
 extern TextViewer *sv_strings;
 extern TextViewer *sv_project;
 #include <FL/Fl_Button.H>
+extern Fl_Button *sv_find_text_case;
+#include <FL/Fl_Input.H>
+extern Fl_Input *sv_find_text;
+#include <FL/Fl_Box.H>
 #include <FL/Fl_Light_Button.H>
 extern Fl_Light_Button *sv_autorefresh;
 extern Fl_Light_Button *sv_autoposition;
+#include <FL/Fl_Choice.H>
+extern Fl_Choice *sv_code_choice_w;
 extern void toggle_sourceview_b_cb(Fl_Button*, void*);
-#include <FL/Fl_Box.H>
 Fl_Double_Window* make_sourceview();
+extern Fl_Menu_Item menu_sv_code_choice_w[];
 #endif
 
 //

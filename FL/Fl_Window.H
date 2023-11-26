@@ -1,7 +1,7 @@
 //
 // Window header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2022 by Bill Spitzak and others.
+// Copyright 1998-2023 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -53,12 +53,11 @@ class Fl_Double_Window;
   flags are ignored.
 */
 class FL_EXPORT Fl_Window : public Fl_Group {
-  friend int Fl::arg(int argc, char **argv, int &i);
   friend class Fl_X;
   friend class Fl_Window_Driver;
 private:
   static char *default_xclass_;
-  static char show_iconic_; // 1 means create next window in iconic form
+  static char show_next_window_iconic_; // 1 means create next window in iconic form
 
   int no_fullscreen_x;
   int no_fullscreen_y;
@@ -91,6 +90,8 @@ private:
   // unimplemented copy ctor and assignment operator
   Fl_Window(const Fl_Window&);
   Fl_Window& operator=(const Fl_Window&);
+
+  void is_maximized_(bool b);
 
 protected:
 
@@ -508,6 +509,12 @@ public:
     \see void Fl_Window::fullscreen()
     */
   void fullscreen_screens(int top, int bottom, int left, int right);
+
+  void maximize();
+  void un_maximize();
+  /** Returns whether the window is currently maximized */
+  unsigned int maximize_active() const { return flags() & MAXIMIZED; }
+public:
   /**
     Iconifies the window.  If you call this when shown() is false
     it will show() it as an icon.  If the window is already
@@ -594,6 +601,28 @@ public:
   void screen_num(int screen_num);
   static bool is_a_rescale();
   fl_uintptr_t os_id();
+
+  /**
+    Sets a static flag whether the next window should be opened iconified.
+
+    \note This is an <b>internal function</b>, you should not use this in user code.
+
+    Please use Fl_Window::iconize() instead.
+  */
+  static void show_next_window_iconic(char stat) {
+    show_next_window_iconic_ = stat ? 1 : 0;
+  }
+
+  /**
+    Returns the static flag whether the next window should be opened iconified.
+
+    \note This is an <b>internal function</b>, you should not use this in user code.
+
+    Please use Fl_Window::iconize() to iconify a window.
+  */
+  static char show_next_window_iconic() {
+    return show_next_window_iconic_;
+  }
 };
 
 #endif
