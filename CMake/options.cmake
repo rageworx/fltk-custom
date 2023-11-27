@@ -77,6 +77,24 @@ set (OPTION_ABI_VERSION ""
 )
 set (FL_ABI_VERSION ${OPTION_ABI_VERSION})
 
+
+#######################################################################
+#  Select MSVC (Visual Studio) Runtime: DLL (/MDx) or static (/MTx)
+#  where x = 'd' for Debug builds, empty ('') for non-Debug builds.
+#  Note: this might be handled better by the 'MSVC_RUNTIME_LIBRARY'
+#  target property for each target rather than setting a global
+#  CMake variable - but this version does the latter.
+#######################################################################
+
+if (MSVC)
+  option (FLTK_MSVC_RUNTIME_DLL "use MSVC Runtime-DLL (/MDx)" ON)
+  if (FLTK_MSVC_RUNTIME_DLL)
+    set (CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+  else ()
+    set (CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  endif ()
+endif (MSVC)
+
 #######################################################################
 #  Bundled Library Options
 #######################################################################
@@ -311,6 +329,16 @@ if (APPLE)
   endif (CMAKE_OSX_SYSROOT)
 endif (APPLE)
 
+#######################################################################
+option (OPTION_USE_STD "allow FLTK to use some std:: features" OFF)
+if (OPTION_USE_STD)
+  set (FLTK_USE_STD 1)
+else ()
+  set (FLTK_USE_STD 0)
+endif ()
+
+#######################################################################
+
 # find X11 libraries and headers
 set (PATH_TO_XLIBS)
 if ((NOT APPLE OR OPTION_APPLE_X11) AND NOT WIN32 AND NOT OPTION_USE_WAYLAND)
@@ -526,7 +554,7 @@ if (OPTION_USE_GL)
     unset(HAVE_GL_GLU_H CACHE)
     find_file (HAVE_GL_GLU_H GL/glu.h PATHS ${X11_INCLUDE_DIR})
   else()
-    include (FindOpenGL)
+    find_package(OpenGL)
     if (APPLE)
       set (HAVE_GL_GLU_H ${HAVE_OPENGL_GLU_H})
     endif (APPLE)

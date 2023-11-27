@@ -663,7 +663,13 @@ int Fl_Text_Editor::handle_key() {
   Key_Func f;
   f = bound_key_function(key, state, global_key_bindings);
   if (!f) f = bound_key_function(key, state, key_bindings);
-  if (f) return f(key, this);
+  if (f == kf_undo || f == kf_redo) {
+    // never propagate undo and redo up to another widget
+    if (!f(key, this)) fl_beep();
+    return 1;
+  } else if (f){
+    return f(key, this);
+  }
   if (default_key_function_ && !state) return default_key_function_(c, this);
   return 0;
 }
@@ -741,6 +747,25 @@ int Fl_Text_Editor::handle(int event) {
         if (when()&FL_WHEN_CHANGED) do_callback(FL_REASON_CHANGED);
         return 1;
       }
+
+      if (Fl::event_button() == FL_RIGHT_MOUSE) {
+        if (active_r() && window()) {
+          if (Fl::event_inside(text_area.x, text_area.y, text_area.w,
+                               text_area.h)) window()->cursor(FL_CURSOR_INSERT);
+          else window()->cursor(FL_CURSOR_DEFAULT);
+        }
+        if (Fl::focus() != this) {
+          Fl::focus(this);
+          handle(FL_FOCUS);
+        }
+        switch (handle_rmb(0)) {
+          case 1: kf_cut(0, this); break;
+          case 2: kf_copy(0, this); break;
+          case 3: kf_paste(0, this); break;
+        }
+        return 1;
+      }
+
       break;
 
     case FL_SHORTCUT:

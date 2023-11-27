@@ -1,7 +1,7 @@
 //
 // Basic Fl_String header for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2021-2022 by Bill Spitzak and others.
+// Copyright 2021-2023 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -17,11 +17,17 @@
 #ifndef _FL_Fl_String_H_
 #define _FL_Fl_String_H_
 
-/** \file FL/Fl_String.H
+/**
+ \cond DriverDev
+ \addtogroup DriverDeveloper
+ \{
+ */
+
+/** \file src/Fl_String.H
   Basic Fl_String class for FLTK.
 */
 
-#include "Fl_Export.H"
+#include <FL/Fl_Export.H>
 
 // See: https://en.cppreference.com/w/cpp/string/basic_string/basic_string
 
@@ -34,7 +40,7 @@
   a drop-in if we ever decide to allow templates and the std library.
 
   Fl_String always maintains a trailing \e nul byte, but can also contain
-  \e nul bytes insde the string if the constructor
+  \e nul bytes inside the string if the constructor
   Fl_String(const char *str, int size) is used.
 
   Assignment and copy constructors \b copy the string value such that the
@@ -55,7 +61,7 @@ class FL_EXPORT Fl_String {
 
 private:
   /*
-   FLTK does no small string optimisation.
+   FLTK does no small string optimization.
    If the string is empty and capacity is not set, buffer_ will be NULL.
    */
   char *buffer_;
@@ -113,6 +119,7 @@ public:
   Fl_String &operator+=(const char *src);
   Fl_String &operator+=(const Fl_String &src);
   Fl_String &operator+=(char c);
+  int find(const Fl_String &needle, int start_pos=0) const;
   Fl_String &replace(int at, int n_del, const char *src, int n_ins=npos);
   Fl_String &replace(int at, int n_del, const Fl_String &src);
   Fl_String substr(int pos=0, int n=npos) const;
@@ -125,8 +132,13 @@ public:
 }; // class Fl_String
 
 // ---- Non-member functions
-extern Fl_String operator+(const Fl_String &lhs, const Fl_String &rhs);
-extern Fl_String operator+(const Fl_String &lhs, const char *rhs);
-extern bool operator==(const Fl_String &lhs, const Fl_String &rhs);
+FL_EXPORT Fl_String operator+(const Fl_String& lhs, const Fl_String& rhs);
+FL_EXPORT Fl_String operator+(const Fl_String& lhs, const char* rhs);
+FL_EXPORT bool operator==(const Fl_String & lhs, const Fl_String & rhs);
+
+/**
+\}
+\endcond
+*/
 
 #endif // _FL_Fl_String_H_

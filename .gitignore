@@ -7,6 +7,7 @@
 *.bck
 *.exe
 *.o
+*.0
 **/.DS_Store
 
 # CMake build artifacts if built in source - not recommended, but anyway
@@ -60,41 +61,6 @@ etc/FLTKConfig.cmake
 
 # /lib/
 
-# /examples/
-# see examples/.gitignore
-
-# /fluid/
-/fluid/fluid
-/fluid/fluid-shared
-/fluid/*.bck
-/fluid/*.exe
-/fluid/TAGS
-/fluid/fluid.app
-/fluid/pixmaps/*.bck
-/fluid/documentation/html/
-
-# /ide/VisualC2008/
-/ide/VisualC2008/*
-
-# /ide/VisualC2010/
-/ide/VisualC2010/*
-
-# /ide/VisualC2015
-/ide/VisualC2015/*
-
-# /ide/Xcode3/
-/ide/Xcode3/build
-
-# /ide/Xcode3/FLTK.xcodeproj/
-/ide/Xcode3/FLTK.xcodeproj/*
-
-# /ide/Xcode4/
-/ide/Xcode4/build
-
-# /ide/Xcode4/FLTK.xcodeproj/
-/ide/Xcode4/FLTK.xcodeproj/*
-
-# /lib/
 /lib/lib*
 /lib/*.lib
 /lib/*.a
@@ -114,6 +80,8 @@ etc/FLTKConfig.cmake
 
 # Wayland build artifacts (generated files)
 
+src/gtk-shell-client-protocol.h
+src/gtk-shell-protocol.c
 src/text-input-client-protocol.h
 src/text-input-protocol.c
 src/xdg-decoration-client-protocol.h
@@ -129,8 +97,3 @@ src/xdg-shell-protocol.c
 /out/build/x64-Debug
 /CMakeSettings.json
 /CppProperties.json
-**/.DS_Store
-*.back
-*.bak
-*.swp
-configure~

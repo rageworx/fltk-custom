@@ -18,9 +18,15 @@
 #ifndef Fl_Int_Vector_H
 #define Fl_Int_Vector_H
 
+/**
+ \cond DriverDev
+ \addtogroup DriverDeveloper
+ \{
+ */
+
 #include <FL/Fl_Export.H>
 
-/** \file FL/Fl_Int_Vector.H
+/** \file src/Fl_Int_Vector.H
   An STL-ish vector implemented without templates.
 */
 
@@ -33,7 +39,7 @@
   Common use:
   \code
   #include <stdio.h>
-  #include <FL/Fl_Int_Vector.H>
+  #include "Fl_Int_Vector.H"
   int main() {
       Fl_Int_Vector v;
 
@@ -56,6 +62,8 @@
   \endcode
 
   \todo
+      - Note: this class is only for internal use and deprecated by design.
+        It will be replaced with std::vector<int> in the next version after 1.4.x.
       - Add other std::vector methods like erase(), etc.
       - Make memory blocking size flexible, and add related methods like capacity(), reserve(), shrink_to_fit(), etc.
       - Add non-std methods that are nevertheless needed, e.g. insert(index,val), delete(index), delete(start, end), swap(a_idx,b_idx)
@@ -162,5 +170,10 @@ public:
     return (size_ == 0) ? true : false;
   }
 };
+
+/**
+\}
+\endcond
+*/
 
 #endif // Fl_Int_Vector_H

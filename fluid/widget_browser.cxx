@@ -110,7 +110,7 @@ void reveal_in_browser(Fl_Type *t) {
       if (!p->parent) break;
       p = p->parent;
     }
-    fixvisible(p);
+    update_visibility_flag(p);
   }
   widget_browser->display(t);
   widget_browser->redraw();
@@ -252,7 +252,7 @@ int Widget_Browser::item_height(void *l) const {
  \return height in FLTK units
  */
 int Widget_Browser::incr_height() const {
-  return textsize()+5;
+  return textsize() + 5 + linespacing();
 }
 
 /**
@@ -345,11 +345,11 @@ void Widget_Browser::item_draw(void *v, int X, int Y, int, int) const {
   }
 
   if (   l->is_widget()
-      && !l->is_a(Fl_Type::ID_Window)
+      && !l->is_a(ID_Window)
       && ((Fl_Widget_Type*)l)->o
       && !((Fl_Widget_Type*)l)->o->visible()
-      && (!l->parent || (   !l->parent->is_a(Fl_Type::ID_Tabs)
-                         && !l->parent->is_a(Fl_Type::ID_Wizard) ) )
+      && (!l->parent || (   !l->parent->is_a(ID_Tabs)
+                         && !l->parent->is_a(ID_Wizard) ) )
       )
   {
     invisible_pixmap->draw(X - 17, Y);
@@ -423,7 +423,7 @@ int Widget_Browser::item_width(void *v) const {
 }
 
 /**
- Callback to tell the FLuid UI when the list of selected items changed.
+ Callback to tell the Fluid UI when the list of selected items changed.
  */
 void Widget_Browser::callback() {
   selection_changed((Fl_Type*)selection());
@@ -552,15 +552,15 @@ void Widget_Browser::display(Fl_Type *inNode) {
   Fl_Type *p=Fl_Type::first;
   for ( ; p && p!=inNode; p=p->next) {
     if (p->visible)
-      nodeV += item_height(p);
+      nodeV += item_height(p) + linespacing();
   }
   if (p) {
     int xx, yy, ww, hh;
     bbox(xx, yy, ww, hh);
     int frame_top = xx-x();
     int frame_bottom = frame_top + hh;
-    int node_height = item_height(inNode);
-    int margin_height = 2 * item_quick_height(inNode);
+    int node_height = item_height(inNode) + linespacing();
+    int margin_height = 2 * (item_quick_height(inNode) + linespacing());
     if (margin_height>hh/2) margin_height = hh/2;
     // is the inNode above the current scroll position?
     if (nodeV<currentV+margin_height)

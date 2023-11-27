@@ -7,7 +7,7 @@
 // This file also contains code to make Fl_Menu_Button, Fl_Menu_Bar,
 // etc widgets.
 //
-// Copyright 1998-2010 by Bill Spitzak and others.
+// Copyright 1998-2023 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -24,11 +24,11 @@
 
 #include "fluid.h"
 #include "Fl_Window_Type.h"
-#include "alignment_panel.h"
 #include "file.h"
 #include "code.h"
 #include "Fluid_Image.h"
 #include "custom_widgets.h"
+#include "mergeback.h"
 
 #include <FL/Fl.H>
 #include <FL/fl_message.H>
@@ -105,7 +105,7 @@ void Fl_Input_Choice_Type::build_menu() {
     }
     // Menus are already built during the .fl file reading process, so if the
     // end of a menu list is not read yet, the end markers (label==NULL) will
-    // not be set, and deleting dependants will randomly free memory.
+    // not be set, and deleting dependents will randomly free memory.
     // Clearing the array should avoid that.
     memset( (void*)w->menu(), 0, menusize * sizeof(Fl_Menu_Item) );
     // fill them all in:
@@ -277,6 +277,7 @@ void Fl_Menu_Item_Type::write_static(Fd_Code_Writer& f) {
     f.write_c(", %s", ut);
     if (use_v) f.write_c(" v");
     f.write_c(") {\n");
+    // Matt: disabled f.tag(FD_TAG_GENERIC, 0);
     f.write_c_indented(callback(), 1, 0);
     if (*(d-1) != ';' && *(d-1) != '}') {
       const char *p = strrchr(callback(), '\n');
@@ -286,18 +287,20 @@ void Fl_Menu_Item_Type::write_static(Fd_Code_Writer& f) {
       // statement...
       if (*p != '#' && *p) f.write_c(";");
     }
-    f.write_c("\n}\n");
+    f.write_c("\n");
+    // Matt: disabled f.tag(FD_TAG_MENU_CALLBACK, get_uid());
+    f.write_c("}\n");
     if (k) {
       f.write_c("void %s::%s(Fl_Menu_* o, %s v) {\n", k, cn, ut);
       f.write_c("%s((%s*)(o", f.indent(1), k);
       Fl_Type* t = parent; while (t->is_a(ID_Menu_Item)) t = t->parent;
       Fl_Type *q = 0;
       // Go up one more level for Fl_Input_Choice, as these are groups themselves
-      if (t && t->is_a(Fl_Type::ID_Input_Choice))
+      if (t && t->is_a(ID_Input_Choice))
         f.write_c("->parent()");
       for (t = t->parent; t && t->is_widget() && !is_class(); q = t, t = t->parent)
         f.write_c("->parent()");
-      if (!q || !q->is_a(Fl_Type::ID_Widget_Class))
+      if (!q || !q->is_a(ID_Widget_Class))
         f.write_c("->user_data()");
       f.write_c("))->%s_i(o,v);\n}\n", cn);
     }
@@ -556,7 +559,7 @@ void Fl_Menu_Base_Type::build_menu() {
     }
     // Menus are already built during the .fl file reading process, so if the
     // end of a menu list is not read yet, the end markers (label==NULL) will
-    // not be set, and deleting dependants will randomly free memory.
+    // not be set, and deleting dependents will randomly free memory.
     // Clearing the array should avoid that.
     memset( (void*)w->menu(), 0, menusize * sizeof(Fl_Menu_Item) );
     // fill them all in:
@@ -697,11 +700,11 @@ void shortcut_in_cb(Fl_Shortcut_Button* i, void* v) {
   if (v == LOAD) {
     if (current_widget->is_button())
       i->value( ((Fl_Button*)(current_widget->o))->shortcut() );
-    else if (current_widget->is_a(Fl_Type::ID_Input))
+    else if (current_widget->is_a(ID_Input))
       i->value( ((Fl_Input_*)(current_widget->o))->shortcut() );
-    else if (current_widget->is_a(Fl_Type::ID_Value_Input))
+    else if (current_widget->is_a(ID_Value_Input))
       i->value( ((Fl_Value_Input*)(current_widget->o))->shortcut() );
-    else if (current_widget->is_a(Fl_Type::ID_Text_Display))
+    else if (current_widget->is_a(ID_Text_Display))
       i->value( ((Fl_Text_Display*)(current_widget->o))->shortcut() );
     else {
       i->hide();
@@ -719,16 +722,16 @@ void shortcut_in_cb(Fl_Shortcut_Button* i, void* v) {
         Fl_Button* b = (Fl_Button*)(((Fl_Widget_Type*)o)->o);
         if (b->shortcut() != (int)i->value()) mod = 1;
         b->shortcut(i->value());
-        if (o->is_a(Fl_Type::ID_Menu_Item)) ((Fl_Widget_Type*)o)->redraw();
-      } else if (o->selected && o->is_a(Fl_Type::ID_Input)) {
+        if (o->is_a(ID_Menu_Item)) ((Fl_Widget_Type*)o)->redraw();
+      } else if (o->selected && o->is_a(ID_Input)) {
         Fl_Input_* b = (Fl_Input_*)(((Fl_Widget_Type*)o)->o);
         if (b->shortcut() != (int)i->value()) mod = 1;
         b->shortcut(i->value());
-      } else if (o->selected && o->is_a(Fl_Type::ID_Value_Input)) {
+      } else if (o->selected && o->is_a(ID_Value_Input)) {
         Fl_Value_Input* b = (Fl_Value_Input*)(((Fl_Widget_Type*)o)->o);
         if (b->shortcut() != (int)i->value()) mod = 1;
         b->shortcut(i->value());
-      } else if (o->selected && o->is_a(Fl_Type::ID_Text_Display)) {
+      } else if (o->selected && o->is_a(ID_Text_Display)) {
         Fl_Text_Display* b = (Fl_Text_Display*)(((Fl_Widget_Type*)o)->o);
         if (b->shortcut() != (int)i->value()) mod = 1;
         b->shortcut(i->value());

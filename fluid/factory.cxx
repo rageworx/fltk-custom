@@ -26,6 +26,7 @@
 
 #include "fluid.h"
 #include "Fl_Group_Type.h"
+#include "Fl_Grid_Type.h"
 #include "Fl_Menu_Type.h"
 #include "Fd_Snap_Action.h"
 #include "pixmaps.h"
@@ -48,7 +49,7 @@
 #include <FL/Fl_Progress.H>
 #include <FL/Fl_Roller.H>
 #include <FL/Fl_Scrollbar.H>
-#include <FL/Fl_Simple_Terminal.H>
+#include <FL/Fl_Terminal.H>
 #include <FL/Fl_Spinner.H>
 #include <FL/Fl_Text_Display.H>
 #include <FL/Fl_Text_Editor.H>
@@ -658,7 +659,7 @@ static Fl_Menu_Item input_type_menu[] = {
 
 /**
  \brief Manage simple text input widgets.
- The managed class is derived from Fl_Input_, but for simpleicity, deriving from
+ The managed class is derived from Fl_Input_, but for simplicity, deriving from
  Fl_Widget_Type seems sufficient here.
  */
 class Fl_Input_Type : public Fl_Widget_Type
@@ -773,7 +774,7 @@ static Fl_Output_Type Fl_Output_type;
 
 /**
  \brief Manage the Text Display as a base class.
- Fl_Text_Dissplay is actually derived from Fl_Group, but for FLUID, deriving
+ Fl_Text_Display is actually derived from Fl_Group, but for FLUID, deriving
  the type from Widget is better.
  */
 class Fl_Text_Display_Type : public Fl_Widget_Type
@@ -842,37 +843,98 @@ public:
 static Fl_Text_Editor_Type Fl_Text_Editor_type;
 
 
-// ---- Simple Terminal ----
+// ---- Terminal ----
 
-/**
- \brief Manage a simple terminal widget.
- */
-class Fl_Simple_Terminal_Type : public Fl_Text_Display_Type
-{
-  typedef Fl_Text_Display_Type super;
+/** Use this terminal instead of Fl_Terminal to capture resize actions. */
+class Fl_Terminal_Proxy : public Fl_Terminal {
 public:
-  const char *type_name() FL_OVERRIDE { return "Fl_Simple_Terminal"; }
-  const char *alt_type_name() FL_OVERRIDE { return "fltk::SimpleTerminal"; }
-  Fl_Widget *widget(int x, int y, int w, int h) FL_OVERRIDE {
-    Fl_Widget *myo = 0L;
-    if (batch_mode) {
-      // The Fl_Simple_Terminal constructor attaches a buffer which in turn
-      // opens a connection to the display. In batch mode, we create the
-      // superclass Fl_Text_Display to avoid that.
-      myo = new Fl_Text_Display(x,y,w,h);
-    } else {
-      Fl_Simple_Terminal *term = new Fl_Simple_Terminal(x, y, w, h);
-      term->text("> ls -als");
-      myo = term;
-    }
-    return myo;
+  Fl_Terminal_Proxy(int x, int y, int w, int h, const char *l=NULL)
+  : Fl_Terminal(x, y, w, h, l) { }
+  void print_sample_text() {
+    clear_screen_home(false);
+    append("> ls -als");
   }
-  Fl_Widget_Type *_make() FL_OVERRIDE {return new Fl_Simple_Terminal_Type();}
-  ID id() const FL_OVERRIDE { return ID_Simple_Terminal; }
-  bool is_a(ID inID) const FL_OVERRIDE { return (inID==ID_Simple_Terminal) ? true : super::is_a(inID); }
+  void resize(int x, int y, int w, int h) FL_OVERRIDE {
+    Fl_Terminal::resize(x, y, w, h);
+    // After a resize, the top text vanishes, so make sure we redraw it.
+    print_sample_text();
+  }
 };
 
-static Fl_Simple_Terminal_Type Fl_Simple_Terminal_type;
+/** Use this terminal in batch mode to avoid opening a DISPLAY connection. */
+class Fl_Batchmode_Terminal : public Fl_Group {
+public:
+  Fl_Font tfont_;
+  int tsize_;
+  Fl_Color tcolor_;
+  Fl_Batchmode_Terminal(int x, int y, int w, int h, const char *l=NULL)
+  : Fl_Group(x, y, w, h, l) 
+  { // set the defaults that Fl_Terminal would set
+    box(FL_DOWN_BOX);
+    color(FL_FOREGROUND_COLOR);
+    selection_color(FL_BACKGROUND_COLOR);
+    labeltype(FL_NORMAL_LABEL);
+    labelfont(0);
+    labelsize(14);
+    labelcolor(FL_FOREGROUND_COLOR);
+    tfont_ = 4;
+    tcolor_ = 0xd0d0d000;
+    tsize_ = 14;
+    align(Fl_Align(FL_ALIGN_TOP));
+    when(FL_WHEN_RELEASE);
+    end();
+  }
+};
+
+/**
+ \brief Manage a terminal widget.
+ */
+class Fl_Terminal_Type : public Fl_Group_Type
+{
+  typedef Fl_Group_Type super;
+public:
+  const char *type_name() FL_OVERRIDE { return "Fl_Terminal"; }
+  // Older .fl files with Fl_Simple_Terminal will create a Fl_Terminal instead.
+  const char *alt_type_name() FL_OVERRIDE { return "Fl_Simple_Terminal"; }
+  Fl_Widget *widget(int x, int y, int w, int h) FL_OVERRIDE {
+    Fl_Widget *ret = NULL;
+    if (batch_mode) {
+      ret = new Fl_Batchmode_Terminal(x, y, w, h);
+    } else {
+      Fl_Terminal_Proxy *term = new Fl_Terminal_Proxy(x, y, w+100, h);
+      ret = term;
+    }
+    return ret;
+  }
+  int textstuff(int w, Fl_Font& f, int& s, Fl_Color& c) FL_OVERRIDE {
+    if (batch_mode) {
+      Fl_Batchmode_Terminal *myo = (Fl_Batchmode_Terminal*)(w==4 ? ((Fl_Widget_Type*)factory)->o : o);
+      switch (w) {
+        case 4:
+        case 0: f = (Fl_Font)myo->tfont_; s = myo->tsize_; c = myo->tcolor_; break;
+        case 1: myo->tfont_ = f; break;
+        case 2: myo->tsize_ = s; break;
+        case 3: myo->tcolor_ = c; break;
+      }
+    } else {
+      Fl_Terminal_Proxy *myo = (Fl_Terminal_Proxy*)(w==4 ? ((Fl_Widget_Type*)factory)->o : o);
+      switch (w) {
+        case 4:
+        case 0: f = (Fl_Font)myo->textfont(); s = myo->textsize(); c = myo->textcolor(); break;
+        case 1: myo->textfont(f); myo->print_sample_text(); break;
+        case 2: myo->textsize(s); myo->print_sample_text(); break;
+        case 3: myo->textcolor(c); myo->print_sample_text(); break;
+      }
+    }
+    return 1;
+  }
+  Fl_Widget_Type *_make() FL_OVERRIDE {return new Fl_Terminal_Type();}
+  int is_parent() const FL_OVERRIDE { return 0; }
+  ID id() const FL_OVERRIDE { return ID_Terminal; }
+  bool is_a(ID inID) const FL_OVERRIDE { return (inID==ID_Terminal) ? true : super::is_a(inID); }
+};
+
+static Fl_Terminal_Type Fl_Terminal_type;
 
 
 // ---- Other ---------------------------------------------------------- MARK: -
@@ -1025,6 +1087,7 @@ extern class Fl_Widget_Class_Type Fl_Widget_Class_type;
 extern class Fl_Group_Type Fl_Group_type;
 extern class Fl_Pack_Type Fl_Pack_type;
 extern class Fl_Flex_Type Fl_Flex_type;
+extern class Fl_Grid_Type Fl_Grid_type;
 extern class Fl_Tabs_Type Fl_Tabs_type;
 extern class Fl_Scroll_Type Fl_Scroll_type;
 extern class Fl_Table_Type Fl_Table_type;
@@ -1075,6 +1138,7 @@ static Fl_Type *known_types[] = {
   (Fl_Type*)&Fl_Scroll_type,
   (Fl_Type*)&Fl_Tile_type,
   (Fl_Type*)&Fl_Wizard_type,
+  (Fl_Type*)&Fl_Grid_type,
   // buttons
   (Fl_Type*)&Fl_Button_type,
   (Fl_Type*)&Fl_Return_Button_type,
@@ -1099,7 +1163,7 @@ static Fl_Type *known_types[] = {
   (Fl_Type*)&Fl_Text_Editor_type,
   (Fl_Type*)&Fl_Text_Display_type,
   (Fl_Type*)&Fl_File_Input_type,
-  (Fl_Type*)&Fl_Simple_Terminal_type,
+  (Fl_Type*)&Fl_Terminal_type,
   // menus
   (Fl_Type*)&Fl_Menu_Bar_type,
   (Fl_Type*)&Fl_Menu_Button_type,
@@ -1125,7 +1189,7 @@ static Fl_Type *known_types[] = {
 /**
  Create and add a new widget to the widget tree.
 
- Fluid will try to set a default postion for widgets to the user's expectation.
+ Fluid will try to set a default position for widgets to the user's expectation.
  Using the context menu will put new widgets at the position of the mouse click.
  Pulldown menu and bin actions will generate widgets no too far from previously
  added widgets in the same group.
@@ -1150,7 +1214,7 @@ Fl_Type *add_new_widget_from_user(Fl_Type *inPrototype, Strategy strategy) {
   undo_suspend();
   Fl_Type *t = ((Fl_Type*)inPrototype)->make(strategy);
   if (t) {
-    if (t->is_widget() && !t->is_a(Fl_Type::ID_Window)) {
+    if (t->is_widget() && !t->is_a(ID_Window)) {
       Fl_Widget_Type *wt = (Fl_Widget_Type *)t;
       bool changed = false;
 
@@ -1176,13 +1240,13 @@ Fl_Type *add_new_widget_from_user(Fl_Type *inPrototype, Strategy strategy) {
         wt->textstuff(2, f, s, c);
       }
 
-      if (changed && t->is_a(Fl_Type::ID_Menu_Item)) {
+      if (changed && t->is_a(ID_Menu_Item)) {
         Fl_Type * tt = t->parent;
-        while (tt && !tt->is_a(Fl_Type::ID_Menu_Manager_)) tt = tt->parent;
+        while (tt && !tt->is_a(ID_Menu_Manager_)) tt = tt->parent;
         ((Fl_Menu_Manager_Type*)tt)->build_menu();
       }
     }
-    if (t->is_true_widget() && !t->is_a(Fl_Type::ID_Window)) {
+    if (t->is_true_widget() && !t->is_a(ID_Window)) {
       // Resize and/or reposition new widget...
       Fl_Widget_Type *wt = (Fl_Widget_Type *)t;
 
@@ -1191,22 +1255,24 @@ Fl_Type *add_new_widget_from_user(Fl_Type *inPrototype, Strategy strategy) {
       int w = 0, h = 0;
       wt->ideal_size(w, h);
 
-      if ((t->parent && t->parent->is_a(Fl_Type::ID_Flex))) {
-        // Do not resize or layout the widget. Flex will need the widget size.
-      } else if (   wt->is_a(Fl_Type::ID_Group)
+      if ((t->parent && t->parent->is_a(ID_Flex))) {
+        if (Fl_Window_Type::popupx != 0x7FFFFFFF)
+          ((Fl_Flex_Type*)t->parent)->insert_child_at(((Fl_Widget_Type*)t)->o, Fl_Window_Type::popupx, Fl_Window_Type::popupy);
+        t->parent->layout_widget();
+      } else if (   wt->is_a(ID_Group)
                  && wt->parent
-                 && wt->parent->is_a(Fl_Type::ID_Tabs)
+                 && wt->parent->is_a(ID_Tabs)
                  //&& (Fl_Window_Type::popupx == 0x7FFFFFFF)
                  && (layout->top_tabs_margin > 0)) {
         // If the widget is a group and the parent is tabs and the top tabs
         // margin is set (and the user is not requesting a specific position)
-        // then  prefit the group correctly to the Tabs container.
+        // then prefit the group correctly to the Tabs container.
         Fl_Widget *po = ((Fl_Tabs_Type*)wt->parent)->o;
         wt->o->resize(po->x(), po->y() + layout->top_tabs_margin,
                       po->w(), po->h() - layout->top_tabs_margin);
-      } else if (   wt->is_a(Fl_Type::ID_Menu_Bar)
+      } else if (   wt->is_a(ID_Menu_Bar)
                  && wt->parent
-                 && wt->parent->is_a(Fl_Type::ID_Window)
+                 && wt->parent->is_a(ID_Window)
                  && (wt->prev == wt->parent)) {
         // If this is the first child of a window, make the menu bar as wide as
         // the window and drop it at 0, 0. Otherwise just use the suggested size.
@@ -1223,8 +1289,15 @@ Fl_Type *add_new_widget_from_user(Fl_Type *inPrototype, Strategy strategy) {
           wt->o->size(w, h);
         }
       }
+      if (t->parent && t->parent->is_a(ID_Grid)) {
+        if (Fl_Window_Type::popupx != 0x7FFFFFFF) {
+          ((Fl_Grid_Type*)t->parent)->insert_child_at(((Fl_Widget_Type*)t)->o, Fl_Window_Type::popupx, Fl_Window_Type::popupy);
+        } else {
+          ((Fl_Grid_Type*)t->parent)->insert_child_at_next_free_cell(((Fl_Widget_Type*)t)->o);
+        }
+      }
     }
-    if (t->is_a(Fl_Type::ID_Window)) {
+    if (t->is_a(ID_Window)) {
       int x = 0, y = 0, w = 480, h = 320;
       Fl_Window_Type *wt = (Fl_Window_Type *)t;
       wt->ideal_size(w, h);
@@ -1272,7 +1345,7 @@ Fl_Type *add_new_widget_from_user(const char *inName, Strategy strategy) {
  */
 static void cbf(Fl_Widget *, void *v) {
   Fl_Type *t = NULL;
-  if (Fl_Type::current && Fl_Type::current->is_group())
+  if (Fl_Type::current && Fl_Type::current->is_a(ID_Group))
     t = ((Fl_Type*)v)->make(kAddAsLastChild);
   else
     t = ((Fl_Type*)v)->make(kAddAfterCurrent);
@@ -1284,7 +1357,7 @@ static void cbf(Fl_Widget *, void *v) {
  */
 static void cb(Fl_Widget *, void *v) {
   Fl_Type *t = NULL;
-  if (Fl_Type::current && Fl_Type::current->is_group())
+  if (Fl_Type::current && Fl_Type::current->is_a(ID_Group))
     t = add_new_widget_from_user((Fl_Type*)v, kAddAsLastChild);
   else
     t = add_new_widget_from_user((Fl_Type*)v, kAddAfterCurrent);
@@ -1312,6 +1385,7 @@ Fl_Menu_Item New_Menu[] = {
   {0,0,cb,(void*)&Fl_Scroll_type},
   {0,0,cb,(void*)&Fl_Tile_type},
   {0,0,cb,(void*)&Fl_Wizard_type},
+  {0,0,cb,(void*)&Fl_Grid_type},
 {0},
 {"Buttons",0,0,0,FL_SUBMENU},
   {0,0,cb,(void*)&Fl_Button_type},
@@ -1339,7 +1413,7 @@ Fl_Menu_Item New_Menu[] = {
   {0,0,cb,(void*)&Fl_Text_Editor_type},
   {0,0,cb,(void*)&Fl_Text_Display_type},
   {0,0,cb,(void*)&Fl_File_Input_type},
-  {0,0,cb,(void*)&Fl_Simple_Terminal_type},
+  {0,0,cb,(void*)&Fl_Terminal_type},
 {0},
 {"Menus",0,0,0,FL_SUBMENU},
   {0,0,cb,(void*)&Fl_Menu_Bar_type},

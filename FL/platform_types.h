@@ -39,7 +39,7 @@ typedef opaque fl_uintptr_t;
  Platform-specific value representing an offscreen drawing buffer.
   \note This value can be safely cast to these types on each platform:
   \li X11: Pixmap
-  \li Wayland: struct fl_wld_draw_buffer *
+  \li Wayland: cairo_t *
   \li Windows: HBITMAP
   \li macOS:  CGContextRef
  */
@@ -81,6 +81,7 @@ typedef opaque Fl_Timestamp;
 #define FL_PLATFORM_TYPES_H
 
 #include <FL/fl_config.h>
+#include <time.h> // for time_t
 
 /* Platform-dependent types are defined here.
   These types must be defined by any platform:
@@ -139,8 +140,8 @@ extern FL_EXPORT int fl_control_modifier();
 
 // This is currently the same for all platforms, but may change in the future
 struct Fl_Timestamp_t {
-  long sec;
-  long usec;
+  time_t sec;
+  int usec;
 };
 
 typedef struct Fl_Timestamp_t Fl_Timestamp;

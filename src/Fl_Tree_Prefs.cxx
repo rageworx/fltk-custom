@@ -171,16 +171,6 @@ Fl_Tree_Prefs::Fl_Tree_Prefs() {
   _itemdrawmode           = FL_TREE_ITEM_DRAW_DEFAULT;
   _itemdrawcallback       = 0;
   _itemdrawuserdata       = 0;
-#ifdef FLTK_EXT_VERSION  
-  // Let fltk's current 'scheme' affect defaults
-  if (Fl::is_scheme("gtk+")) {
-    _selectbox = _FL_GTK_THIN_UP_BOX;
-  } else if (Fl::is_scheme("plastic")) {
-    _selectbox = _FL_PLASTIC_THIN_UP_BOX;
-  } else if (Fl::is_scheme("oxy")) {
-    _selectbox = _FL_OXY_THIN_UP_BOX;
-  }
-#endif /// of FLTK_EXT_VERSION
 }
 
 /// Fl_Tree_Prefs destructor
