@@ -50,6 +50,35 @@ int is_id(char c) {
 }
 
 /**
+ Write a string to a file, replacing all non-ASCII characters with octal codes.
+ \param[in] out output file
+ \param[in] text write this NUL terminated utf-8 string
+ \return EOF if any of the file access calls failed, 0 if OK
+ */
+int write_escaped_strings(FILE *out, const char *text) {
+  int ret = 0;
+  const unsigned char *utf8_text = (const unsigned char *)text;
+  for (const unsigned char *s = utf8_text; *s; ++s) {
+    unsigned char c = *s;
+    // escape control characters, delete, all utf-8, and the double quotes
+    // note: we should have an option in the project settings to allow utf-8
+    //       characters in the output text and not escape them
+    if (c < 32 || c > 126 || c == '\"') {
+      if (c == '\r') {
+        ret = fputs("\\r", out);
+      } else if (c == '\n') {
+        ret = fputs("\\n", out);
+      } else {
+        ret = fprintf(out, "\\%03o", c);
+      }
+    } else {
+      ret = putc((int)c, out);
+    }
+  }
+  return ret;
+}
+
+/**
  Write a file that contains all label and tooltip strings for internationalization.
  The user is responsible to set the right file name extension. The file format
  is determined by `g_project.i18n_type`.
@@ -73,20 +102,12 @@ int write_strings(const Fl_String &filename) {
           w = (Fl_Widget_Type *)p;
 
           if (w->label()) {
-            for (const char *s = w->label(); *s; s ++)
-              if (*s < 32 || *s > 126 || *s == '\"')
-                fprintf(fp, "\\%03o", *s);
-              else
-                putc(*s, fp);
+            write_escaped_strings(fp, w->label());
             putc('\n', fp);
           }
 
           if (w->tooltip()) {
-            for (const char *s = w->tooltip(); *s; s ++)
-              if (*s < 32 || *s > 126 || *s == '\"')
-                fprintf(fp, "\\%03o", *s);
-              else
-                putc(*s, fp);
+            write_escaped_strings(fp, w->tooltip());
             putc('\n', fp);
           }
         }
@@ -100,42 +121,22 @@ int write_strings(const Fl_String &filename) {
           w = (Fl_Widget_Type *)p;
 
           if (w->label()) {
-            const char *s;
-
             fputs("msgid \"", fp);
-            for (s = w->label(); *s; s ++)
-              if (*s < 32 || *s > 126 || *s == '\"')
-                fprintf(fp, "\\%03o", *s);
-              else
-                putc(*s, fp);
+            write_escaped_strings(fp, w->label());
             fputs("\"\n", fp);
 
             fputs("msgstr \"", fp);
-            for (s = w->label(); *s; s ++)
-              if (*s < 32 || *s > 126 || *s == '\"')
-                fprintf(fp, "\\%03o", *s);
-              else
-                putc(*s, fp);
+            write_escaped_strings(fp, w->label());
             fputs("\"\n", fp);
           }
 
           if (w->tooltip()) {
-            const char *s;
-
             fputs("msgid \"", fp);
-            for (s = w->tooltip(); *s; s ++)
-              if (*s < 32 || *s > 126 || *s == '\"')
-                fprintf(fp, "\\%03o", *s);
-              else
-                putc(*s, fp);
+            write_escaped_strings(fp, w->tooltip());
             fputs("\"\n", fp);
 
             fputs("msgstr \"", fp);
-            for (s = w->tooltip(); *s; s ++)
-              if (*s < 32 || *s > 126 || *s == '\"')
-                fprintf(fp, "\\%03o", *s);
-              else
-                putc(*s, fp);
+            write_escaped_strings(fp, w->tooltip());
             fputs("\"\n", fp);
           }
         }
@@ -153,21 +154,13 @@ int write_strings(const Fl_String &filename) {
 
           if (w->label()) {
             fprintf(fp, "%d \"", i ++);
-            for (const char *s = w->label(); *s; s ++)
-              if (*s < 32 || *s > 126 || *s == '\"')
-                fprintf(fp, "\\%03o", *s);
-              else
-                putc(*s, fp);
+            write_escaped_strings(fp, w->label());
             fputs("\"\n", fp);
           }
 
           if (w->tooltip()) {
             fprintf(fp, "%d \"", i ++);
-            for (const char *s = w->tooltip(); *s; s ++)
-              if (*s < 32 || *s > 126 || *s == '\"')
-                fprintf(fp, "\\%03o", *s);
-              else
-                putc(*s, fp);
+            write_escaped_strings(fp, w->tooltip());
             fputs("\"\n", fp);
           }
         }
@@ -669,6 +662,41 @@ void Fd_Code_Writer::write_c_indented(const char *textlines, int inIndent, char 
   }
 }
 
+/**
+ Return true if the type would be the member of a class.
+ Some types are treated differently if they are inside class. Especially within
+ a Widget Class, children that are widgets are written as part of the
+ constructor whereas functions, declarations, and inline data are seen as
+ members of the class itself.
+ */
+bool is_class_member(Fl_Type *t) {
+  return    t->is_a(ID_Function)
+         || t->is_a(ID_Decl)
+         || t->is_a(ID_Data);
+//         || t->is_a(ID_Class)         // FLUID can't handle a class inside a class
+//         || t->is_a(ID_Widget_Class)
+//         || t->is_a(ID_DeclBlock)     // Declaration blocks are generally not handled well
+}
+
+/**
+ Return true, if this is a comment, and if it is followed by a class member.
+ This must only be called if q is inside a widget class.
+ Widget classes can have widgets and members (functions/methods, declarations,
+ etc.) intermixed.
+ \param[in] q should be a comment type
+ \return true if this comment is followed by a class member
+ \return false if it is followed by a widget or code
+ \see is_class_member(Fl_Type *t)
+ */
+bool is_comment_before_class_member(Fl_Type *q) {
+  if (q->is_a(ID_Comment) && q->next && q->next->level==q->level) {
+    if (q->next->is_a(ID_Comment))
+      return is_comment_before_class_member(q->next);
+    if (is_class_member(q->next))
+      return true;
+  }
+  return false;
+}
 
 /**
  Recursively dump code, putting children between the two parts of the parent code.
@@ -690,8 +718,10 @@ Fl_Type* Fd_Code_Writer::write_code(Fl_Type* p) {
   if (p->is_widget() && p->is_class()) {
     // Handle widget classes specially
     for (q = p->next; q && q->level > p->level;) {
-      if (!q->is_a(ID_Function)) q = write_code(q);
-      else {
+      // note: maybe declaration blocks should be handled like comments in the context
+      if (!is_class_member(q) && !is_comment_before_class_member(q)) {
+        q = write_code(q);
+      } else {
         int level = q->level;
         do {
           q = q->next;
@@ -707,8 +737,9 @@ Fl_Type* Fd_Code_Writer::write_code(Fl_Type* p) {
     if (write_sourceview) p->header2_end = (int)ftell(header_file);
 
     for (q = p->next; q && q->level > p->level;) {
-      if (q->is_a(ID_Function)) q = write_code(q);
-      else {
+      if (is_class_member(q) || is_comment_before_class_member(q)) {
+        q = write_code(q);
+      } else {
         int level = q->level;
         do {
           q = q->next;
@@ -764,7 +795,7 @@ int Fd_Code_Writer::write_code(const char *s, const char *t, bool to_sourceview)
     Fl_String proj_filename = g_project.projectfile_path() + g_project.projectfile_name();
     int i, n = proj_filename.size();
     for (i=0; i<n; i++) if (proj_filename[i]=='\\') proj_filename[i] = '/';
-    Fl_Preferences build_records(Fl_Preferences::USER_L, "fltk.org.build", "fluid");
+    Fl_Preferences build_records(Fl_Preferences::USER_L, "fltk.org", "fluid-build");
     Fl_Preferences path(build_records, proj_filename.c_str());
     path.set("code", s);
   }

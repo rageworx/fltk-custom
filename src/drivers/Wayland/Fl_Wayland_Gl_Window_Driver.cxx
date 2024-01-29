@@ -63,6 +63,9 @@ struct gl_start_support { // to support use of gl_start / gl_finish
 
 
 static EGLConfig wld_egl_conf = NULL;
+static EGLint swap_interval_ = 1;
+static EGLint max_swap_interval = 1000;
+static EGLint min_swap_interval = 0;
 
 
 EGLDisplay Fl_Wayland_Gl_Window_Driver::egl_display = EGL_NO_DISPLAY;
@@ -170,6 +173,9 @@ Fl_Gl_Choice *Fl_Wayland_Gl_Window_Driver::find(int m, const int *alistp)
     Fl::fatal("failed to choose an EGL config\n");
   }
 
+  eglGetConfigAttrib(egl_display, g->egl_conf, EGL_MAX_SWAP_INTERVAL, &max_swap_interval);
+  eglGetConfigAttrib(egl_display, g->egl_conf, EGL_MIN_SWAP_INTERVAL, &min_swap_interval);
+
   first = g;
   return g;
 }
@@ -256,6 +262,9 @@ void Fl_Wayland_Gl_Window_Driver::delete_gl_context(GLContext context) {
   if (cached_context == context) {
     cached_context = 0;
     cached_window = 0;
+  }
+  if (eglGetCurrentContext() == (EGLContext)context) {
+    eglMakeCurrent(egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
   }
   eglDestroyContext(egl_display, (EGLContext)context);
   eglDestroySurface(egl_display, egl_surface);
@@ -397,6 +406,12 @@ void Fl_Wayland_Gl_Window_Driver::resize(int is_a_resize, int W, int H) {
   int W2, H2;
   wl_egl_window_get_attached_size(egl_window, &W2, &H2);
   if (W2 != W || H2 != H) {
+    struct wld_window *xid = fl_wl_xid(pWindow);
+    if (xid->kind == Fl_Wayland_Window_Driver::DECORATED && !xid->frame_cb) {
+      xid->frame_cb = wl_surface_frame(xid->wl_surface);
+      wl_callback_add_listener(xid->frame_cb, 
+                               Fl_Wayland_Graphics_Driver::p_surface_frame_listener, xid);
+    }
     wl_egl_window_resize(egl_window, W, H, 0, 0);
   }
   /* CONTROL_LEAKING_SUB_GL_WINDOWS
@@ -431,6 +446,18 @@ void Fl_Wayland_Gl_Window_Driver::gl_start() {
   glClear(GL_COLOR_BUFFER_BIT);
 }
 
+void Fl_Wayland_Gl_Window_Driver::swap_interval(int interval) {
+  if (interval < min_swap_interval) interval = min_swap_interval;
+  if (interval > max_swap_interval) interval = max_swap_interval;
+  if (egl_display && eglSwapInterval(egl_display, interval))
+    swap_interval_ = interval;
+  // printf("swap_interval_=%d\n",swap_interval_);
+}
+
+
+int Fl_Wayland_Gl_Window_Driver::swap_interval() const {
+  return swap_interval_;
+}
 
 FL_EXPORT EGLContext fl_wl_glcontext(GLContext rc) { return (EGLContext)rc; }
 

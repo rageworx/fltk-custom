@@ -55,6 +55,11 @@ Fl_Shortcut_Button::Fl_Shortcut_Button(int X,int Y,int W,int H, const char* l)
   box(FL_DOWN_BOX);
   selection_color(FL_SELECTION_COLOR);
   type(FL_TOGGLE_BUTTON);
+  // suppress warning on unused private members. I keep these around in case
+  // we decide to activate this API again without changing the ABI.
+  (void)default_shortcut_;
+  (void)default_set_;
+
 }
 
 /**
@@ -73,34 +78,6 @@ void Fl_Shortcut_Button::value(Fl_Shortcut shortcut) {
  */
 Fl_Shortcut Fl_Shortcut_Button::value() {
   return shortcut_value;
-}
-
-/**
- Set the default shortcut.
- If set, and additional 'reverse' button apears that the user can click to
- reset the shortcut to some default value (including 0).
- \param[in] shortcut encoded as key and modifier
- */
-void Fl_Shortcut_Button::default_value(Fl_Shortcut shortcut) {
-  default_shortcut_ = shortcut;
-  default_set_ = true;
-  redraw();
-}
-
-/**
- Return the default shortcut.
- \return shortcut encoded as key and modifier
- */
-Fl_Shortcut Fl_Shortcut_Button::default_value() {
-  return default_shortcut_;
-}
-
-/**
- No longer show the button to reverse to a default shortcut.
- */
-void Fl_Shortcut_Button::default_clear() {
-  default_set_ = false;
-  redraw();
 }
 
 /**
@@ -134,12 +111,7 @@ void Fl_Shortcut_Button::draw() {
   const char *text = label();
   if (shortcut_value)
     text = fl_shortcut_label(shortcut_value);
-  if (default_set_) {
-    fl_draw(text, X, Y, W-H, H, align() | FL_ALIGN_INSIDE);
-    fl_draw_symbol("@-29undo", X+W-H, Y, H, H, textcol);
-  } else {
-    fl_draw(text, X, Y, W, H, align() | FL_ALIGN_INSIDE);
-  }
+  fl_draw(text, X, Y, W, H, align() | FL_ALIGN_INSIDE);
   if (Fl::focus() == this) draw_focus();
 }
 
@@ -156,34 +128,6 @@ void Fl_Shortcut_Button::do_end_hot_callback() {
  Handle keystrokes to catch the user's shortcut.
  */
 int Fl_Shortcut_Button::handle(int e) {
-  bool inside_default_button = false;
-  if (default_set_ && ( (e == FL_PUSH) || (e == FL_DRAG) || (e == FL_RELEASE) ) ) {
-    int X = x() + Fl::box_dx(box());
-    int W = w() - Fl::box_dw(box());
-    int H = h() - Fl::box_dh(box());
-    if (Fl::event_inside(this) && (Fl::event_x() > X+W-H))
-      inside_default_button = true;
-  }
-  if ((e == FL_PUSH) && default_set_ && inside_default_button) {
-    if (Fl::visible_focus() && handle(FL_FOCUS)) Fl::focus(this);
-    handle_default_button_ = true;
-    return 1;
-  }
-  if (handle_default_button_) {
-    if (e == FL_DRAG)
-      return 1;
-    if (e == FL_RELEASE) {
-      if (inside_default_button && (shortcut_value != default_shortcut_)) {
-        shortcut_value = default_shortcut_;
-        set_changed();
-        redraw();
-        if (when() & FL_WHEN_CHANGED) do_callback(FL_REASON_CHANGED);
-        clear_changed();
-      }
-      handle_default_button_ = false;
-      return 1;
-    }
-  }
   switch (e) {
     case FL_PUSH:
       if (Fl::visible_focus() && handle(FL_FOCUS)) Fl::focus(this);
@@ -213,6 +157,7 @@ int Fl_Shortcut_Button::handle(int e) {
       if (hot_) {
         // Note: we can't really handle non-Latin shortcuts in the Fl_Shortcut
         //       type, so we don't handle them here either
+        // Todo: use fl_utf_tolower and fl_utf_toupper
         int v = fl_utf8decode(Fl::event_text(), 0, 0);
         if ( (v > 32 && v < 0x7f) || (v > 0xa0 && v <= 0xff) ) {
           if (isupper(v)) {
@@ -250,6 +195,9 @@ int Fl_Shortcut_Button::handle(int e) {
           return 1;
         }
       }
+      break;
+    case FL_SHORTCUT:
+      if (hot_) return 1;
       break;
   }
   return Fl_Button::handle(e);

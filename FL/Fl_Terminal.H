@@ -417,18 +417,20 @@ protected:
     int         charwidth_;        // width of a fixed width ASCII character
   public:
     CharStyle(bool fontsize_defer);
+    uchar attrib(void) const            { return attrib_; }
+    uchar charflags(void) const         { return charflags_; }
     Fl_Color fgcolor(void) const;
     Fl_Color bgcolor(void) const;
     Fl_Color defaultfgcolor(void) const { return defaultfgcolor_; }
     Fl_Color defaultbgcolor(void) const { return defaultbgcolor_; }
-    uchar attrib(void) const            { return attrib_; }
     Fl_Font fontface(void) const        { return fontface_; }
     Fl_Fontsize fontsize(void) const    { return fontsize_; }
     int  fontheight(void) const         { return fontheight_; }
     int  fontdescent(void) const        { return fontdescent_; }
     int  charwidth(void) const          { return charwidth_; }
     uchar colorbits_only(uchar inflags) const;
-    void attrib(uchar val)              { attrib_  = val; }
+    void attrib(uchar val)              { attrib_    = val; }
+    void charflags(uchar val)           { charflags_ = val; }
     void set_charflag(uchar val)        { charflags_ |= val; }
     void clr_charflag(uchar val)        { charflags_ &= ~val; }
     void fgcolor_uchar(uchar val);
@@ -614,6 +616,10 @@ private:
     inline int disp_srow(void) const { return((offset_ + hist_rows_) % ring_rows_); }
     inline int disp_erow(void) const { return((offset_ + hist_rows_ + disp_rows_ - 1) % ring_rows_); }
     inline int offset(void)    const { return offset_; }
+    void offset_adjust(int rows);
+    void hist_rows(int val) { hist_rows_ = val; }
+    void disp_rows(int val) { disp_rows_ = val; }
+
     // History use
     inline int  hist_use(void)  const       { return hist_use_; }
     inline void hist_use(int val)           { hist_use_ = val; }
@@ -625,7 +631,7 @@ private:
     bool is_disp_ring_row(int grow) const;
     //DEBUG void show_ring_info(void) const;
     void move_disp_row(int src_row, int dst_row);
-    void clear_disp_row(int drow, const CharStyle& style);
+    void clear_disp_rows(int sdrow, int edrow, const CharStyle& style);
     void scroll(int rows, const CharStyle& style);
 
     const Utf8Char* u8c_ring_row(int row) const;
@@ -785,9 +791,14 @@ private:
   ////// Fl_Terminal members + methods
   //////
   ///////////////////////////////////////////////////////////////
+public:
+  /**
+    Vertical scrollbar. Public, so that it can be accessed directly.
+    \todo Support scrollbar_left/right() - See Fl_Browser_::scrollbar docs
+   */
+  Fl_Scrollbar *scrollbar;       // vertical scrollbar (value: rows above disp_chars[])
 private:
   bool          fontsize_defer_; // flag defers font calcs until first draw() (issue 837)
-  Fl_Scrollbar *vscroll_;        // vertical scrollbar (value: rows above disp_chars[])
   int           scrollbar_size_; // local preference for scrollbar size
   CharStyle     *current_style_; // current font, attrib, color..
   OutFlags      oflags_;         // output translation flags (CR_TO_LF, LF_TO_CR, LF_TO_CRLF)
@@ -805,7 +816,7 @@ private:
   bool           ansi_;             // if true, parse ansi codes (default on)
   char          *tabstops_;         // array of tab stops (0|1)   \__ TODO: This should probably
   int            tabstops_size_;    // size of tabstops[] array   /         be a class "TabStops".
-  Fl_Rect        scrn_;             // terminal screen xywh inside box(), margins, and vscroll
+  Fl_Rect        scrn_;             // terminal screen xywh inside box(), margins, and scrollbar
   int            autoscroll_dir_;   // 0=autoscroll timer off, 3=scrolling up, 4=scrolling down
   int            autoscroll_amt_;   // #pixels above or below edge, used for autoscroll speed
   RedrawStyle    redraw_style_;     // NO_REDRAW, RATE_LIMITED, PER_WRITE
@@ -832,7 +843,7 @@ private:
   void create_ring(int drows, int dcols, int hrows);
   void init_(int X,int Y,int W,int H,const char*L,int rows,int cols,int hist,bool fontsize_defer);
 protected:
-  int  vscroll_width(void) const;
+  int  scrollbar_width(void) const;
 private:
   // Tabstops
   void init_tabstops(int newsize);
@@ -1087,6 +1098,7 @@ public:
   Fl_Color selectionbgcolor(void) const { return select_.selectionbgcolor(); }
   // API: Text attrib
   void textattrib(uchar val);
+  uchar textattrib() const;
   // API: Redraw style/rate
   RedrawStyle redraw_style(void) const;
   void  redraw_style(RedrawStyle val);

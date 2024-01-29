@@ -85,6 +85,13 @@ static int scroll_amount = 0;
 static int scroll_y = 0;
 static int scroll_x = 0;
 
+static Fl_Menu_Item rmb_menu[] = {
+  { NULL, 0, NULL, (void*)1 },
+  { NULL, 0, NULL, (void*)2 },
+  { NULL, 0, NULL, (void*)3 },
+  { NULL }
+};
+
 // CET - FIXME
 #define TMPFONTWIDTH 6
 
@@ -4116,12 +4123,6 @@ void Fl_Text_Display::scroll_timer_cb(void *user_data) {
   Fl::repeat_timeout(.1, scroll_timer_cb, user_data);
 }
 
-static Fl_Menu_Item rmb_menu[] = {
-  { Fl_Input::cut_menu_text,    0, NULL, (void*)1 },
-  { Fl_Input::copy_menu_text,   0, NULL, (void*)2 },
-  { Fl_Input::paste_menu_text,  0, NULL, (void*)3 },
-  { NULL }
-};
 
 /** Handle right mouse button down events.
  \return 0 for no op, 1 to cut, 2 to copy, 3 to paste
@@ -4146,7 +4147,12 @@ int Fl_Text_Display::handle_rmb(int readonly) {
       txtbuf->select(txtbuf->word_start(newpos), txtbuf->word_end(newpos));
     }
   }
-  if (readonly) { // give only the menu options that make sense
+  // keep the menu labels current
+  rmb_menu[0].label(Fl_Input::cut_menu_text);
+  rmb_menu[1].label(Fl_Input::copy_menu_text);
+  rmb_menu[2].label(Fl_Input::paste_menu_text);
+  // give only the menu options that make sense
+  if (readonly) {
     rmb_menu[0].deactivate(); // cut
     rmb_menu[2].deactivate(); // paste
   } else {
@@ -4316,6 +4322,7 @@ int Fl_Text_Display::handle(int event) {
           buffer()->primary_selection()->includes(dragPos) && !(Fl::event_state()&FL_SHIFT) ) {
         buffer()->unselect(); // clicking in the selection: unselect and move cursor
         insert_position(dragPos);
+        dragType = DRAG_CHAR;
         return 1;
       } else if (Fl::event_clicks() == DRAG_LINE && Fl::event_button() == FL_LEFT_MOUSE) {
         buffer()->select(buffer()->line_start(dragPos), buffer()->next_char(buffer()->line_end(dragPos)));

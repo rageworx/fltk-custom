@@ -1,12 +1,8 @@
 //
-//    Simple example of using Fl_Table - Greg Ercolano 11/29/2010
+//    Simple example of using Fl_Table with popup menus - Greg Ercolano 12/16/2023
+//    Ref: https://www.seriss.com/people/erco/fltk/#GLDynamicPopup
 //
-//    Demonstrates the simplest use of Fl_Table possible.
-//    Display a 10x10 array of integers with row/col headers.
-//    No interaction; simple display of data only.
-//    See other examples for more complex interactions with the table.
-//
-// Copyright 2010 Greg Ercolano.
+// Copyright 2023 Greg Ercolano.
 // Copyright 1998-2010 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
@@ -23,14 +19,44 @@
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Table.H>
 #include <FL/fl_draw.H>
+#include <FL/Fl_Menu_Button.H>
 
 #define MAX_ROWS 30
 #define MAX_COLS 26             // A-Z
 
 // Derive a class from Fl_Table
 class MyTable : public Fl_Table {
+  // Post context menu at current event x,y
+  void PostContextMenu() {
+    int context = callback_context();
+    switch (context) {
+      case CONTEXT_COL_HEADER:
+      case CONTEXT_CELL: {
+        char s[80];
+        // Create context sensitive menu label
+        if ( context == CONTEXT_CELL ) {
+          sprintf(s, "Cell %c%d", 'A'+callback_col(), callback_row());
+        } else {
+          sprintf(s, "Column %c", 'A'+callback_col());
+        }
+        // Post dynamically created context menu, get user's choice
+        Fl_Menu_Button menu(Fl::event_x(), Fl::event_y(), 80, 1);
+        menu.add(s, 0, 0, 0, FL_MENU_DIVIDER|FL_MENU_INACTIVE);
+        menu.add("Item 1");
+        menu.add("Item 2");
+        const Fl_Menu_Item *item = menu.popup();
+        if ( item ) printf("You chose '%s'\n", item->label());
+        break;
+      }
+      default: break;
+    }
+  }
 
-  int data[MAX_ROWS][MAX_COLS];         // data array for cells
+  // MyTable callback
+  static void my_callback(Fl_Widget*, void*data) {
+    MyTable *o = (MyTable*)data;
+    if ( Fl::event_button() == FL_RIGHT_MOUSE ) o->PostContextMenu();
+  }
 
   // Draw the row/col headings
   //    Make this a dark thin upbox with the text inside.
@@ -42,17 +68,12 @@ class MyTable : public Fl_Table {
       fl_draw(s, X,Y,W,H, FL_ALIGN_CENTER);
     fl_pop_clip();
   }
-  // Draw the cell data
-  //    Dark gray text on white background with subtle border
-  //
-  void DrawData(const char *s, int X, int Y, int W, int H) {
+  // Draw the cells
+  void DrawCell(const char *s, int X, int Y, int W, int H) {
     fl_push_clip(X,Y,W,H);
-      // Draw cell bg
-      fl_color(FL_WHITE); fl_rectf(X,Y,W,H);
-      // Draw cell data
-      fl_color(FL_GRAY0); fl_draw(s, X,Y,W,H, FL_ALIGN_CENTER);
-      // Draw box border
-      fl_color(color()); fl_rect(X,Y,W,H);
+      fl_color(FL_WHITE); fl_rectf(X,Y,W,H);                    // Draw cell bg
+      fl_color(FL_GRAY0); fl_draw(s, X,Y,W,H, FL_ALIGN_CENTER); // Draw cell text
+      fl_color(color());  fl_rect(X,Y,W,H);                     // Draw box border
     fl_pop_clip();
   }
   // Handle drawing table's cells
@@ -73,9 +94,9 @@ class MyTable : public Fl_Table {
         sprintf(s,"%03d:",ROW);                 // "001:", "002:", etc
         DrawHeader(s,X,Y,W,H);
         return;
-      case CONTEXT_CELL:                        // Draw data in cells
-        sprintf(s,"%d",data[ROW][COL]);
-        DrawData(s,X,Y,W,H);
+      case CONTEXT_CELL:                        // Draw cells
+        sprintf(s,"%c%d",'A'+COL,ROW);
+        DrawCell(s,X,Y,W,H);
         return;
       default:
         return;
@@ -83,13 +104,7 @@ class MyTable : public Fl_Table {
   }
 public:
   // Constructor
-  //     Make our data array, and initialize the table options.
-  //
   MyTable(int X, int Y, int W, int H, const char *L=0) : Fl_Table(X,Y,W,H,L) {
-    // Fill data array
-    for ( int r=0; r<MAX_ROWS; r++ )
-      for ( int c=0; c<MAX_COLS; c++ )
-        data[r][c] = 1000+(r*1000)+c;
     // Rows
     rows(MAX_ROWS);             // how many rows
     row_header(1);              // enable row headers (along left)
@@ -101,6 +116,7 @@ public:
     col_width_all(80);          // default width of columns
     col_resize(1);              // enable column resizing
     end();                      // end the Fl_Table group
+    callback(my_callback, (void*)this);  // set a callback for the table
   }
   ~MyTable() { }
 };

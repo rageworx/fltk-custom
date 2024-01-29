@@ -20,6 +20,7 @@
 #include <FL/Fl.H>
 #include <FL/fl_string_functions.h>
 #include "Fl_System_Driver.H"
+#include "Fl_Window_Driver.H"
 
 #include <stdio.h>
 
@@ -50,6 +51,7 @@ public:
   Fl_TooltipBox() : Fl_Menu_Window(0, 0) {
     set_override();
     set_tooltip_window();
+    Fl_Window_Driver::driver(this)->popup_window(true);
     end();
   }
   void draw() FL_OVERRIDE;
@@ -94,8 +96,10 @@ void Fl_TooltipBox::layout() {
   for (Fl_Widget* p = Fl_Tooltip::current(); p; p = p->window()) {
     oy += p->y();
   }
-  int scr_x, scr_y, scr_w, scr_h;
-  Fl::screen_xywh(scr_x, scr_y, scr_w, scr_h);
+  int scr_x = -100000, scr_y = -100000, scr_w = 1000000, scr_h = 1000000;
+  if (!Fl_Window_Driver::driver(this)->popup_window()) {
+    Fl::screen_xywh(scr_x, scr_y, scr_w, scr_h);
+  }
   if (ox+ww > scr_x+scr_w) ox = scr_x+scr_w - ww;
   if (ox < scr_x) ox = scr_x;
   if (currentTooltipH > 30) {
@@ -105,7 +109,7 @@ void Fl_TooltipBox::layout() {
     if (oy+hh > scr_y+scr_h) oy -= (4+hh+currentTooltipH);
   }
   if (oy < scr_y) oy = scr_y;
-
+  
   resize(ox, oy, ww, hh);
 }
 

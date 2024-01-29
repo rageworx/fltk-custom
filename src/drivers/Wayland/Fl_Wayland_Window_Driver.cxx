@@ -44,7 +44,6 @@ struct cursor_image { // as in wayland-cursor.c of the Wayland project source co
 extern "C" {
 # include "../../../libdecor/src/libdecor-plugin.h"
   uchar *fl_libdecor_titlebar_buffer(struct libdecor_frame *frame, int *w, int *h, int *stride);
-  void use_FLTK_pointer_button(struct libdecor_frame *);
 }
 
 #define fl_max(a,b) ((a) > (b) ? (a) : (b))
@@ -69,6 +68,7 @@ Fl_Wayland_Window_Driver::Fl_Wayland_Window_Driver(Fl_Window *win) : Fl_Window_D
   screen_num_ = -1;
   gl_start_support_ = NULL;
   subRect_ = NULL;
+  is_popup_window_ = false;
 }
 
 
@@ -81,6 +81,7 @@ void Fl_Wayland_Window_Driver::delete_cursor_(struct wld_window *xid, bool delet
     (struct Fl_Wayland_Graphics_Driver::wld_buffer *)
     wl_buffer_get_user_data(new_image->buffer);
     struct wld_window fake_xid;
+    memset(&fake_xid, 0, sizeof(fake_xid));
     fake_xid.buffer = offscreen;
     Fl_Wayland_Graphics_Driver::buffer_release(&fake_xid);
     free(new_image);
@@ -353,7 +354,7 @@ void Fl_Wayland_Window_Driver::make_current() {
   }
 
   // to support progressive drawing
-  if ( (!Fl_Wayland_Window_Driver::in_flush_) && window->buffer && (!window->buffer->cb)
+  if ( (!Fl_Wayland_Window_Driver::in_flush_) && window->buffer && (!window->frame_cb)
       && window->buffer->draw_buffer_needs_commit && (!wait_for_expose_value) ) {
     Fl_Wayland_Graphics_Driver::buffer_commit(window);
   }
@@ -416,7 +417,7 @@ void Fl_Wayland_Window_Driver::flush() {
   Fl_Wayland_Window_Driver::in_flush_ = true;
   Fl_Window_Driver::flush();
   Fl_Wayland_Window_Driver::in_flush_ = false;
-  if (!window->buffer->cb) Fl_Wayland_Graphics_Driver::buffer_commit(window, r);
+  if (!window->frame_cb) Fl_Wayland_Graphics_Driver::buffer_commit(window, r);
 }
 
 
@@ -854,7 +855,6 @@ static void handle_configure(struct libdecor_frame *frame,
 #ifdef LIBDECOR_MR131
   if (is_1st_run) use_FLTK_toplevel_configure_cb(frame);
 #endif
-  use_FLTK_pointer_button(frame);
   struct wl_output *wl_output = NULL;
   if (window->fl_win->fullscreen_active()) {
     if (!(window->state & LIBDECOR_WINDOW_STATE_FULLSCREEN)) {
@@ -911,9 +911,13 @@ static void handle_configure(struct libdecor_frame *frame,
 #ifndef LIBDECOR_MR131
   bool in_decorated_window_resizing = (window->state & LIBDECOR_WINDOW_STATE_RESIZING);
 #endif
-  if (in_decorated_window_resizing && window->buffer && window->buffer->cb) {
+  bool condition = in_decorated_window_resizing;
+  if (condition) { // see issue #878
+    condition = (window->covered ? (window->buffer && window->buffer->in_use) : (window->frame_cb != NULL));
+  }
+  if (condition) {
     // Skip resizing & redrawing. The last resize request won't be skipped because
-    // in_decorated_window_resizing will be false then.
+    // in_decorated_window_resizing will be false or cb will be NULL then.
     return;
   }
 
@@ -1290,7 +1294,9 @@ bool Fl_Wayland_Window_Driver::process_menu_or_tooltip(struct wld_window *new_wi
   if (!target) target = Fl::belowmouse();
   if (!target) target = Fl::first_window();
   Fl_Window *parent_win = target->top_window();
-  while (parent_win && parent_win->menu_window()) parent_win = Fl::next_window(parent_win);
+  while (parent_win && parent_win->menu_window() && driver(parent_win)->popup_window()) {
+    parent_win = Fl::next_window(parent_win);
+  }
   Fl_Window *origin_win = (menu_origin ? menu_origin : parent_win);
   struct wld_window * parent_xid = fl_wl_xid(origin_win);
   struct xdg_surface *parent_xdg = parent_xid->xdg_surface;
@@ -1391,12 +1397,13 @@ void Fl_Wayland_Window_Driver::makeWindow()
   // put transient scale win at center of top window by making it a tooltip of top
     Fl_Screen_Driver::transient_scale_parent = Fl::first_window();
     pWindow->set_tooltip_window();
+    popup_window(true);
     pWindow->position(
               (Fl_Screen_Driver::transient_scale_parent->w() - pWindow->w())/2 ,
               (Fl_Screen_Driver::transient_scale_parent->h() - pWindow->h())/2);
   }
 
-  if (pWindow->menu_window() || pWindow->tooltip_window()) { // a menu window or tooltip
+  if (popup_window()) { // a menu window or tooltip
     is_floatingtitle = process_menu_or_tooltip(new_window);
 
   } else if (pWindow->border() && !pWindow->parent() ) { // a decorated window
@@ -1490,7 +1497,7 @@ void Fl_Wayland_Window_Driver::makeWindow()
   pWindow->redraw();
   pWindow->handle(Fl::e_number = FL_SHOW); // get child windows to appear
   Fl::e_number = old_event;
-  if (pWindow->menu_window() && !is_floatingtitle) {
+  if (pWindow->menu_window() && popup_window() && !is_floatingtitle) {
     // make sure each menu window is mapped with its constraints before mapping next popup
     pWindow->wait_for_expose();
     if (previous_floatingtitle) { // a menuwindow with a menutitle
@@ -1792,23 +1799,25 @@ int Fl_Wayland_Window_Driver::set_cursor_4args(const Fl_RGB_Image *rgb, int hotx
 }
 
 
-#if defined(USE_SYSTEM_LIBDECOR) && USE_SYSTEM_LIBDECOR
-// This is only to fix a bug in libdecor where what libdecor_frame_set_min_content_size()
-// does is often destroyed by libdecor-cairo.
-static void delayed_minsize(Fl_Window *win) {
-  struct wld_window *wl_win = fl_wl_xid(win);
-  Fl_Window_Driver *driver = Fl_Window_Driver::driver(win);
-  if (wl_win->kind == Fl_Wayland_Window_Driver::DECORATED) {
-    float f = Fl::screen_scale(win->screen_num());
-    libdecor_frame_set_min_content_size(wl_win->frame, driver->minw()*f, driver->minh()*f);
-  }
-  bool need_resize = false;
-  int W = win->w(), H = win->h();
-  if (W < driver->minw()) { W = driver->minw(); need_resize = true; }
-  if (H < driver->minh()) { H = driver->minh(); need_resize = true; }
-  if (need_resize) win->size(W, H);
+// does win entirely cover its parent ?
+static void does_window_cover_parent(Fl_Window *win) {
+  Fl_Window *parent = win->window();
+  fl_wl_xid(parent)->covered = (win->x() <= 0 && win->y() <= 0 &&
+                                win->w() >= parent->w() && win->h() >= parent->h());
 }
-#endif
+
+
+// recursively explore all shown subwindows in a window and call f for each
+static void scan_subwindows(Fl_Group *g, void (*f)(Fl_Window *)) {
+  for (int i = 0; i < g->children(); i++) {
+    Fl_Widget *o = g->child(i);
+    if (o->as_window()) {
+      if (!o->as_window()->shown()) continue;
+      f(o->as_window());
+    }
+    if (o->as_group()) scan_subwindows(o->as_group(), f);
+  }
+}
 
 
 void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
@@ -1834,13 +1843,12 @@ void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
       if (H < 1) H = 1;
     }
     // toplevel, non-popup windows must have origin at 0,0
-    if (!pWindow->parent() &&
-        !(pWindow->menu_window() || pWindow->tooltip_window())) X = Y = 0;
+    if (!pWindow->parent() && !popup_window()) X = Y = 0;
     pWindow->Fl_Group::resize(X,Y,W,H);
 //fprintf(stderr, "resize: win=%p to %dx%d\n", pWindow, W, H);
     if (shown()) {pWindow->redraw();}
   } else {
-    if (pWindow->parent() || pWindow->menu_window() || pWindow->tooltip_window()) {
+    if (pWindow->parent() || popup_window()) {
       x(X); y(Y);
 //fprintf(stderr, "move menuwin=%p x()=%d\n", pWindow, X);
     } else {
@@ -1890,11 +1898,6 @@ void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
         xdg_surface_set_window_geometry(fl_win->xdg_surface, 0, 0, W, H);
         //printf("xdg_surface_set_window_geometry: %dx%d\n",W, H);
       }
-#if defined(USE_SYSTEM_LIBDECOR) && USE_SYSTEM_LIBDECOR
-      if (W < minw() || H < minh()) {
-        Fl::add_timeout(0.01, (Fl_Timeout_Handler)delayed_minsize, pWindow);
-      }
-#endif
     } else {
       if (!in_handle_configure && xdg_toplevel()) {
         // Wayland doesn't seem to provide a reliable way for the app to set the
@@ -1911,6 +1914,11 @@ void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
 
   if (fl_win && fl_win->kind == SUBWINDOW && fl_win->subsurface)
       checkSubwindowFrame(); // make sure subwindow doesn't leak outside parent
+  
+  if (Fl_Wayland_Screen_Driver::compositor == Fl_Wayland_Screen_Driver::MUTTER &&
+    fl_win && is_a_resize && fl_win->kind == DECORATED) { // fix for issue #878
+    scan_subwindows(pWindow, does_window_cover_parent);
+  }
 }
 
 
@@ -2016,7 +2024,7 @@ void Fl_Wayland_Window_Driver::reposition_menu_window(int x, int y) {
   struct wld_window * parent_xid = fl_wl_xid(menu_origin);
   float f = Fl::screen_scale(Fl_Window_Driver::menu_parent()->screen_num());
   int popup_x = x * f, popup_y = y * f + xid_menu->state;
-  if (menu_origin->menu_window()) {
+  if (menu_origin->menu_window() && driver(menu_origin)->popup_window()) {
     popup_x -= menu_origin->x() * f;
     popup_y -= menu_origin->y() * f;
   }
@@ -2058,7 +2066,7 @@ void Fl_Wayland_Window_Driver::menu_window_area(int &X, int &Y, int &W, int &H, 
   int HH;
   Fl_Window *parent = Fl_Window_Driver::menu_parent(&HH);
   if (parent) {
-    if (pWindow->menu_window() && pWindow->h() > HH) {
+    if (pWindow->menu_window() && popup_window() && pWindow->h() > HH) {
       // tall menu: set top (Y) and bottom (Y+H) bounds relatively to reference window
       int ih = Fl_Window_Driver::menu_itemheight(pWindow);
       X = -50000;
@@ -2151,4 +2159,14 @@ void Fl_Wayland_Window_Driver::maximize() {
 void Fl_Wayland_Window_Driver::un_maximize() {
   struct wld_window *xid = (struct wld_window *)Fl_X::flx(pWindow)->xid;
   if (xid->kind == DECORATED) libdecor_frame_unset_maximized(xid->frame);
+}
+
+
+void Fl_Wayland_Window_Driver::popup_window(bool v) {
+  is_popup_window_ = v;
+}
+
+
+bool Fl_Wayland_Window_Driver::popup_window() {
+  return is_popup_window_;
 }

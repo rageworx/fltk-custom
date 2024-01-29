@@ -211,9 +211,10 @@ public:
   static int *menu_offset_y(Fl_Window*);
   static bool is_floating_title(Fl_Window *);
   static void scroll_to_selected_item(Fl_Window *);
-  static bool is_menutitle(Fl_Window *);
 
   virtual fl_uintptr_t os_id() { return 0; }
+  virtual void popup_window(bool v) {}
+  virtual bool popup_window() { return false; }
 };
 
 #endif // FL_WINDOW_DRIVER_H

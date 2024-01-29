@@ -1,7 +1,7 @@
 #
 # CMakeLists.txt to build the FLTK library using CMake (www.cmake.org)
 #
-# Copyright 1998-2023 by Bill Spitzak and others.
+# Copyright 1998-2024 by Bill Spitzak and others.
 #
 # This library is free software. Distribution and use rights are outlined in
 # the file "COPYING" which should have been included with this file.  If this
@@ -80,7 +80,6 @@ set (CPPFILES
   Fl_Scrollbar.cxx
   Fl_Shared_Image.cxx
   Fl_Shortcut_Button.cxx
-  Fl_Simple_Terminal.cxx
   Fl_Single_Window.cxx
   Fl_Slider.cxx
   Fl_Spinner.cxx
@@ -407,14 +406,18 @@ set (CPPFILES
   ${DRIVER_FILES}
 )
 
-set (FORMS_FILES
-  forms_compatibility.cxx
-  forms_bitmap.cxx
-  forms_free.cxx
-  forms_fselect.cxx
-  forms_pixmap.cxx
-  forms_timer.cxx
-)
+if (FLTK_BUILD_FORMS)
+  set (FORMS_FILES
+    forms_compatibility.cxx
+    forms_bitmap.cxx
+    forms_free.cxx
+    forms_fselect.cxx
+    forms_pixmap.cxx
+    forms_timer.cxx
+  )
+else ()
+  set (FORMS_FILES "")
+endif ()
 
 set (GLCPPFILES
   Fl_Gl_Choice.cxx
@@ -515,23 +518,44 @@ endif (FLTK_USE_X11)
 
 if (OPTION_USE_WAYLAND)
   pkg_check_modules(DBUS dbus-1)
-  include_directories(${DBUS_INCLUDE_DIRS})
-  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_CURRENT_BINARY_DIR} -fPIC -D_GNU_SOURCE")
+  set (IDIRS "${CMAKE_CURRENT_BINARY_DIR}")
+  set (CDEFS "_GNU_SOURCE;HAVE_MEMFD_CREATE;HAVE_MKOSTEMP;HAVE_POSIX_FALLOCATE")
+  set (COPTS "-fPIC")
   if (DBUS_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAS_DBUS")
+    set (CDEFS "${CDEFS};HAS_DBUS")
+    set (IDIRS "${IDIRS};${DBUS_INCLUDE_DIRS}")
   endif (DBUS_FOUND)
   if (OPTION_USE_SYSTEM_LIBDECOR)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_SYSTEM_LIBDECOR")
-    get_filename_component(PATH_TO_SHARED_LIBS ${HAVE_LIB_PANGO} DIRECTORY)
-    set (LIBDECOR_PLUGIN_DIR "\\\"${PATH_TO_SHARED_LIBS}/libdecor/plugins-1\\\" " )
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBDECOR_PLUGIN_DIR=${LIBDECOR_PLUGIN_DIR} ")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_SYSTEM_LIBDECOR")
+    set (CDEFS "${CDEFS};USE_SYSTEM_LIBDECOR;LIBDECOR_PLUGIN_DIR=${LIBDECOR_PLUGIN_DIR}")
+    if (GTK_FOUND)
+      set (CDEFS "${CDEFS};HAVE_GTK")
+    endif (GTK_FOUND)
+    set_source_files_properties(
+      ${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/build/fl_libdecor-plugins.c
+      ${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/src/os-compatibility.c
+      ${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/src/cursor-settings.c
+      PROPERTIES COMPILE_DEFINITIONS "${CDEFS}"
+      INCLUDE_DIRECTORIES "${IDIRS}"
+      COMPILE_OPTIONS "${COPTS}"
+      )
   else()
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/src  -I${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/src/plugins  -DLIBDECOR_PLUGIN_API_VERSION=1 -DLIBDECOR_PLUGIN_DIR=\\\"\\\" ")
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_SYSTEM_LIBDECOR=0 -DHAVE_MEMFD_CREATE -DHAVE_MKOSTEMP -DHAVE_POSIX_FALLOCATE")
+    set (IDIRS "${IDIRS};${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/src"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/src/plugins")
+    set (CDEFS "${CDEFS};USE_SYSTEM_LIBDECOR=0;LIBDECOR_PLUGIN_API_VERSION=1"
+      "LIBDECOR_PLUGIN_DIR=\"\"")
     if (GTK_FOUND AND OPTION_ALLOW_GTK_PLUGIN)
-      set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_GTK")
+      set (CDEFS "${CDEFS};HAVE_GTK")
     endif (GTK_FOUND AND OPTION_ALLOW_GTK_PLUGIN)
+    set_source_files_properties(
+      ${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/build/fl_libdecor.c
+      ${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/build/fl_libdecor-plugins.c
+      ${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/src/os-compatibility.c
+      ${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/src/cursor-settings.c
+      PROPERTIES
+      COMPILE_DEFINITIONS "${CDEFS}"
+      INCLUDE_DIRECTORIES "${IDIRS}"
+      COMPILE_OPTIONS "${COPTS}"
+      )
   endif (OPTION_USE_SYSTEM_LIBDECOR)
 
   list (APPEND CFILES
@@ -579,9 +603,14 @@ list (APPEND SHARED_FILES ${HEADER_FILES} ${DRIVER_HEADER_FILES})
 
 set (STATIC_FILES ${SHARED_FILES})
 
-if (MSVC)
+# Visual Studio (MSVC) is known to need WinMain() and maybe BORLAND
+# needs it as well, hence we include it on all Windows platforms.
+# The GNU compilers (MinGW, MSYS2, Cygwin) disable compilation inside
+# the source file which is what we finally want and need.
+
+if (WIN32)
   list (APPEND STATIC_FILES fl_call_main.c)
-endif (MSVC)
+endif ()
 
 #######################################################################
 
@@ -683,18 +712,16 @@ if (UNIX AND OPTION_USE_WAYLAND)
     )
     list (APPEND STATIC_FILES "xdg-decoration-protocol.c")
     list (APPEND SHARED_FILES "xdg-decoration-protocol.c")
-    if (GTK_FOUND AND OPTION_ALLOW_GTK_PLUGIN)
-      add_custom_command(
-        OUTPUT gtk-shell-protocol.c gtk-shell-client-protocol.h
-        COMMAND wayland-scanner private-code ${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/build/gtk-shell.xml gtk-shell-protocol.c
-        COMMAND wayland-scanner client-header ${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/build/gtk-shell.xml gtk-shell-client-protocol.h
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/build/gtk-shell.xml
-        VERBATIM
-      )
-      list (APPEND STATIC_FILES "gtk-shell-protocol.c")
-      list (APPEND SHARED_FILES "gtk-shell-protocol.c")
-    endif (GTK_FOUND AND OPTION_ALLOW_GTK_PLUGIN)
   endif (NOT OPTION_USE_SYSTEM_LIBDECOR)
+  add_custom_command(
+      OUTPUT gtk-shell-protocol.c gtk-shell-client-protocol.h
+      COMMAND wayland-scanner private-code ${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/build/gtk-shell.xml gtk-shell-protocol.c
+      COMMAND wayland-scanner client-header ${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/build/gtk-shell.xml gtk-shell-client-protocol.h
+      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../libdecor/build/gtk-shell.xml
+      VERBATIM
+  )
+  list (APPEND STATIC_FILES "gtk-shell-protocol.c")
+  list (APPEND SHARED_FILES "gtk-shell-protocol.c")
   add_custom_command(
     OUTPUT text-input-protocol.c text-input-client-protocol.h
     COMMAND wayland-scanner private-code ${PROTOCOLS}/unstable/text-input/text-input-unstable-v3.xml text-input-protocol.c
@@ -736,8 +763,10 @@ endif()
 
 #######################################################################
 
-FL_ADD_LIBRARY (fltk_forms STATIC "${FORMS_FILES}")
-target_link_libraries (fltk_forms fltk)
+if (FLTK_BUILD_FORMS)
+  FL_ADD_LIBRARY (fltk_forms STATIC "${FORMS_FILES}")
+  target_link_libraries (fltk_forms fltk)
+endif ()
 
 #######################################################################
 
@@ -783,8 +812,10 @@ if (OPTION_BUILD_SHARED_LIBS AND NOT MSVC)
 
   ###################################################################
 
-  FL_ADD_LIBRARY (fltk_forms SHARED "${FORMS_FILES}")
-  target_link_libraries (fltk_forms_SHARED fltk_SHARED)
+  if (FLTK_BUILD_FORMS)
+    FL_ADD_LIBRARY (fltk_forms SHARED "${FORMS_FILES}")
+    target_link_libraries (fltk_forms_SHARED fltk_SHARED)
+  endif ()
 
   ###################################################################
 

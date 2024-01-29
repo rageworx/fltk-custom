@@ -2,7 +2,7 @@
 # Main CMakeLists.txt to build the FLTK project using CMake (www.cmake.org)
 # Originally written by Michael Surette
 #
-# Copyright 1998-2022 by Bill Spitzak and others.
+# Copyright 1998-2023 by Bill Spitzak and others.
 #
 # This library is free software. Distribution and use rights are outlined in
 # the file "COPYING" which should have been included with this file.  If this
@@ -125,12 +125,12 @@ endif ()
 # If either of them is not available, we fall back to using both local libraries
 if (OPTION_USE_SYSTEM_LIBPNG AND NOT (OPTION_USE_SYSTEM_ZLIB AND ZLIB_FOUND))
     set (PNG_FOUND FALSE)
-    set (OPTION_USE_SYSTEM_LIBPNG FALSE)
+    set (OPTION_USE_SYSTEM_LIBPNG OFF)
     message (STATUS "Local z lib selected: overriding png lib to local for compatibility.\n")
 endif ()
 if (OPTION_USE_SYSTEM_ZLIB AND NOT (OPTION_USE_SYSTEM_LIBPNG AND PNG_FOUND))
     set (ZLIB_FOUND FALSE)
-    set (OPTION_USE_SYSTEM_ZLIB FALSE)
+    set (OPTION_USE_SYSTEM_ZLIB OFF)
     message (STATUS "Local png lib selected: overriding z lib to local for compatibility.\n")
 endif ()
 
@@ -258,7 +258,7 @@ if (UNIX)
     endif (X11_FOUND)
     unset (OPTION_USE_CAIRO CACHE)
     set (OPTION_USE_CAIRO TRUE CACHE BOOL "all drawing to X11 windows uses Cairo")
-    option (OPTION_USE_SYSTEM_LIBDECOR "use libdecor from the system" OFF)
+    option (OPTION_USE_SYSTEM_LIBDECOR "use libdecor from the system" ON)
     unset (OPTION_USE_XRENDER CACHE)
     unset (OPTION_USE_XINERAMA CACHE)
     unset (OPTION_USE_XFT CACHE)
@@ -293,13 +293,25 @@ if (UNIX)
     unset (OPTION_USE_PANGO CACHE)
     set (OPTION_USE_PANGO TRUE CACHE BOOL "use lib Pango")
     if (OPTION_USE_SYSTEM_LIBDECOR)
-      pkg_check_modules(SYSTEM_LIBDECOR libdecor-0)
+      pkg_check_modules(SYSTEM_LIBDECOR libdecor-0>=0.2.0)
       if (NOT SYSTEM_LIBDECOR_FOUND)
         set (OPTION_USE_SYSTEM_LIBDECOR OFF)
+      else ()
+        pkg_get_variable(LIBDECOR_LIBDIR libdecor-0 libdir)
+        set (LIBDECOR_PLUGIN_DIR ${LIBDECOR_LIBDIR}/libdecor/plugins-1)
+        if (EXISTS ${LIBDECOR_PLUGIN_DIR} AND IS_DIRECTORY ${LIBDECOR_PLUGIN_DIR})
+          set (LIBDECOR_PLUGIN_DIR "\"${LIBDECOR_PLUGIN_DIR}\"" )
+        else ()
+          set (OPTION_USE_SYSTEM_LIBDECOR OFF)
+        endif ()
       endif (NOT SYSTEM_LIBDECOR_FOUND)
     endif (OPTION_USE_SYSTEM_LIBDECOR)
 
-    option (OPTION_ALLOW_GTK_PLUGIN "Allow to use libdecor's GTK plugin" ON)
+    if (OPTION_USE_SYSTEM_LIBDECOR)
+        set (OPTION_ALLOW_GTK_PLUGIN ON)
+    else ()
+      option (OPTION_ALLOW_GTK_PLUGIN "Allow to use libdecor's GTK plugin" ON)
+    endif (OPTION_USE_SYSTEM_LIBDECOR)
 
     if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "FreeBSD")
       CHECK_INCLUDE_FILE (linux/input.h LINUX_INPUT_H)
@@ -384,13 +396,21 @@ option (OPTION_BUILD_SHARED_LIBS
 )
 
 #######################################################################
-option (OPTION_PRINT_SUPPORT "allow print support" ON)
-option (OPTION_FILESYSTEM_SUPPORT "allow file system support" ON)
 
-option (FLTK_BUILD_FLUID        "Build FLUID"              ON)
-option (FLTK_BUILD_FLTK_OPTIONS "Build fltk-options"       ON)
-option (FLTK_BUILD_TEST         "Build test/demo programs" ON)
-option (FLTK_BUILD_EXAMPLES     "Build example programs"   OFF)
+option (OPTION_PRINT_SUPPORT      "allow print support"               ON)
+option (OPTION_FILESYSTEM_SUPPORT "allow file system support"         ON)
+
+option (FLTK_BUILD_FORMS          "Build forms compatibility library" ON)
+option (FLTK_BUILD_FLUID          "Build FLUID"                       ON)
+option (FLTK_BUILD_FLTK_OPTIONS   "Build fltk-options"                ON)
+option (FLTK_BUILD_TEST           "Build test/demo programs"          ON)
+option (FLTK_BUILD_EXAMPLES       "Build example programs"            OFF)
+
+if (FLTK_BUILD_FORMS)
+  set (FLTK_HAVE_FORMS 1)
+else ()
+  set (FLTK_HAVE_FORMS 0)
+endif ()
 
 if (DEFINED OPTION_BUILD_EXAMPLES)
   message (WARNING
@@ -856,7 +876,7 @@ if ((X11_Xft_FOUND OR NOT USE_PANGOXFT) AND OPTION_USE_PANGO)
 
 endif ((X11_Xft_FOUND OR NOT USE_PANGOXFT) AND OPTION_USE_PANGO)
 
-if (OPTION_USE_WAYLAND AND NOT OPTION_USE_SYSTEM_LIBDECOR)
+if (OPTION_USE_WAYLAND)
 
   # Note: Disable OPTION_ALLOW_GTK_PLUGIN to get cairo titlebars rather than GTK
   if (OPTION_ALLOW_GTK_PLUGIN)
@@ -869,7 +889,7 @@ if (OPTION_USE_WAYLAND AND NOT OPTION_USE_SYSTEM_LIBDECOR)
     endif (GTK_FOUND)
   endif (OPTION_ALLOW_GTK_PLUGIN)
 
-endif (OPTION_USE_WAYLAND AND NOT OPTION_USE_SYSTEM_LIBDECOR)
+endif (OPTION_USE_WAYLAND)
 
 if (OPTION_USE_XFT)
   set (USE_XFT X11_Xft_FOUND)
@@ -939,6 +959,14 @@ if (DEBUG_OPTIONS_CMAKE)
   fl_debug_var (OPENGL_FOUND)
   fl_debug_var (OPENGL_INCLUDE_DIR)
   fl_debug_var (OPENGL_LIBRARIES)
+  fl_debug_var (CMAKE_MSVC_RUNTIME_LIBRARY)
+  message ("--- bundled libraries ---")
+  fl_debug_var (OPTION_USE_SYSTEM_LIBJPEG)
+  fl_debug_var (OPTION_USE_SYSTEM_LIBPNG)
+  fl_debug_var (OPTION_USE_SYSTEM_ZLIB)
+  fl_debug_var (FLTK_USE_BUILTIN_JPEG)
+  fl_debug_var (FLTK_USE_BUILTIN_PNG)
+  fl_debug_var (FLTK_USE_BUILTIN_ZLIB)
   message ("--- X11 ---")
   fl_debug_var (X11_FOUND)
   fl_debug_var (X11_INCLUDE_DIR)

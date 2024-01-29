@@ -552,25 +552,22 @@ HBITMAP Fl_GDI_Graphics_Driver::create_alphamask(int w, int h, int d, int ld, co
 void Fl_GDI_Graphics_Driver::cache(Fl_RGB_Image *img)
 {
   Fl_Image_Surface *surface = new Fl_Image_Surface(img->data_w(), img->data_h());
-  if ( surface != NULL )
-  {
-    Fl_Surface_Device::push_current(surface);
-    if ((img->d() == 2 || img->d() == 4) && fl_can_do_alpha_blending()) {
-      fl_draw_image(img->array, 0, 0, img->data_w(), img->data_h(), img->d()|FL_IMAGE_WITH_ALPHA, img->ld());
-    } else {
-      fl_draw_image(img->array, 0, 0, img->data_w(), img->data_h(), img->d(), img->ld());
-      if (img->d() == 2 || img->d() == 4) {
-        *Fl_Graphics_Driver::mask(img) = (fl_uintptr_t)create_alphamask(img->data_w(), img->data_h(), img->d(), img->ld(), img->array);
-      }
+  Fl_Surface_Device::push_current(surface);
+  if ((img->d() == 2 || img->d() == 4) && fl_can_do_alpha_blending()) {
+    fl_draw_image(img->array, 0, 0, img->data_w(), img->data_h(), img->d()|FL_IMAGE_WITH_ALPHA, img->ld());
+  } else {
+    fl_draw_image(img->array, 0, 0, img->data_w(), img->data_h(), img->d(), img->ld());
+    if (img->d() == 2 || img->d() == 4) {
+      *Fl_Graphics_Driver::mask(img) = (fl_uintptr_t)create_alphamask(img->data_w(), img->data_h(), img->d(), img->ld(), img->array);
     }
-    Fl_Surface_Device::pop_current();
-    Fl_Offscreen offs = Fl_Graphics_Driver::get_offscreen_and_delete_image_surface(surface);
-    int *pw, *ph;
-    cache_w_h(img, pw, ph);
-    *pw = img->data_w();
-    *ph = img->data_h();
-    *Fl_Graphics_Driver::id(img) = (fl_uintptr_t)offs;
   }
+  Fl_Surface_Device::pop_current();
+  Fl_Offscreen offs = Fl_Graphics_Driver::get_offscreen_and_delete_image_surface(surface);
+  int *pw, *ph;
+  cache_w_h(img, pw, ph);
+  *pw = img->data_w();
+  *ph = img->data_h();
+  *Fl_Graphics_Driver::id(img) = (fl_uintptr_t)offs;
 }
 
 

@@ -531,7 +531,8 @@ void Fl_X11_Screen_Driver::disable_im() {
 }
 
 void Fl_X11_Screen_Driver::open_display_platform() {
-  if (fl_display) return;
+  static Display *d = NULL;
+  if (d) return;
 
   setlocale(LC_CTYPE, "");
   XSetLocaleModifiers("");
@@ -539,7 +540,7 @@ void Fl_X11_Screen_Driver::open_display_platform() {
   XSetIOErrorHandler(io_error_handler);
   XSetErrorHandler(xerror_handler);
 
-  Display *d = XOpenDisplay(0);
+  d = (fl_display ? fl_display : XOpenDisplay(0));
   if (!d) {
     Fl::fatal("Can't open display: %s", XDisplayName(0)); // does not return
     return; // silence static code analyzer
@@ -2280,8 +2281,10 @@ void Fl_X11_Window_Driver::activate_window() {
     prev = x->xid;
   }
 
-  send_wm_event(w, fl_NET_ACTIVE_WINDOW, 1 /* application */,
-                0 /* timestamp */, prev /* previously active window */);
+  send_wm_event(w, fl_NET_ACTIVE_WINDOW,
+                1,              // source: 1 = application
+                fl_event_time,  // time of client's last user activity (STR 3396)
+                prev);          // previously active window
 }
 
 /* Change an existing window to fullscreen */

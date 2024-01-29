@@ -56,7 +56,7 @@
   In this mode, the child that is marked resizable() will behave as it would
   in a regular Fl_Group widget.
   When dragging edges or intersections with the mouse, Fl_Tile will ensure that
-  none of the children shrinks to a size that is smaller than requested. 
+  none of the children shrinks to a size that is smaller than requested.
   When resizing the Fl_Tile group, size ranges are not enforced by the tile.
   Instead, the size range of the enclosing window should be limited to a
   valid range.
@@ -155,7 +155,7 @@ static Fl_Cursor Fl_Tile_cursors[4] = {
 static int fl_min(int a, int b) { return a<b ? a : b; }
 static int fl_max(int a, int b) { return a>b ? a : b; }
 
-/** 
+/**
  Request for children to change their layout.
 
  drag_intersection requests that all children with the left edge at old_l to
@@ -565,16 +565,57 @@ void Fl_Tile::drag_intersection(int oldx, int oldy, int newx, int newy) {
 void Fl_Tile::resize(int X,int Y,int W,int H) {
 
   if (size_range_) {
-    int dw = w() - W, dh = h() - H;
-    Fl_Widget *r = resizable();
-    if (r) {
-      int rr = r->x() + r->w(), rb = r->y() + r->h();
-      move_intersection(rr, rb, rr-dw, rb-dh);
+    // -- handle size_range style resizing
+    int dx = X - x();
+    int dy = Y - y();
+    int dw = w() - W;
+    int dh = h() - H;
+    // -- if the size does not change, Group resize will suffice
+    if ((dw==0) && (dh==0)) {
+      Fl_Group::resize(X, Y, W, H);
+      init_sizes();
+      redraw();
+      return;
     }
-    int tr = x() + w(), tb = y() + h();
-    move_intersection(tr, tb, tr-dw, tb-dh);
-    Fl_Widget::resize(X,Y,W,H);
+    // -- if the position changes, move all widgets first
+    if ((dx!=0) || (dy!=0)) {
+      for (int i = 0; i < children(); i++) {
+        Fl_Widget *c = child(i);
+        c->position(c->x()+dx, c->y()+dy);
+      }
+    }
+    // check the bounding box of all children at minimum size
     init_sizes();
+    Fl_Rect *p = bounds();
+    int bbr = X, bbb = Y;
+    for (int i = 0; i < children(); i++) {
+      // find the current bounding box
+      bbr = fl_max(bbr, p[i+2].r());
+      bbb = fl_max(bbb, p[i+2].b());
+    }
+    // fix the dw to the maximum difference possible
+    int r2 = X+W;
+    request_shrink_r(bbr, r2, NULL);
+    dw = bbr - r2;
+    // fix the dh to the maximum difference possible
+    int b2 = Y+H;
+    request_shrink_b(bbb, b2, NULL);
+    dh = bbb - b2;
+    // perform the actual resize within a safe range
+    if ((dw!=0) || (dh!=0)) {
+      Fl_Widget *r = resizable();
+      if (r) {
+        int rr = r->x() + r->w(), rb = r->y() + r->h();
+        move_intersection(rr, rb, rr-dw, rb-dh);
+      }
+      move_intersection(bbr, bbb, bbr-dw, bbb-dh);
+      init_sizes();
+    }
+    // resize the tile itself
+    if (Fl_Window::is_a_rescale())
+      Fl_Group::resize(X, Y, W, H);
+    else
+      Fl_Widget::resize(X, Y, W, H);
     return;
   }
 
@@ -695,7 +736,7 @@ int Fl_Tile::handle(int event) {
     // if (damage()) return 1; // don't fall behind
   case FL_RELEASE: {
     if (!sdrag) break;
-    Fl_Widget* r = resizable(); 
+    Fl_Widget* r = resizable();
     if (size_range_ || !r) r = this;
     int newx;
     if (sdrag&DRAGH) {

@@ -813,6 +813,11 @@ void revert_cb(Fl_Widget *,void *) {
  If the design was modified, a dialog will ask for confirmation.
  */
 void exit_cb(Fl_Widget *,void *) {
+  if (shell_command_running()) {
+    fl_alert("Previous shell command still running!");
+    return;
+  }
+
   flush_text_widgets();
 
   // verify user intention
@@ -871,9 +876,9 @@ void exit_cb(Fl_Widget *,void *) {
 
  \return false if the operation was canceled
  */
-bool new_project() {
+bool new_project(bool user_must_confirm = true) {
   // verify user intention
-  if (confirm_project_clear() == false)
+  if ((user_must_confirm) &&  (confirm_project_clear() == false))
     return false;
 
   // clear the current project
@@ -1085,11 +1090,22 @@ bool merge_project_file(const Fl_String &filename_arg) {
  \param[in] filename_arg load from this file, or show file chooser if empty
  \return false if the operation was canceled or failed otherwise
  */
-bool open_project_file(const Fl_String &new_filename) {
+bool open_project_file(const Fl_String &filename_arg) {
   // verify user intention
-  if (new_project() == false)
+  if (confirm_project_clear() == false)
     return false;
 
+  // ask for a filename if none was given
+  Fl_String new_filename = filename_arg;
+  if (new_filename.empty()) {
+    new_filename = open_project_filechooser("Open Project File");
+    if (new_filename.empty()) {
+      return false;
+    }
+  }
+
+  // clear the project and merge a file by the given name
+  new_project(false);
   return merge_project_file(new_filename);
 }
 
@@ -1295,7 +1311,7 @@ int mergeback_code_files()
   Fl_String code_filename;
 #if 1
   if (!batch_mode) {
-    Fl_Preferences build_records(Fl_Preferences::USER_L, "fltk.org.build", "fluid");
+    Fl_Preferences build_records(Fl_Preferences::USER_L, "fltk.org", "fluid-build");
     Fl_Preferences path(build_records, proj_filename.c_str());
     int i, n = proj_filename.size();
     for (i=0; i<n; i++) if (proj_filename[i]=='\\') proj_filename[i] = '/';
@@ -1891,6 +1907,7 @@ void make_main_window() {
   if (!batch_mode) {
     load_history();
     g_shell_config = new Fd_Shell_Command_List;
+    widget_browser->load_prefs();
     make_settings_window();
   }
 }
@@ -2154,6 +2171,7 @@ int main(int argc,char **argv) {
   setlocale(LC_NUMERIC, "C"); // make sure numeric values are written correctly
   g_launch_path = end_with_slash(fl_getcwd()); // store the current path at launch
 
+  Fl::args_to_utf8(argc, argv); // for MSYS2/MinGW
   if (   (Fl::args(argc,argv,i,arg) == 0)     // unsupported argument found
       || (batch_mode && (i != argc-1))        // .fl filename missing
       || (!batch_mode && (i < argc-1))        // more than one filename found

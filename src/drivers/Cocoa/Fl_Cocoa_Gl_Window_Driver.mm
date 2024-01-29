@@ -187,7 +187,7 @@ static NSOpenGLContext *create_GLcontext_for_window(
   if (shared_ctx && !context) context = [[NSOpenGLContext alloc] initWithFormat:pixelformat shareContext:nil];
   if (context) {
     NSView *view = [fl_xid(window) contentView];
-    if (fl_mac_os_version >= 100700) {
+    if (view && fl_mac_os_version >= 100700) {
       //replaces  [view setWantsBestResolutionOpenGLSurface:YES]  without compiler warning
       typedef void (*bestResolutionIMP)(id, SEL, BOOL);
       static bestResolutionIMP addr = (bestResolutionIMP)[NSView instanceMethodForSelector:@selector(setWantsBestResolutionOpenGLSurface:)];
@@ -242,7 +242,7 @@ void Fl_Cocoa_Gl_Window_Driver::delete_gl_context(GLContext context) {
 void Fl_Cocoa_Gl_Window_Driver::make_overlay_current() {
   // this is not very useful, but unfortunately, Apple decided
   // that front buffer drawing can no longer (OS X 10.4) be supported on their platforms.
-  pWindow->make_current();
+  if (pWindow->shown()) pWindow->make_current();
 }
 
 void Fl_Cocoa_Gl_Window_Driver::redraw_overlay() {
@@ -362,7 +362,7 @@ void Fl_Cocoa_Gl_Window_Driver::swap_interval(int n) {
     [ctx setValues:&interval forParameter:NSOpenGLContextParameterSwapInterval];
 }
 
-int Fl_Cocoa_Gl_Window_Driver::swap_interval() {
+int Fl_Cocoa_Gl_Window_Driver::swap_interval() const {
   GLint interval = (GLint)-1;
   NSOpenGLContext* ctx = (NSOpenGLContext*)pWindow->context();
   if (ctx)

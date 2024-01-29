@@ -52,9 +52,9 @@ const char *Fl_Input::copy_menu_text = "Copy";
 const char *Fl_Input::paste_menu_text = "Paste";
 
 static Fl_Menu_Item rmb_menu[] = {
-  { Fl_Input::cut_menu_text,    0, NULL, (void*)1 },
-  { Fl_Input::copy_menu_text,   0, NULL, (void*)2 },
-  { Fl_Input::paste_menu_text,  0, NULL, (void*)3 },
+  { NULL, 0, NULL, (void*)1 },
+  { NULL, 0, NULL, (void*)2 },
+  { NULL, 0, NULL, (void*)3 },
   { NULL }
 };
 
@@ -524,7 +524,12 @@ int Fl_Input::handle_rmb() {
         insert_position(word_start(newpos), word_end(newpos));
       }
     }
-    if (readonly()) { // give only the menu options that make sense
+    // keep the menu labels current
+    rmb_menu[0].label(Fl_Input::cut_menu_text);
+    rmb_menu[1].label(Fl_Input::copy_menu_text);
+    rmb_menu[2].label(Fl_Input::paste_menu_text);
+    // give only the menu options that make sense
+    if (readonly()) {
       rmb_menu[0].deactivate(); // cut
       rmb_menu[2].deactivate(); // paste
     } else {
