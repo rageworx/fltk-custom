@@ -1,7 +1,7 @@
 #
 # Library Makefile for the Fast Light Tool Kit (FLTK).
 #
-# Copyright 1998-2023 by Bill Spitzak and others.
+# Copyright 1998-2024 by Bill Spitzak and others.
 #
 # This library is free software. Distribution and use rights are outlined in
 # the file "COPYING" which should have been included with this file.  If this
@@ -84,7 +84,6 @@ CPPFILES = \
 	Fl_Scrollbar.cxx \
 	Fl_Shared_Image.cxx \
 	Fl_Shortcut_Button.cxx \
-	Fl_Simple_Terminal.cxx \
 	Fl_Single_Window.cxx \
 	Fl_Slider.cxx \
 	Fl_Spinner.cxx \
@@ -243,6 +242,7 @@ IMGCPPFILES = \
 	Fl_PNM_Image.cxx \
 	Fl_Image_Reader.cxx \
 	Fl_SVG_Image.cxx \
+	nanosvg.cxx \
 	drivers/SVG/Fl_SVG_File_Surface.cxx
 
 CFILES = flstring.c numericsort.c vsnprintf.c
@@ -333,7 +333,7 @@ WLX11CPPFILES = \
 	fl_dnd_x.cxx \
 	Fl_get_key.cxx
 
-      
+
 #   fl_dnd_x.cxx  Fl_Native_File_Chooser_GTK.cxx
 
 # This C file is used under condition: BUILD_X11
@@ -343,6 +343,7 @@ XLIBCFILES = \
 
 # These C files are used under condition: BUILD_X11 AND NOT BUILD_XFT
 XLIBXCFILES = \
+        xutf8/utf8Input.c \
         xutf8/utf8Utils.c \
         xutf8/utf8Wrap.c
 
@@ -354,7 +355,7 @@ XLIBFONTFILES = \
 XLIBXFTFILES = \
 	drivers/Xlib/Fl_Xlib_Graphics_Driver_font_xft.cxx \
 	drivers/Cairo/Fl_Cairo_Graphics_Driver.cxx
-	
+
 # This C file is used under condition: BUILD_WAYLAND
 WLCFILES = \
         xutf8/keysym2Ucs.c \
@@ -428,7 +429,7 @@ EXTRA_OBJECTS_WAYLAND =  ../libdecor/build/fl_libdecor.o ../libdecor/build/libde
   ../libdecor/build/fl_libdecor-plugins.o \
   xdg-decoration-protocol.o xdg-shell-protocol.o text-input-protocol.o \
   gtk-shell-protocol.o \
-  ../libdecor/build/cursor-settings.o ../libdecor/build/os-compatibility.o
+  ../libdecor/build/desktop-settings.o ../libdecor/build/os-compatibility.o
 EXTRA_OBJECTS_WAYLANDX11 = $(EXTRA_OBJECTS_WAYLAND)
 EXTRA_CXXFLAGS_WAYLAND = -I.
 EXTRA_CXXFLAGS_WAYLANDX11 = $(EXTRA_CXXFLAGS_WAYLAND)
@@ -458,7 +459,7 @@ $(LIBNAME): $(OBJECTS)
 
 libfltk.so.$(FL_DSO_VERSION): $(OBJECTS)
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(OBJECTS) $(LDLIBS) $(CAIROLIBS)
+	$(DSOCOMMAND) $@ $(OBJECTS) $(LDFLAGS) $(LDLIBS) $(CAIROLIBS)
 	$(RM) libfltk.so
 	$(LN) libfltk.so.$(FL_DSO_VERSION) libfltk.so
 
@@ -474,7 +475,7 @@ libfltk.$(FL_DSO_VERSION).dylib: $(OBJECTS)
 		-install_name $(libdir)/$@ \
 		-current_version $(FL_VERSION) \
 		-compatibility_version $(FL_DSO_VERSION).0 \
-		$(OBJECTS) $(LDLIBS) $(CAIROLIBS)
+		$(OBJECTS) $(LDFLAGS) $(LDLIBS) $(CAIROLIBS)
 	$(RM) libfltk.dylib
 	$(LN) libfltk.$(FL_DSO_VERSION).dylib libfltk.dylib
 
@@ -494,7 +495,7 @@ $(FLLIBNAME): $(FLOBJECTS)
 
 libfltk_forms.so.$(FL_DSO_VERSION): $(FLOBJECTS) libfltk.so.$(FL_DSO_VERSION)
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(FLOBJECTS) -L. -lfltk $(LDLIBS)
+	$(DSOCOMMAND) $@ $(FLOBJECTS) -L. -lfltk $(LDFLAGS) $(LDLIBS)
 	$(RM) libfltk_forms.so
 	$(LN) libfltk_forms.so.$(FL_DSO_VERSION) libfltk_forms.so
 
@@ -510,7 +511,7 @@ libfltk_forms.$(FL_DSO_VERSION).dylib: $(FLOBJECTS) libfltk.$(FL_DSO_VERSION).dy
 		-install_name $(libdir)/$@ \
 		-current_version $(FL_VERSION) \
 		-compatibility_version $(FL_ABI_VERSION) \
-		$(FLOBJECTS) -L. $(LDLIBS) -lfltk
+		$(FLOBJECTS) -L. $(LDFLAGS) $(LDLIBS) -lfltk
 	$(RM) libfltk_forms.dylib
 	$(LN) libfltk_forms.$(FL_DSO_VERSION).dylib libfltk_forms.dylib
 
@@ -530,7 +531,7 @@ $(GLLIBNAME): $(GLOBJECTS)
 
 libfltk_gl.so.$(FL_DSO_VERSION): $(GLOBJECTS) libfltk.so.$(FL_DSO_VERSION)
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(GLOBJECTS) -L. -lfltk $(LDLIBS) $(GLDLIBS)
+	$(DSOCOMMAND) $@ $(GLOBJECTS) -L. -lfltk $(LDFLAGS) $(LDLIBS) $(GLDLIBS)
 	$(RM) libfltk_gl.so
 	$(LN) libfltk_gl.so.$(FL_DSO_VERSION) libfltk_gl.so
 
@@ -566,7 +567,7 @@ $(IMGLIBNAME): $(IMGOBJECTS)
 
 libfltk_images.so.$(FL_DSO_VERSION): $(IMGOBJECTS) libfltk.so.$(FL_DSO_VERSION)
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(IMGOBJECTS) -L. $(IMAGELIBS) -lfltk $(LDLIBS)
+	$(DSOCOMMAND) $@ $(IMGOBJECTS) -L. $(IMAGELIBS) -lfltk $(LDFLAGS) $(LDLIBS)
 	$(RM) libfltk_images.so
 	$(LN) libfltk_images.so.$(FL_DSO_VERSION) libfltk_images.so
 
@@ -582,7 +583,7 @@ libfltk_images.$(FL_DSO_VERSION).dylib: $(IMGOBJECTS) libfltk.$(FL_DSO_VERSION).
 		-install_name $(libdir)/$@ \
 		-current_version $(FL_VERSION) \
 		-compatibility_version $(FL_ABI_VERSION) \
-		$(IMGOBJECTS)  -L. $(LDLIBS) $(IMAGELIBS) -lfltk
+		$(IMGOBJECTS)  -L. $(LDFLAGS) $(LDLIBS) $(IMAGELIBS) -lfltk
 	$(RM) libfltk_images.dylib
 	$(LN) libfltk_images.$(FL_DSO_VERSION).dylib libfltk_images.dylib
 

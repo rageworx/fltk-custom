@@ -37,7 +37,7 @@ const int FO_GAP = 10;
 const int FO_BROWSER_W = 200;
 const int FO_SCROLL_W = 16 + 4; //Fl::scrollbar_size() + Fl::box_dw(FL_DOWN_BOX);
 const int FO_CHOICE_W = 75;
-const int FO_OPTIONS_W = 380;
+const int FO_OPTIONS_W = 420;
 const int FO_BUTTON_W = 75;
 const int FO_WINDOW_W = FO_GAP + FO_BROWSER_W + FO_GAP + FO_SCROLL_W + FO_OPTIONS_W + FO_SCROLL_W + FO_GAP;
 const int FO_SYSTEM_X = FO_OPTIONS_W - 2*FO_GAP - 2*FO_CHOICE_W;
@@ -136,11 +136,17 @@ Fo_Option_Descr g_option_list[] = {
     "platfom. If disabled, the Fl_Native_File_Chooser class always uses FLTK's "
     "own file dialog (i.e., Fl_File_Chooser) even if GTK is available." },
   { FO_OPTION_BOOL, "Native File Chooser uses Zenity:",
-    Fl::OPTION_FNFC_USES_ZENITY, "OPTION_FNFC_USES_ZENITY", "UseZenity", true,
-    "Use Zenity file chooser instead of FLTK if available.",
-    "Meaningful for the Wayland/X11 platform only. When switched on (default),"
-    "the library uses a Zenity-based file dialog. When switched off, the GTK"
-    "file dialog is used instead." },
+    Fl::OPTION_FNFC_USES_ZENITY, "OPTION_FNFC_USES_ZENITY", "UseZenity", false,
+    "Fl_Native_File_Chooser uses the 'zenity' command if possible.",
+    "Meaningful for the Wayland/X11 platform only. When switched on, "
+    "the library uses a Zenity-based file dialog if command 'zenity' is available. "
+    "When switched off (default), command 'zenity' is not used."},
+  { FO_OPTION_BOOL, "Native File Chooser uses Kdialog:",
+    Fl::OPTION_FNFC_USES_KDIALOG, "OPTION_FNFC_USES_KDIALOG", "UseKdialog", false,
+    "Fl_Native_File_Chooser uses the 'kdialog' command if possible.",
+    "Meaningful for the Wayland/X11 platform. "
+    "When switched on, the library uses a kdialog-based file dialog if command 'kdialog' is "
+    "available. When switched off (default), command 'kdialog' is not used." },
   { FO_HEADLINE, "Print dialog Options" },
   { FO_OPTION_BOOL, "Print dialog uses GTK:",
     Fl::OPTION_PRINTER_USES_GTK, "OPTION_PRINTER_USES_GTK", "PrintUsesGTK", true,
@@ -156,6 +162,13 @@ Fo_Option_Descr g_option_list[] = {
     "If 'Transiently show scaling factor' is enabled, the library shows in a "
     "transient popup window the display scaling factor value when it is "
     "changed. If disabled, no such transient window is used." },
+  { FO_OPTION_BOOL, "Allow simple zoom-in shortcut:",
+    Fl::OPTION_SIMPLE_ZOOM_SHORTCUT, "OPTION_SIMPLE_ZOOM_SHORTCUT", "SimpleZoomShortcut", false,
+    "Fine tune the shortcut that triggers the zoom-in operation.",
+    "When the keyboard in use has '+' in the shifted position of its key, "
+    "pressing that key and ctrl triggers the zoom-in operation. "
+    "If disabled, the zoom-in operation requires the shift key to be pressed also "
+    "with such a keyboard." },
   // -- When adding new options here, please make sure that you also update
   // --   documentation.src/fltk-options.dox
   // -- and
@@ -676,6 +689,7 @@ int main(int argc,char **argv) {
   check_write_permissions(g_system_write_ok, g_user_write_ok);
 
   int i = 1;
+  Fl::args_to_utf8(argc, argv); // for MSYS2/MinGW
   int args_processed = Fl::args(argc, argv, i, read_command_line_args);
   if (args_processed < argc) {
     fprintf(stderr, "ERROR: Unrecognized command line option \"%s\".\n", argv[i]);

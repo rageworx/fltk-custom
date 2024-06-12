@@ -1,7 +1,7 @@
 //
 // Enumerations for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2023 by Bill Spitzak and others.
+// Copyright 1998-2024 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -509,7 +509,7 @@ enum Fl_Callback_Reason {
 #define FL_Menu         0xff67  ///< The menu key.
 #define FL_Help         0xff68  ///< The 'help' key on Mac keyboards
 #define FL_Num_Lock     0xff7f  ///< The num lock key.
-#define FL_KP           0xff80  ///< One of the keypad numbers; use FL_KP + n' for digit n.
+#define FL_KP           0xff80  ///< One of the keypad numbers; use FL_KP + 'n' for digit n.
 #define FL_KP_Enter     0xff8d  ///< The enter key on the keypad, same as Fl_KP+'\\r'.
 #define FL_KP_Last      0xffbd  ///< The last keypad key; use to range-check keypad.
 #define FL_F            0xffbd  ///< One of the function keys; use FL_F + n for function key n.
@@ -524,6 +524,7 @@ enum Fl_Callback_Reason {
 #define FL_Alt_L        0xffe9  ///< The left alt key.
 #define FL_Alt_R        0xffea  ///< The right alt key.
 #define FL_Delete       0xffff  ///< The delete key.
+#define FL_Alt_Gr       0xfe03  ///< The AltGr key on some international keyboards.
 
 // These use the Private Use Area (PUA) of the Basic Multilingual Plane
 // of Unicode. Guaranteed not to conflict with a proper Unicode character.
@@ -713,7 +714,8 @@ enum Fl_Boxtype { // boxtypes (if you change these you must also change fl_boxty
   _FL_FLAT_ROUND_UP_BOX,
   _FL_FLAT_ROUND_DOWN_BOX,
 #endif /// of FLTK_EXT_VERSION
-  FL_FREE_BOXTYPE		///< the first free box type for creation of new box types
+  FL_FREE_BOXTYPE,              ///< the first free box type for creation of new box types
+  FL_MAX_BOXTYPE = 255          ///< highest legal index for a box type
 };
 
 #ifndef FL_DOXYGEN
@@ -1191,19 +1193,22 @@ FL_EXPORT Fl_Color fl_inactive(Fl_Color c);
   with fl_contrast_mode(FL_CONTRAST_CUSTOM).
   Example:
   \code
-    Fl_Color my_contrast(Fl_Color fg, Fl_Color bg, Fl_Fontsize fs, int context) {
+    Fl_Color my_contrast(Fl_Color fg, Fl_Color bg, int context, int size) {
       // calculate contrast and ...
       return color;
     }
     // call this early in your main() program:
     fl_contrast_function(my_contrast);
     fl_contrast_mode(FL_CONTRAST_CUSTOM);
+    fl_contrast_level(50); // optional, must be called after fl_contrast_mode()
   \endcode
 
-  \see fl_contrast(Fl_Color, Fl_Color, Fl_Fontsize, int)
+  For parameters and types see fl_contrast(Fl_Color, Fl_Color, int, int).
+
+  \see fl_contrast(Fl_Color, Fl_Color, int, int)
   \see fl_contrast_mode(int)
 */
-typedef Fl_Color (Fl_Contrast_Function)(Fl_Color, Fl_Color, Fl_Fontsize, int);
+typedef Fl_Color (Fl_Contrast_Function)(Fl_Color, Fl_Color, int, int);
 
 FL_EXPORT void fl_contrast_function(Fl_Contrast_Function *f);
 
@@ -1225,7 +1230,7 @@ FL_EXPORT int fl_contrast_level();
 FL_EXPORT void fl_contrast_mode(int mode);
 FL_EXPORT int fl_contrast_mode();
 
-FL_EXPORT Fl_Color fl_contrast(Fl_Color fg, Fl_Color bg, Fl_Fontsize fs = 0, int context = 0);
+FL_EXPORT Fl_Color fl_contrast(Fl_Color fg, Fl_Color bg, int context = 0, int size = 0);
 
 FL_EXPORT double fl_lightness(Fl_Color color);
 FL_EXPORT double fl_luminance(Fl_Color color);

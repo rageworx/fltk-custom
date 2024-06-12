@@ -50,19 +50,7 @@ Fl_Window_Driver::~Fl_Window_Driver() {
   // empty
 }
 
-// accessors to Fl_Window's size_range stuff
-
-int Fl_Window_Driver::minw() {return pWindow->minw_;}
-int Fl_Window_Driver::minh() {return pWindow->minh_;}
-int Fl_Window_Driver::maxw() {return pWindow->maxw_;}
-int Fl_Window_Driver::maxh() {return pWindow->maxh_;}
-int Fl_Window_Driver::dw() {return pWindow->dw_;}
-int Fl_Window_Driver::dh() {return pWindow->dh_;}
-int Fl_Window_Driver::aspect() {return pWindow->aspect_;}
-unsigned char Fl_Window_Driver::size_range_set() {return pWindow->size_range_set_;}
-
-// other Fl_Window accessors
-
+// accessors to Fl_Window private stuff
 int Fl_Window_Driver::force_position() {return pWindow->force_position(); }
 void Fl_Window_Driver::force_position(int c) { pWindow->force_position(c); }
 void Fl_Window_Driver::x(int X) {pWindow->x(X); }
@@ -244,6 +232,7 @@ void Fl_Window_Driver::resize_after_scale_change(int ns, float old_f, float new_
     if (Y+H/2 < sY) Y = sY-H/2+d;
     else if (Y+H/2 > sY+sH-1) Y = sY+sH-1-H/2-d;
   }
+  size_range(); // adjust the OS-level boundary size values for the window (#880)
   is_a_rescale_ = true;
   pWindow->resize(X, Y, W, H);
   is_a_rescale_ = false;

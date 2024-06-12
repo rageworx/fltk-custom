@@ -1,7 +1,7 @@
 //
 // Input widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2023 by Bill Spitzak and others.
+// Copyright 1998-2024 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -52,9 +52,9 @@ const char *Fl_Input::copy_menu_text = "Copy";
 const char *Fl_Input::paste_menu_text = "Paste";
 
 static Fl_Menu_Item rmb_menu[] = {
-  { Fl_Input::cut_menu_text,    0, NULL, (void*)1 },
-  { Fl_Input::copy_menu_text,   0, NULL, (void*)2 },
-  { Fl_Input::paste_menu_text,  0, NULL, (void*)3 },
+  { NULL, 0, NULL, (void*)1 },
+  { NULL, 0, NULL, (void*)2 },
+  { NULL, 0, NULL, (void*)3 },
   { NULL }
 };
 
@@ -486,7 +486,7 @@ int Fl_Input::handle_key() {
  Simple function that determines if a character is a whitespace.
  \todo This function is not UTF-8-aware.
  */
-static int _isspace(char c) {
+static int fltk__isspace(char c) {
   return (c&128 || isspace(c));
 }
 
@@ -512,19 +512,24 @@ int Fl_Input::handle_rmb() {
         // if clicked to the right of the line or text end, clear the
         // selection and set the cursor at the end of the line
         insert_position(newpos, newpos);
-      } else if (_isspace(index(newpos))) {
+      } else if (fltk__isspace(index(newpos))) {
         // if clicked into a whitespace, select the entire whitespace
         oldpos = newpos;
-        while (oldpos > 0 && _isspace(index(oldpos-1))) oldpos--;
+        while (oldpos > 0 && fltk__isspace(index(oldpos-1))) oldpos--;
         oldmark = newpos+1;
-        while (oldmark < size() && _isspace(index(oldmark))) oldmark++;
+        while (oldmark < size() && fltk__isspace(index(oldmark))) oldmark++;
         insert_position(oldpos, oldmark);
       } else {
         // if clicked on a word, select the entire word
         insert_position(word_start(newpos), word_end(newpos));
       }
     }
-    if (readonly()) { // give only the menu options that make sense
+    // keep the menu labels current
+    rmb_menu[0].label(Fl_Input::cut_menu_text);
+    rmb_menu[1].label(Fl_Input::copy_menu_text);
+    rmb_menu[2].label(Fl_Input::paste_menu_text);
+    // give only the menu options that make sense
+    if (readonly()) {
       rmb_menu[0].deactivate(); // cut
       rmb_menu[2].deactivate(); // paste
     } else {

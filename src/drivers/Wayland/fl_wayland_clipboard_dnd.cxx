@@ -1,7 +1,7 @@
 //
 // Wayland-specific code for clipboard and drag-n-drop support.
 //
-// Copyright 1998-2023 by Bill Spitzak and others.
+// Copyright 1998-2024 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -111,6 +111,7 @@ static void data_source_handle_cancelled(void *data, struct wl_data_source *sour
       (struct Fl_Wayland_Graphics_Driver::wld_buffer *)
       wl_surface_get_user_data(dnd_icon);
     struct wld_window fake_window;
+    memset(&fake_window, 0, sizeof(fake_window));
     fake_window.buffer = off;
     Fl_Wayland_Graphics_Driver::buffer_release(&fake_window);
     wl_surface_destroy(dnd_icon);
@@ -296,6 +297,12 @@ static void data_offer_handle_offer(void *data, struct wl_data_offer *offer,
   } else if (strcmp(mime_type, wld_plain_text_clipboard) == 0 && !fl_selection_type[1]) {
     fl_selection_type[1] = Fl::clipboard_plain_text;
     fl_selection_offer_type = wld_plain_text_clipboard;
+  } else if (strcmp(mime_type, "text/plain") == 0 && !fl_selection_type[1]) {
+    fl_selection_type[1] = Fl::clipboard_plain_text;
+    fl_selection_offer_type = "text/plain";
+  } else if (strcmp(mime_type, "UTF8_STRING") == 0 && !fl_selection_type[1]) {
+    fl_selection_type[1] = Fl::clipboard_plain_text;
+    fl_selection_offer_type = "text/plain";
   }
 }
 

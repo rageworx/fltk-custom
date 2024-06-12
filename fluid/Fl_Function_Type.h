@@ -172,13 +172,21 @@ public:
 class Fl_DeclBlock_Type : public Fl_Type
 {
   typedef Fl_Type super;
-  const char* after;
-  char public_;
+  enum {
+    CODE_IN_HEADER = 1,
+    CODE_IN_SOURCE = 2,
+    STATIC_IN_HEADER = 4,
+    STATIC_IN_SOURCE = 8
+  };
+  const char* after; ///< code after all children of this block
+  int write_map_;     ///< see enum above
 
 public:
   Fl_DeclBlock_Type();
   ~Fl_DeclBlock_Type();
   Fl_Type *make(Strategy strategy) FL_OVERRIDE;
+  void write_static(Fd_Code_Writer& f) FL_OVERRIDE;
+  void write_static_after(Fd_Code_Writer& f) FL_OVERRIDE;
   void write_code1(Fd_Code_Writer& f) FL_OVERRIDE;
   void write_code2(Fd_Code_Writer& f) FL_OVERRIDE;
   void open() FL_OVERRIDE;
@@ -198,7 +206,6 @@ class Fl_Comment_Type : public Fl_Type
 {
   typedef Fl_Type super;
   char in_c_, in_h_, style_;
-  char title_buf[64];
 
 public:
   Fl_Comment_Type();
@@ -207,7 +214,6 @@ public:
   void write_code2(Fd_Code_Writer& f) FL_OVERRIDE { }
   void open() FL_OVERRIDE;
   const char *type_name() FL_OVERRIDE {return "comment";}
-  const char *title() FL_OVERRIDE; // string for browser
   void write_properties(Fd_Project_Writer &f) FL_OVERRIDE;
   void read_property(Fd_Project_Reader &f, const char *) FL_OVERRIDE;
   int is_public() const FL_OVERRIDE { return 1; }

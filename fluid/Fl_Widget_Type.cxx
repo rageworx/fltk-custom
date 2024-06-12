@@ -24,7 +24,7 @@
 #include "file.h"
 #include "code.h"
 #include "Fluid_Image.h"
-#include "alignment_panel.h"
+#include "settings_panel.h"
 #include "widget_panel.h"
 #include "undo.h"
 #include "mergeback.h"
@@ -151,8 +151,17 @@ void Fl_Widget_Type::setimage(Fluid_Image *i) {
   if (image) image->decrement();
   if (i) i->increment();
   image = i;
-  if (i) i->image(o);
-  else o->image(0);
+  if (i) {
+    i->image(o);
+    if (o->image() && (scale_image_w_ || scale_image_h_)) {
+      int iw = scale_image_w_>0 ? scale_image_w_ : o->image()->data_w();
+      int ih = scale_image_h_>0 ? scale_image_h_ : o->image()->data_h();
+      o->image()->scale(iw, ih, 0, 1);
+    }
+  } else {
+    o->image(0);
+    //scale_image_w_ = scale_image_h_ = 0;
+  }
   redraw();
 }
 
@@ -161,8 +170,17 @@ void Fl_Widget_Type::setinactive(Fluid_Image *i) {
   if (inactive) inactive->decrement();
   if (i) i->increment();
   inactive = i;
-  if (i) i->deimage(o);
-  else o->deimage(0);
+  if (i) {
+    i->deimage(o);
+    if (o->deimage()) {
+      int iw = scale_deimage_w_>0 ? scale_deimage_w_ : o->deimage()->data_w();
+      int ih = scale_deimage_h_>0 ? scale_deimage_h_ : o->deimage()->data_h();
+      o->deimage()->scale(iw, ih, 0, 1);
+    }
+  } else {
+    o->deimage(0);
+    //scale_deimage_w_ = scale_deimage_h_ = 0;
+  }
   redraw();
 }
 
@@ -188,6 +206,10 @@ Fl_Widget_Type::Fl_Widget_Type()
   compress_image_ = 1;
   bind_deimage_ = 0;
   compress_deimage_ = 1;
+  scale_image_w_ = 0;
+  scale_image_h_ = 0;
+  scale_deimage_w_ = 0;
+  scale_deimage_h_ = 0;
 }
 
 Fl_Widget_Type::~Fl_Widget_Type() {
@@ -255,7 +277,7 @@ void Fl_Widget_Type::redraw() {
 Fl_Type *sort(Fl_Type *parent) {
   Fl_Type *f,*n=0;
   for (f = parent ? parent->next : Fl_Type::first; ; f = n) {
-    if (!f || (parent && f->level <= parent->level)) return f;
+    if (!f || (parent && f->level <= parent->level)) break;
     n = sort(f);
     if (!f->selected || !f->is_true_widget()) continue;
     Fl_Widget* fw = ((Fl_Widget_Type*)f)->o;
@@ -268,7 +290,9 @@ Fl_Type *sort(Fl_Type *parent) {
     }
     if (g != f) f->move_before(g);
   }
-  parent->layout_widget();
+  if (parent)
+    parent->layout_widget();
+  return f;
 }
 
 ////////////////////////////////////////////////////////////////
@@ -359,7 +383,7 @@ void name_public_cb(Fl_Choice* i, void* v) {
 /* Treating UNDO for text widget.
 
  Goal: we want to continuously update the UI while the user is typing text
- (changing the label, in this case). Source View does deferred updates, and
+ (changing the label, in this case). Code View does deferred updates, and
  the widget browser and widget panel update on every keystroke. At the same
  time, we want to limit undo actions to few and logical units.
 
@@ -455,7 +479,7 @@ void image_browse_cb(Fl_Button* b, void *v) {
   }
 }
 
-void bind_image_cb(Fl_Button* b, void *v) {
+void bind_image_cb(Fl_Check_Button* b, void *v) {
   if (v == LOAD) {
     if (current_widget->is_widget() && !current_widget->is_a(ID_Window)) {
       b->activate();
@@ -475,11 +499,11 @@ void bind_image_cb(Fl_Button* b, void *v) {
   }
 }
 
-void compress_image_cb(Fl_Button* b, void *v) {
+void compress_image_cb(Fl_Check_Button* b, void *v) {
   if (v == LOAD) {
     if (current_widget->is_widget() && !current_widget->is_a(ID_Window)) {
       b->activate();
-      b->value(current_widget->compress_image_);
+      b->value(!current_widget->compress_image_);
     } else {
       b->deactivate();
     }
@@ -487,7 +511,7 @@ void compress_image_cb(Fl_Button* b, void *v) {
     int mod = 0;
     for (Fl_Type *o = Fl_Type::first; o; o = o->next) {
       if (o->selected && o->is_widget()) {
-        ((Fl_Widget_Type*)o)->compress_image_ = b->value();
+        ((Fl_Widget_Type*)o)->compress_image_ = !b->value();
         mod = 1;
       }
     }
@@ -537,7 +561,7 @@ void inactive_browse_cb(Fl_Button* b, void *v) {
   }
 }
 
-void bind_deimage_cb(Fl_Button* b, void *v) {
+void bind_deimage_cb(Fl_Check_Button* b, void *v) {
   if (v == LOAD) {
     if (current_widget->is_widget() && !current_widget->is_a(ID_Window)) {
       b->activate();
@@ -557,11 +581,11 @@ void bind_deimage_cb(Fl_Button* b, void *v) {
   }
 }
 
-void compress_deimage_cb(Fl_Button* b, void *v) {
+void compress_deimage_cb(Fl_Check_Button* b, void *v) {
   if (v == LOAD) {
     if (current_widget->is_widget() && !current_widget->is_a(ID_Window)) {
       b->activate();
-      b->value(current_widget->compress_deimage_);
+      b->value(!current_widget->compress_deimage_);
     } else {
       b->deactivate();
     }
@@ -569,7 +593,7 @@ void compress_deimage_cb(Fl_Button* b, void *v) {
     int mod = 0;
     for (Fl_Type *o = Fl_Type::first; o; o = o->next) {
       if (o->selected && o->is_widget()) {
-        ((Fl_Widget_Type*)o)->compress_deimage_ = b->value();
+        ((Fl_Widget_Type*)o)->compress_deimage_ = !b->value();
         mod = 1;
       }
     }
@@ -2703,7 +2727,7 @@ void Fl_Widget_Type::open() {
 extern void redraw_overlays();
 extern void check_redraw_corresponding_parent(Fl_Type*);
 extern void redraw_browser();
-extern void update_sourceview_position();
+extern void update_codeview_position();
 
 // Called when ui changes what objects are selected:
 // p is selected object, null for all deletions (we must throw away
@@ -2737,8 +2761,8 @@ void selection_changed(Fl_Type *p) {
   redraw_overlays();
   // load the panel with the new settings:
   load_panel();
-  // update the source viewer to show the code for the selected object
-  update_sourceview_position();
+  // update the code viewer to show the code for the selected object
+  update_codeview_position();
 }
 
 ////////////////////////////////////////////////////////////////
@@ -2973,17 +2997,18 @@ void Fl_Widget_Type::write_code1(Fd_Code_Writer& f) {
   if (label() && *label()) {
     f.write_c(", ");
     switch (g_project.i18n_type) {
-    case 0 : /* None */
+    case FD_I18N_NONE : /* None */
         f.write_cstring(label());
         break;
-    case 1 : /* GNU gettext */
+    case FD_I18N_GNU : /* GNU gettext */
         f.write_c("%s(", g_project.i18n_gnu_function.c_str());
         f.write_cstring(label());
         f.write_c(")");
         break;
-    case 2 : /* POSIX catgets */
-        f.write_c("catgets(%s,%s,%d,", g_project.i18n_pos_file[0] ? g_project.i18n_pos_file.c_str() : "_catalog",
-                g_project.i18n_pos_set.c_str(), msgnum());
+    case FD_I18N_POSIX : /* POSIX catgets */
+        f.write_c("catgets(%s,%s,%d,",
+                  g_project.i18n_pos_file.empty() ? "_catalog" : g_project.i18n_pos_file.c_str(),
+                  g_project.i18n_pos_set.c_str(), msgnum());
         f.write_cstring(label());
         f.write_c(")");
         break;
@@ -3046,17 +3071,19 @@ void Fl_Widget_Type::write_widget_code(Fd_Code_Writer& f) {
   if (tooltip() && *tooltip()) {
     f.write_c("%s%s->tooltip(",f.indent(), var);
     switch (g_project.i18n_type) {
-    case 0 : /* None */
+    case FD_I18N_NONE : /* None */
         f.write_cstring(tooltip());
         break;
-    case 1 : /* GNU gettext */
+    case FD_I18N_GNU : /* GNU gettext */
         f.write_c("%s(", g_project.i18n_gnu_function.c_str());
         f.write_cstring(tooltip());
         f.write_c(")");
         break;
-    case 2 : /* POSIX catgets */
-        f.write_c("catgets(%s,%s,%d,", g_project.i18n_pos_file[0] ? g_project.i18n_pos_file.c_str() : "_catalog",
-                g_project.i18n_pos_set.c_str(), msgnum() + 1);
+    case FD_I18N_POSIX : /* POSIX catgets */
+        f.write_c("catgets(%s,%s,%d,",
+                  g_project.i18n_pos_file.empty() ? "_catalog" : g_project.i18n_pos_file.c_str(),
+                  g_project.i18n_pos_set.c_str(),
+                  msgnum() + 1);
         f.write_cstring(tooltip());
         f.write_c(")");
         break;
@@ -3078,14 +3105,21 @@ void Fl_Widget_Type::write_widget_code(Fd_Code_Writer& f) {
   else if (is_a(ID_Value_Input)) shortcut = ((Fl_Value_Input*)o)->shortcut();
   else if (is_a(ID_Text_Display)) shortcut = ((Fl_Text_Display*)o)->shortcut();
   if (shortcut) {
-    if (g_project.use_FL_COMMAND && (shortcut & (FL_CTRL|FL_META))) {
-      f.write_c("%s%s->shortcut(", f.indent(), var);
-      if (shortcut & FL_COMMAND) f.write_c("FL_COMMAND|");
-      if (shortcut & FL_CONTROL) f.write_c("FL_CONTROL|");
-      f.write_c("0x%x);\n", shortcut & ~(FL_CTRL|FL_META));
+    int s = shortcut;
+    f.write_c("%s%s->shortcut(", f.indent(), var);
+    if (g_project.use_FL_COMMAND) {
+      if (s & FL_CTRL) { f.write_c("FL_CONTROL|"); s &= ~FL_CTRL; }
+      if (s & FL_META) { f.write_c("FL_COMMAND|"); s &= ~FL_META; }
     } else {
-      f.write_c("%s%s->shortcut(0x%x);\n", f.indent(), var, shortcut);
+      if (s & FL_CTRL) { f.write_c("FL_CTRL|"); s &= ~FL_CTRL; }
+      if (s & FL_META) { f.write_c("FL_META|"); s &= ~FL_META; }
     }
+    if (s & FL_SHIFT) { f.write_c("FL_SHIFT|"); s &= ~FL_SHIFT; }
+    if (s & FL_ALT) { f.write_c("FL_ALT|"); s &= ~FL_ALT; }
+    if ((s < 127) && isprint(s))
+      f.write_c("'%c');\n", s);
+    else
+      f.write_c("0x%x);\n", s);
   }
 
   if (is_a(ID_Button)) {
@@ -3107,8 +3141,34 @@ void Fl_Widget_Type::write_widget_code(Fd_Code_Writer& f) {
     write_color(f, "color", o->color());
   if (o->selection_color() != tplate->selection_color() || subclass())
     write_color(f, "selection_color", o->selection_color());
-  if (image) image->write_code(f, bind_image_, var);
-  if (inactive) inactive->write_code(f, bind_deimage_, var, 1);
+  if (image) {
+    image->write_code(f, bind_image_, var);
+    if (scale_image_w_ || scale_image_h_) {
+      f.write_c("%s%s->image()->scale(", f.indent(), var);
+      if (scale_image_w_>0)
+        f.write_c("%d, ", scale_image_w_);
+      else
+        f.write_c("%s->image()->data_w(), ", var);
+      if (scale_image_h_>0)
+        f.write_c("%d, 0, 1);\n", scale_image_h_);
+      else
+        f.write_c("%s->image()->data_h(), 0, 1);\n", var);
+    }
+  }
+  if (inactive) {
+    inactive->write_code(f, bind_deimage_, var, 1);
+    if (scale_deimage_w_ || scale_deimage_h_) {
+      f.write_c("%s%s->deimage()->scale(", f.indent(), var);
+      if (scale_deimage_w_>0)
+        f.write_c("%d, ", scale_deimage_w_);
+      else
+        f.write_c("%s->deimage()->data_w(), ", var);
+      if (scale_deimage_h_>0)
+        f.write_c("%d, 0, 1);\n", scale_deimage_h_);
+      else
+        f.write_c("%s->deimage()->data_h(), 0, 1);\n", var);
+    }
+  }
   if (o->labeltype() != tplate->labeltype() || subclass())
     f.write_c("%s%s->labeltype(FL_%s);\n", f.indent(), var,
             item_name(labeltypemenu, o->labeltype()));
@@ -3178,8 +3238,6 @@ void Fl_Widget_Type::write_widget_code(Fd_Code_Writer& f) {
     f.write_c("));\n");
   }
   Fl_When ww = o->when();
-  if (ww==FL_WHEN_NOT_CHANGED)
-    ww = FL_WHEN_NEVER;
   if (ww != tplate->when() || subclass())
     f.write_c("%s%s->when(%s);\n", f.indent(), var, when_symbol_name(ww));
   if (!o->visible() && o->parent())
@@ -3230,12 +3288,16 @@ void Fl_Widget_Type::write_properties(Fd_Project_Writer &f) {
     f.write_word(tooltip());
   }
   if (image_name() && *image_name()) {
+    if (scale_image_w_ || scale_image_h_)
+      f.write_string("scale_image {%d %d}", scale_image_w_, scale_image_h_);
     f.write_string("image");
     f.write_word(image_name());
     f.write_string("compress_image %d", compress_image_);
   }
   if (bind_image_) f.write_string("bind_image 1");
   if (inactive_name() && *inactive_name()) {
+    if (scale_deimage_w_ || scale_deimage_h_)
+      f.write_string("scale_deimage {%d %d}", scale_deimage_w_, scale_deimage_h_);
     f.write_string("deimage");
     f.write_word(inactive_name());
     f.write_string("compress_deimage %d", compress_deimage_);
@@ -3359,12 +3421,18 @@ void Fl_Widget_Type::read_property(Fd_Project_Reader &f, const char *c) {
     }
   } else if (!strcmp(c,"tooltip")) {
     tooltip(f.read_word());
+  } else if (!strcmp(c,"scale_image")) {
+    if (sscanf(f.read_word(),"%d %d",&w,&h) == 2) {
+      scale_image_w_ = w;
+      scale_image_h_ = h;
+    }
   } else if (!strcmp(c,"image")) {
     image_name(f.read_word());
     // starting in 2023, `image` is always followed by `compress_image`
     // the code below is for compatibility with older .fl files
     const char *ext = fl_filename_ext(image_name_);
     if (   strcmp(ext, ".jpg")
+        && strcmp(ext, ".png")
         && strcmp(ext, ".svg")
         && strcmp(ext, ".svgz"))
       compress_image_ = 0; // if it is neither of those, default to uncompressed
@@ -3372,12 +3440,18 @@ void Fl_Widget_Type::read_property(Fd_Project_Reader &f, const char *c) {
     bind_image_ = (int)atol(f.read_word());
   } else if (!strcmp(c,"compress_image")) {
     compress_image_ = (int)atol(f.read_word());
+  } else if (!strcmp(c,"scale_deimage")) {
+    if (sscanf(f.read_word(),"%d %d",&w,&h) == 2) {
+      scale_deimage_w_ = w;
+      scale_deimage_h_ = h;
+    }
   } else if (!strcmp(c,"deimage")) {
     inactive_name(f.read_word());
     // starting in 2023, `deimage` is always followed by `compress_deimage`
     // the code below is for compatibility with older .fl files
     const char *ext = fl_filename_ext(inactive_name_);
     if (   strcmp(ext, ".jpg")
+        && strcmp(ext, ".png")
         && strcmp(ext, ".svg")
         && strcmp(ext, ".svgz"))
       compress_deimage_ = 0; // if it is neither of those, default to uncompressed
@@ -3657,9 +3731,9 @@ void Fl_Widget_Type::copy_properties() {
   if (!live_widget)
     return;
 
-  Fl_Font ff;
-  int fs;
-  Fl_Color fc;
+  Fl_Font ff = 0;
+  int fs = 0;
+  Fl_Color fc = 0;
   textstuff(0, ff, fs, fc);
 
   // copy all attributes common to all widget types

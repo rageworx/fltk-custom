@@ -319,20 +319,21 @@ public:
    */
   void scrollbar_align(Fl_Align a) { scrollbar_align_ = a; }
 
-#ifdef FLTK_EXT_VERSION  
+#ifdef FLTK_EXT_VERSION
   /**
    Sets the scrollbar color.
    \param a new scrollbar color or colors
   */
   void scrollbar_color( Fl_Color c );
   void scrollbar_color( Fl_Color c1, Fl_Color c2 );
-  
-  /**
+
+   /**
    Sets the scrollbar box.
    \param a new scrollbar box type
   */
   void scrollbar_box( Fl_Boxtype b );
 #endif /// of FLTK_EXT_VERSION
+
 
   /**
    Moves the insert position to the beginning of the current word.
@@ -513,7 +514,7 @@ protected:
                    int leftClip, int rightClip) const;
 
   int handle_rmb(int readonly);
-  
+
   void draw_line_numbers(bool clearAll);
 
   void clear_rect(int style, int x, int y, int width, int height) const;

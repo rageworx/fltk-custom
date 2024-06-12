@@ -592,8 +592,9 @@ int Fl_Window::handle(int ev)
           // unmap because when the parent window is remapped we don't
           // want to reappear.
           if (visible()) {
-            Fl_Widget* p = parent(); for (;p->visible();p = p->parent()) {}
-            if (p->type() >= FL_WINDOW) break; // don't do the unmap
+            Fl_Widget* p = parent();
+            for (; p && p->visible(); p = p->parent()) { /* empty*/ }
+            if (p && p->as_window()) break; // don't do the unmap
           }
           pWindowDriver->unmap();
         }
@@ -605,7 +606,7 @@ int Fl_Window::handle(int ev)
 }
 
 /**
-  Sets the allowable range the user can resize this window to.
+  Sets the allowable range to which the user can resize this window.
 
   We recommend to call size_range() if you have a resizable() widget
   in a main window, and to call it after setting the resizable() and
@@ -674,6 +675,30 @@ void Fl_Window::size_range(int minWidth, int minHeight,
   aspect_         = aspectRatio;
   size_range_set_ = 1;
   pWindowDriver->size_range();  // platform specific stuff
+}
+
+/**
+ Gets the allowable range to which the user can resize this window.
+
+ \param[out] minWidth, minHeight, maxWidth, maxHeight, deltaX, deltaY, aspectRatio
+    are all pointers to integers that will receive the current respective value
+    during the call. Every pointer can be NULL if that value is not needed.
+ \retval 0 if size range not set
+ \retval 1 if the size range was explicitly set by a call to Fl_Window::size_range()
+    or has been calculated
+ \see Fl_Window::size_range(int minWidth, int minHeight, int maxWidth, int maxHeight, int deltaX, int deltaY, int aspectRatio)
+ */
+uchar Fl_Window::get_size_range(int *minWidth, int *minHeight,
+                                int *maxWidth, int *maxHeight,
+                                int *deltaX, int *deltaY, int *aspectRatio) {
+  if (minWidth) *minWidth = minw_;
+  if (minHeight) *minHeight = minh_;
+  if (maxWidth) *maxWidth = maxw_;
+  if (maxHeight) *maxHeight = maxh_;
+  if (deltaX) *deltaX = dw_;
+  if (deltaY) *deltaY = dh_;
+  if (aspectRatio) *aspectRatio = aspect_;
+  return size_range_set_;
 }
 
 /**
@@ -773,7 +798,7 @@ void Fl_Window::default_size_range() {
 
   // Clip the resizable() widget to the window
 
-  int L = r->x();
+  int L = (r == this ? 0 : r->x());
   int R = L + r->w();
   if (R < 0 || L > w()) R = L; // outside the window
   else {
@@ -782,7 +807,7 @@ void Fl_Window::default_size_range() {
   }
   int rw = R - L;
 
-  int T = r->y();
+  int T = (r == this ? 0 : r->y());
   int B = T + r->h();
   if (B < 0 || T > h()) B = T; // outside the window
   else {
@@ -931,7 +956,7 @@ fl_uintptr_t Fl_Window::os_id() { return pWindowDriver->os_id();}
  \see Fl_Window::un_maximize(), Fl_Window::maximize_active()
  */
 void Fl_Window::maximize() {
-  if (!shown() || parent() || !resizable() || maximize_active()) return;
+  if (!shown() || parent() || !is_resizable() || maximize_active()) return;
   set_flag(MAXIMIZED);
   if (border()) pWindowDriver->maximize();
   else pWindowDriver->Fl_Window_Driver::maximize();
@@ -942,7 +967,7 @@ void Fl_Window::maximize() {
  \see Fl_Window::maximize()
 */
 void Fl_Window::un_maximize() {
-  if (!shown() || parent() || !resizable() || !maximize_active()) return;
+  if (!shown() || parent() || !is_resizable() || !maximize_active()) return;
   clear_flag(MAXIMIZED);
   if (border()) pWindowDriver->un_maximize();
   else pWindowDriver->Fl_Window_Driver::un_maximize();
@@ -951,4 +976,12 @@ void Fl_Window::un_maximize() {
 void Fl_Window::is_maximized_(bool b) {
   if (b) set_flag(MAXIMIZED);
   else clear_flag(MAXIMIZED);
+}
+
+/** Allow this subwindow to expand outside the area of its parent window.
+ This is presently implemented only for the Wayland platform to help support window docking.
+ \since 1.4.0
+*/
+void Fl_Window::allow_expand_outside_parent() {
+  if (parent()) pWindowDriver->allow_expand_outside_parent();
 }

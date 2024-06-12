@@ -46,6 +46,8 @@ private:
   void swap_buffers() FL_OVERRIDE;
   void resize(int is_a_resize, int w, int h) FL_OVERRIDE;
   char swap_type() FL_OVERRIDE;
+  void swap_interval(int) FL_OVERRIDE;
+  int swap_interval() const FL_OVERRIDE;
   Fl_Gl_Choice *find(int m, const int *alistp) FL_OVERRIDE;
   GLContext create_gl_context(Fl_Window* window, const Fl_Gl_Choice* g) FL_OVERRIDE;
   void set_gl_context(Fl_Window* w, GLContext context) FL_OVERRIDE;
@@ -54,8 +56,6 @@ private:
   void redraw_overlay() FL_OVERRIDE;
   void gl_start() FL_OVERRIDE;
   void gl_visual(Fl_Gl_Choice *c) FL_OVERRIDE;
-  char *alpha_mask_for_string(
-      const char *str, int n, int w, int h, Fl_Fontsize fs) FL_OVERRIDE;
   void init();
 public:
   //virtual bool need_scissor() { return true; } // CONTROL_LEAKING_SUB_GL_WINDOWS

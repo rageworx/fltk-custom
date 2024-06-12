@@ -25,7 +25,7 @@
 #include "fluid.h"
 #include "widget_browser.h"
 #include "undo.h"
-#include "alignment_panel.h"
+#include "settings_panel.h"
 #include "file.h"
 #include "code.h"
 #include "widget_panel.h"
@@ -73,19 +73,19 @@ void i18n_type_cb(Fl_Choice *c, void *v) {
     c->value(g_project.i18n_type);
   } else {
     undo_checkpoint();
-    g_project.i18n_type = c->value();
+    g_project.i18n_type = static_cast<Fd_I18n_Type>(c->value());
     set_modflag(1);
   }
   switch (g_project.i18n_type) {
-  case 0 : /* None */
+  case FD_I18N_NONE : /* None */
       i18n_gnu_group->hide();
       i18n_posix_group->hide();
       break;
-  case 1 : /* GNU gettext */
+  case FD_I18N_GNU : /* GNU gettext */
       i18n_gnu_group->show();
       i18n_posix_group->hide();
       break;
-  case 2 : /* POSIX cat */
+  case FD_I18N_POSIX : /* POSIX cat */
       i18n_gnu_group->hide();
       i18n_posix_group->show();
       break;
@@ -322,7 +322,7 @@ uchar *Fl_Window_Type::read_image(int &ww, int &hh) {
 }
 
 void Fl_Window_Type::ideal_size(int &w, int &h) {
-  w = 480, h = 320;
+  w = 480; h = 320;
   if (main_window) {
     int sx, sy, sw, sh;
     Fl_Window *win = main_window;
@@ -1519,7 +1519,7 @@ void Fl_Widget_Class_Type::write_code2(Fd_Code_Writer& f) {
 // live mode support
 
 Fl_Widget *Fl_Window_Type::enter_live_mode(int) {
-  Fl_Window *win = new Fl_Window(o->x(), o->y(), o->w(), o->h());
+  Fl_Window *win = new Fl_Window(10, 10, o->w(), o->h());
   return propagate_live_mode(win);
 }
 

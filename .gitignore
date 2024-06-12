@@ -10,7 +10,7 @@
 *.0
 **/.DS_Store
 
-# CMake build artifacts if built in source - not recommended, but anyway
+# CMake build artifacts if built in source - strongly discouraged!
 
 bin/
 **/cmake_install.cmake

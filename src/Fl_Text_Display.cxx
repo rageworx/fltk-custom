@@ -85,6 +85,13 @@ static int scroll_amount = 0;
 static int scroll_y = 0;
 static int scroll_x = 0;
 
+static Fl_Menu_Item rmb_menu[] = {
+  { NULL, 0, NULL, (void*)1 },
+  { NULL, 0, NULL, (void*)2 },
+  { NULL, 0, NULL, (void*)3 },
+  { NULL }
+};
+
 // CET - FIXME
 #define TMPFONTWIDTH 6
 
@@ -441,7 +448,8 @@ void Fl_Text_Display::highlight_data(Fl_Text_Buffer *styleBuffer,
   mHighlightCBArg = cbArg;
   mColumnScale = 0;
 
-  mStyleBuffer->canUndo(0);
+  if (mStyleBuffer)
+    mStyleBuffer->canUndo(0);
   damage(FL_DAMAGE_EXPOSE);
 }
 
@@ -4116,12 +4124,6 @@ void Fl_Text_Display::scroll_timer_cb(void *user_data) {
   Fl::repeat_timeout(.1, scroll_timer_cb, user_data);
 }
 
-static Fl_Menu_Item rmb_menu[] = {
-  { Fl_Input::cut_menu_text,    0, NULL, (void*)1 },
-  { Fl_Input::copy_menu_text,   0, NULL, (void*)2 },
-  { Fl_Input::paste_menu_text,  0, NULL, (void*)3 },
-  { NULL }
-};
 
 /** Handle right mouse button down events.
  \return 0 for no op, 1 to cut, 2 to copy, 3 to paste
@@ -4146,7 +4148,12 @@ int Fl_Text_Display::handle_rmb(int readonly) {
       txtbuf->select(txtbuf->word_start(newpos), txtbuf->word_end(newpos));
     }
   }
-  if (readonly) { // give only the menu options that make sense
+  // keep the menu labels current
+  rmb_menu[0].label(Fl_Input::cut_menu_text);
+  rmb_menu[1].label(Fl_Input::copy_menu_text);
+  rmb_menu[2].label(Fl_Input::paste_menu_text);
+  // give only the menu options that make sense
+  if (readonly) {
     rmb_menu[0].deactivate(); // cut
     rmb_menu[2].deactivate(); // paste
   } else {
@@ -4169,7 +4176,7 @@ int Fl_Text_Display::handle(int event) {
   if (!Fl::event_inside(text_area.x, text_area.y, text_area.w, text_area.h) &&
       !dragging && event != FL_LEAVE && event != FL_ENTER &&
       event != FL_MOVE && event != FL_FOCUS && event != FL_UNFOCUS &&
-      event != FL_KEYBOARD && event != FL_KEYUP) {
+      event != FL_KEYBOARD && event != FL_KEYUP && event != FL_MOUSEWHEEL) {
     return Fl_Group::handle(event);
   }
 
@@ -4316,6 +4323,7 @@ int Fl_Text_Display::handle(int event) {
           buffer()->primary_selection()->includes(dragPos) && !(Fl::event_state()&FL_SHIFT) ) {
         buffer()->unselect(); // clicking in the selection: unselect and move cursor
         insert_position(dragPos);
+        dragType = DRAG_CHAR;
         return 1;
       } else if (Fl::event_clicks() == DRAG_LINE && Fl::event_button() == FL_LEFT_MOUSE) {
         buffer()->select(buffer()->line_start(dragPos), buffer()->next_char(buffer()->line_end(dragPos)));
@@ -4343,8 +4351,20 @@ int Fl_Text_Display::handle(int event) {
     }
 
     case FL_MOUSEWHEEL:
-      if (Fl::event_dy()) return mVScrollBar->handle(event);
-      else return mHScrollBar->handle(event);
+      if (Fl::e_dy && mVScrollBar->visible()) {
+        // Issue #879
+        Fl_Scrollbar *vs = mVScrollBar;
+        if ((Fl::e_dy < 0) && (vs->value() == int(vs->minimum()))) return 0;  // hit top? ignore
+        if ((Fl::e_dy > 0) && (vs->value() == int(vs->maximum()))) return 0;  // hit bot? ignore
+        return vs->handle(event);
+      } else if (Fl::e_dx && mHScrollBar->visible()) {
+        // Issue #879
+        Fl_Scrollbar *hs = mHScrollBar;
+        if ((Fl::e_dx < 0) && (hs->value() == int(hs->minimum()))) return 0;  // hit left? ignore
+        if ((Fl::e_dx > 0) && (hs->value() == int(hs->maximum()))) return 0;  // hit right? ignore
+        return hs->handle(event);
+      }
+      return 0;
 
     case FL_UNFOCUS:
       if (active_r() && window()) window()->cursor(FL_CURSOR_DEFAULT);
