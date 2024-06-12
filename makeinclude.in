@@ -27,7 +27,7 @@ FLTK_VERSION		= @FLTK_VERSION@
 # FLTK configuration options: BUILD = { WIN | OSX | X11 | XFT | CAIROXLIB | WAYLANDX11 | WAYLAND }
 
 BUILD		= @BUILD@
-UNAME            = @UNAME@
+UNAME           = @UNAME@
 
 # Standard configure variables
 
@@ -88,6 +88,9 @@ FLLIBBASENAME	= @FLLIBBASENAME@
 GLLIBBASENAME	= @GLLIBBASENAME@
 IMGLIBBASENAME	= @IMGLIBBASENAME@
 CAIROLIBBASENAME= @CAIROLIBBASENAME@
+
+# Test programs (optional, --disable-test):
+TESTDIR		= @TESTDIR@
 
 # libraries to link with:
 AUDIOLIBS	= @AUDIOLIBS@

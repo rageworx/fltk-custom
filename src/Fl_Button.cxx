@@ -174,10 +174,10 @@ int Fl_Button::handle(int event) {
             set_changed();
             if (when() & FL_WHEN_CHANGED)
               do_callback(FL_REASON_CHANGED);
-            else if (when() & FL_WHEN_RELEASE) 
+            else if (when() & FL_WHEN_RELEASE)
               do_callback(FL_REASON_RELEASED);
           } else {
-            if (when() & FL_WHEN_NOT_CHANGED) 
+            if (when() & FL_WHEN_NOT_CHANGED)
               do_callback(FL_REASON_SELECTED);
           }
         } else if (type() == FL_TOGGLE_BUTTON) {
@@ -260,11 +260,11 @@ void Fl_Button::key_release_timeout(void *d)
  */
 Fl_Button::Fl_Button(int X, int Y, int W, int H, const char *L)
 : Fl_Widget(X,Y,W,H,L),
-  shortcut_(0),
-  value_(0),
-  oldval(0),
-  down_box_(FL_NO_BOX),
-  compact_(0)
+shortcut_(0),
+value_(0),
+oldval(0),
+down_box_(FL_NO_BOX),
+compact_(0)
 {
   box(FL_UP_BOX);
   set_flag(SHORTCUT_LABEL);

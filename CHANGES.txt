@@ -1,4 +1,4 @@
-Changes in FLTK 1.4.0                            Released: ??? ?? 2022
+Changes in FLTK 1.4.0                            Released: Feb ?? 2024
 
   General Information about this Release
 
@@ -9,13 +9,17 @@ Changes in FLTK 1.4.0                            Released: ??? ?? 2022
     CMake can be used to generate Makefiles, IDE project files, and
     several other build systems by using different "generators" provided
     by CMake (for instance Ninja, CodeBlocks, Eclipse, KDevelop3, Xcode, etc.).
-    See README.CMake.txt for more information.
+    FLTK uses "Modern CMake" since release 1.4.0 which simplifies user
+    project build systems significantly.
+    See README.CMake.txt and documentation chapter "Migrating Code from
+    FLTK 1.3 to 1.4" for more information.
 
   - autoconf/configure is still supported by the FLTK team for backwards
-    compatibility with older systems that lack CMake support.
+    compatibility with older systems that lack CMake support. Support of
+    autoconf/configure will be dropped in FLTK 1.5.0.
 
   - FLTK 1.4 introduces a new platform, Wayland, available for recent Linux
-    distributions and FreeBSD. More information in README.Wayland.txt
+    distributions and FreeBSD. For details see README.Wayland.txt.
 
   New Features and Extensions
 
@@ -36,6 +40,8 @@ Changes in FLTK 1.4.0                            Released: ??? ?? 2022
     the starting scaling factor of all FLTK apps.
   - New Fl_Grid class to layout multiple columns and rows of widgets.
   - New Fl_Flex class to layout one row or one column of widgets.
+  - New Fl_Terminal widget supporting Unicode/utf-8, ANSI/xterm escape codes
+    with full RGB color control.
   - New Fl::keyboard_screen_scaling(0) call stops recognition of ctrl/+/-/0/
     keystrokes as scaling all windows of a screen.
   - New member function Fl_Image::scale(int width, int height) to set
@@ -50,8 +56,8 @@ Changes in FLTK 1.4.0                            Released: ??? ?? 2022
   - New Fl_SVG_Image class: gives support of scalable vector graphics images
     to FLTK using the nanosvg software.
   - New Fl_ICO_Image class to read Windows .ico icon files.
-  - New classes Fl_SVG_File_Surface and Fl_EPS_File_Surface to save any FLTK
-    graphics to SVG or EPS files, respectively.
+  - New classes Fl_PDF_File_Surface, Fl_SVG_File_Surface and Fl_EPS_File_Surface
+    to save any FLTK graphics to PDF, SVG or EPS files, respectively.
   - New member functions Fl_Window::maximize(), Fl_Window::un_maximize() and
     Fl_Window::maximize_active() to programmatically manage window maximization.
   - Fl_Button now supports a compact flag that visually groups closely set
@@ -99,6 +105,8 @@ Changes in FLTK 1.4.0                            Released: ??? ?? 2022
     hardware support is present (a backup mechanism is available in absence
     of this support). Thus, all text drawable in Fl_Window's can be drawn
     in Fl_Gl_Window's (STR#3450).
+  - New member function Fl_Menu_Bar::play_menu(const char *title) to
+    programmatically open a menu of a menubar.
   - New member functions Fl::program_should_quit(void),
     and Fl::program_should_quit(int) to support detection by the library
     of a request to terminate cleanly the program.
@@ -131,29 +139,36 @@ Changes in FLTK 1.4.0                            Released: ??? ?? 2022
   - New macros for easy function and method callbacks with multiple
     type safe arguments (see FL_METHOD_CALLBACK_1 etc.) .
 
+  Removed Features
+
+  - X11 platform: Support of XDBE, the configure option '--enable-xdbe'
+    and the CMake option 'OPTION_USE_XDBE' have been removed because XDBE
+    was unreliable and rarely supported by X servers. Double buffering
+    support in Fl_Double_Window is not affected.
+
   New Configuration Options (ABI Version)
 
   - X11 platform: Added support for drawing text with the pango library
     which allows to draw most scripts supported by Unicode, including CJK
     and right-to-left scripts. FLTK now outputs PostScript that draws
     those scripts in vectorial form. The corresponding CMake option is
-    OPTION_USE_PANGO. The corresponding configure option is --enable-pango.
+    FLTK_USE_PANGO. The corresponding configure option is --enable-pango.
     This option is OFF by default.
   - Configure option --enable-wayland allows to build the FLTK library for
     the new Wayland platform while remaining compatible with X11. The
-    corresponding CMake option is OPTION_USE_WAYLAND. This option is ON by default.
+    corresponding CMake option is FLTK_BACKEND_WAYLAND. This option is ON by default.
   - Configure options --enable-wayland --disable-x11 used together allow to
     build FLTK for the Wayland backend only (no x11 backend). Under CMake, the
-    equivalent is to set both OPTION_USE_WAYLAND and OPTION_WAYLAND_ONLY.
+    equivalent option is to set FLTK_BACKEND_WAYLAND=ON and FLTK_BACKEND_X11=OFF.
   - The new configure option --disable-gdiplus removes the possibility to draw
     antialiased lines and curves on the Windows platform. The corresponding CMake
-    option is OPTION_USE_GDIPLUS.
+    option is FLTK_GRAPHICS_GDIPLUS.
   - The library can be built without support for reading SVG images or writing
     graphics in SVG format using the --disable-svg configure option
-    or turning off OPTION_USE_SVG in CMake.
+    or turning off FLTK_OPTION_SVG in CMake.
   - The library can be built without support for PostScript, thus reducing
     its size, using the --disable-print configure option or turning off
-    OPTION_PRINT_SUPPORT in CMake. That makes classes Fl_PostScript_File_Device,
+    FLTK_OPTION_PRINT_SUPPORT in CMake. That makes classes Fl_PostScript_File_Device,
     Fl_EPS_File_Surface and Fl_Printer (under X11 platform only) ineffective.
   - FLTK's ABI version can be configured with 'configure' and CMake.
     See documentation in README.abi-version.txt.
@@ -161,7 +176,7 @@ Changes in FLTK 1.4.0                            Released: ??? ?? 2022
   Bundled libraries
 
   - Bundled image libraries have been upgraded to newer versions.
-    For details see README.bundled-libs.txt.
+    For details see documentation/src/bundled-libs.dox or online docs.
 
   1.4.0 ABI FEATURES
 
@@ -171,11 +186,9 @@ Changes in FLTK 1.4.0                            Released: ??? ?? 2022
   Other Improvements
 
   - (add new items here)
-  - Reported support of macOS 14.0 "Sonoma".
-  - Added support for macOS 13.0 "Ventura".
-  - Added support for macOS 12.0 "Monterey".
-  - Added support for macOS 11.0 "Big Sur" and for building for
-    the arm64 architecture.
+  - Added support of macOS 14.0 "Sonoma", 13.0 "Ventura", 12.0 "Monterey",
+    and 11.0 "Big Sur".
+  - Added macOS support for the arm64 architecture since 11.0 (Big Sur).
   - Added support for macOS 10.15 "Catalina"
   - Added support for macOS 10.14 "Mojave": all drawing to windows is done
     through "layer-backed views" when the app is linked to SDK 10.14.

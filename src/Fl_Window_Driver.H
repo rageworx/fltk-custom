@@ -2,7 +2,7 @@
 // A base class for platform specific window handling code
 // for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2010-2023 by Bill Spitzak and others.
+// Copyright 2010-2024 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -91,14 +91,6 @@ public:
   Fl_Group *parent() const { return pWindow->parent(); }
 
   // --- accessors to private window data
-  int minw();
-  int minh();
-  int maxw();
-  int maxh();
-  int dw();
-  int dh();
-  int aspect();
-  unsigned char size_range_set();
   int is_resizable() { return pWindow->is_resizable(); }
   void is_a_rescale(bool b) { is_a_rescale_ = b;}
   int fullscreen_screen_top();
@@ -129,6 +121,8 @@ public:
   }
 
   void resize_after_scale_change(int ns, float old_f, float new_f);
+  void set_popup_window() { pWindow->set_flag(Fl_Window::POPUP); }
+  bool popup_window() const {return pWindow->flags() & Fl_Window::POPUP;}
 
   // --- window data
   virtual int decorated_w() { return w(); } // default, should be overidden by driver
@@ -213,8 +207,7 @@ public:
   static void scroll_to_selected_item(Fl_Window *);
 
   virtual fl_uintptr_t os_id() { return 0; }
-  virtual void popup_window(bool v) {}
-  virtual bool popup_window() { return false; }
+  virtual void allow_expand_outside_parent() {}
 };
 
 #endif // FL_WINDOW_DRIVER_H

@@ -827,6 +827,34 @@ void Fl::add_handler(Fl_Event_Handler ha) {
 }
 
 
+/** Returns the last function installed by a call to Fl::add_handler() */
+Fl_Event_Handler Fl::last_handler() {
+  return handlers ? handlers->handle : NULL;
+}
+
+
+/** Install a function to parse unrecognized events with less priority than another function.
+ Install function \p ha to handle unrecognized events
+ giving it the priority just lower than that of function \p before
+ which was previously installed.
+ \see Fl::add_handler(Fl_Event_Handler)
+ \see Fl::last_handler()
+ */
+void Fl::add_handler(Fl_Event_Handler ha, Fl_Event_Handler before) {
+  if (!before) return Fl::add_handler(ha);
+  handler_link *l = handlers;
+  while (l) {
+    if (l->handle == before) {
+      handler_link *p = l->next, *q = new handler_link;
+      q->handle = ha;
+      q->next = p;
+      l->next = q;
+      return;
+    }
+    l = l->next;
+  }
+}
+
 /**
  Removes a previously added event handler.
  \see Fl::handle(int, Fl_Window*)
@@ -1933,9 +1961,6 @@ void Fl::clear_widget_pointer(Fl_Widget const *w)
 
  There should be a command line option interface.
 
- There should be an application that manages options system wide, per user, and
- per application.
-
  Example:
  \code
      if ( Fl::option(Fl::OPTION_ARROW_FOCUS) )
@@ -1944,8 +1969,7 @@ void Fl::clear_widget_pointer(Fl_Widget const *w)
          { ..off..  }
  \endcode
 
- \note As of FLTK 1.3.0, options can be managed within fluid, using the menu
- <i>Edit/Global FLTK Settings</i>.
+ \note Options can be managed with the \c fltk-options program, new in FLTK 1.4.0.
 
  \param opt which option
  \return true or false
@@ -1980,8 +2004,12 @@ bool Fl::option(Fl_Option opt)
 
       opt_prefs.get("ShowZoomFactor", tmp, 1);                  // default: on
       options_[OPTION_SHOW_SCALING] = tmp;
-      opt_prefs.get("UseZenity", tmp, 1);                      // default: on
+      opt_prefs.get("UseZenity", tmp, 0);                       // default: off
       options_[OPTION_FNFC_USES_ZENITY] = tmp;
+      opt_prefs.get("UseKdialog", tmp, 0);                      // default: off
+      options_[OPTION_FNFC_USES_KDIALOG] = tmp;
+      opt_prefs.get("SimpleZoomShortcut", tmp, 0);              // default: off
+      options_[OPTION_SIMPLE_ZOOM_SHORTCUT] = tmp;
     }
     { // next, check the user preferences
       // override system options only, if the option is set ( >= 0 )
@@ -2008,6 +2036,10 @@ bool Fl::option(Fl_Option opt)
       if (tmp >= 0) options_[OPTION_SHOW_SCALING] = tmp;
       opt_prefs.get("UseZenity", tmp, -1);
       if (tmp >= 0) options_[OPTION_FNFC_USES_ZENITY] = tmp;
+      opt_prefs.get("UseKdialog", tmp, -1);
+      if (tmp >= 0) options_[OPTION_FNFC_USES_KDIALOG] = tmp;
+      opt_prefs.get("SimpleZoomShortcut", tmp, -1);
+      if (tmp >= 0) options_[OPTION_SIMPLE_ZOOM_SHORTCUT] = tmp;
     }
     { // now, if the developer has registered this app, we could ask for per-application preferences
     }
@@ -2166,12 +2198,19 @@ void Fl::disable_im()
  Opens the display.
  Automatically called by the library when the first window is show()'n.
  Does nothing if the display is already open.
+ \note Requires ##include <FL/platform.H>
  */
 void fl_open_display()
 {
   Fl::screen_driver()->open_display();
 }
 
+/** Closes the connection to the windowing system when that's possible.
+You do \e not need to call this to exit, and in fact it is faster to not do so. It may be
+useful to call this if you want your program to continue without
+a GUI. You cannot open the display again, and cannot call any FLTK functions.
+ \note Requires ##include <FL/platform.H>
+*/
 void fl_close_display()
 {
   Fl::screen_driver()->close_display();
@@ -2238,8 +2277,13 @@ float Fl::screen_scale(int n) {
  Also sets the scale factor value of all windows mapped to screen number \p n, if any.
  */
 void Fl::screen_scale(int n, float factor) {
-  if (!Fl::screen_scaling_supported() || n < 0 || n >= Fl::screen_count()) return;
-  Fl::screen_driver()->rescale_all_windows_from_screen(n, factor);
+  Fl_Screen_Driver::APP_SCALING_CAPABILITY capability = Fl::screen_driver()->rescalable();
+  if (!capability || n < 0 || n >= Fl::screen_count()) return;
+  if (capability == Fl_Screen_Driver::SYSTEMWIDE_APP_SCALING) {
+    for (int s = 0; s < Fl::screen_count(); s++) {
+      Fl::screen_driver()->rescale_all_windows_from_screen(s, factor, factor);
+    }
+  } else Fl::screen_driver()->rescale_all_windows_from_screen(n, factor, factor);
 }
 
 /**

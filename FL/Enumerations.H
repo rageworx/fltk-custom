@@ -524,6 +524,7 @@ enum Fl_Callback_Reason {
 #define FL_Alt_L        0xffe9  ///< The left alt key.
 #define FL_Alt_R        0xffea  ///< The right alt key.
 #define FL_Delete       0xffff  ///< The delete key.
+#define FL_Alt_Gr       0xfe03  ///< The AltGr key on some international keyboards.
 
 // These use the Private Use Area (PUA) of the Basic Multilingual Plane
 // of Unicode. Guaranteed not to conflict with a proper Unicode character.
@@ -713,7 +714,8 @@ enum Fl_Boxtype { // boxtypes (if you change these you must also change fl_boxty
   _FL_FLAT_ROUND_UP_BOX,
   _FL_FLAT_ROUND_DOWN_BOX,
 #endif /// of FLTK_EXT_VERSION
-  FL_FREE_BOXTYPE               ///< the first free box type for creation of new box types
+  FL_FREE_BOXTYPE,              ///< the first free box type for creation of new box types
+  FL_MAX_BOXTYPE = 255          ///< highest legal index for a box type
 };
 
 #ifndef FL_DOXYGEN
@@ -785,6 +787,7 @@ extern FL_EXPORT Fl_Boxtype fl_define_FL_OXY_UP_BOX();
 #define FL_OXY_ROUND_DOWN_BOX (Fl_Boxtype)(fl_define_FL_OXY_UP_BOX()+9)
 #define FL_OXY_BUTTON_UP_BOX (Fl_Boxtype)(fl_define_FL_OXY_UP_BOX()+10)
 #define FL_OXY_BUTTON_DOWN_BOX (Fl_Boxtype)(fl_define_FL_OXY_UP_BOX()+11)
+
 #ifdef FLTK_EXT_VERSION
 extern FL_EXPORT Fl_Boxtype fl_define_FL_FLAT_UP_BOX();
 #define FL_FLAT_UP_BOX fl_define_FL_FLAT_UP_BOX()
@@ -1190,19 +1193,22 @@ FL_EXPORT Fl_Color fl_inactive(Fl_Color c);
   with fl_contrast_mode(FL_CONTRAST_CUSTOM).
   Example:
   \code
-    Fl_Color my_contrast(Fl_Color fg, Fl_Color bg, Fl_Fontsize fs, int context) {
+    Fl_Color my_contrast(Fl_Color fg, Fl_Color bg, int context, int size) {
       // calculate contrast and ...
       return color;
     }
     // call this early in your main() program:
     fl_contrast_function(my_contrast);
     fl_contrast_mode(FL_CONTRAST_CUSTOM);
+    fl_contrast_level(50); // optional, must be called after fl_contrast_mode()
   \endcode
 
-  \see fl_contrast(Fl_Color, Fl_Color, Fl_Fontsize, int)
+  For parameters and types see fl_contrast(Fl_Color, Fl_Color, int, int).
+
+  \see fl_contrast(Fl_Color, Fl_Color, int, int)
   \see fl_contrast_mode(int)
 */
-typedef Fl_Color (Fl_Contrast_Function)(Fl_Color, Fl_Color, Fl_Fontsize, int);
+typedef Fl_Color (Fl_Contrast_Function)(Fl_Color, Fl_Color, int, int);
 
 FL_EXPORT void fl_contrast_function(Fl_Contrast_Function *f);
 
@@ -1224,7 +1230,7 @@ FL_EXPORT int fl_contrast_level();
 FL_EXPORT void fl_contrast_mode(int mode);
 FL_EXPORT int fl_contrast_mode();
 
-FL_EXPORT Fl_Color fl_contrast(Fl_Color fg, Fl_Color bg, Fl_Fontsize fs = 0, int context = 0);
+FL_EXPORT Fl_Color fl_contrast(Fl_Color fg, Fl_Color bg, int context = 0, int size = 0);
 
 FL_EXPORT double fl_lightness(Fl_Color color);
 FL_EXPORT double fl_luminance(Fl_Color color);

@@ -474,6 +474,10 @@ int Fl_WinAPI_System_Driver::ready() {
   return select(0, &fdt[0], &fdt[1], &fdt[2], &t);
 }
 
+static void delayed_create_print_window(void *) {
+  Fl::remove_check(delayed_create_print_window);
+  fl_create_print_window();
+}
 
 void Fl_WinAPI_Screen_Driver::open_display_platform() {
   static char beenHereDoneThat = 0;
@@ -517,9 +521,19 @@ void Fl_WinAPI_Screen_Driver::open_display_platform() {
   }
   OleInitialize(0L);
   get_imm_module();
-  fl_create_print_window();
+  Fl::add_check(delayed_create_print_window);
 }
 
+
+void Fl_WinAPI_Screen_Driver::update_scaling_capability() {
+  scaling_capability = SYSTEMWIDE_APP_SCALING;
+  for (int ns = 1; ns < screen_count(); ns++) {
+    if (scale(ns) != scale(0)) {
+      scaling_capability = PER_SCREEN_APP_SCALING;
+      break;
+    }
+  }
+}
 
 void Fl_WinAPI_Screen_Driver::desktop_scale_factor() {
   typedef HRESULT(WINAPI * GetDpiForMonitor_type)(HMONITOR, int, UINT *, UINT *);
@@ -544,6 +558,7 @@ void Fl_WinAPI_Screen_Driver::desktop_scale_factor() {
     scale(ns, dpiX / 96.f);
     // fprintf(LOG, "desktop_scale_factor ns=%d factor=%.2f dpi=%.1f\n", ns, scale(ns), dpi[ns][0]);
   }
+  update_scaling_capability();
 }
 
 
@@ -1198,15 +1213,30 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
       case WM_DPICHANGED: { // 0x02E0, after display re-scaling and followed by WM_DISPLAYCHANGE
         if (is_dpi_aware && !Fl_WinAPI_Window_Driver::data_for_resize_window_between_screens_.busy) {
-          RECT r;
+          RECT r, *lParam_rect = (RECT*)lParam;
           Fl_WinAPI_Screen_Driver *sd = (Fl_WinAPI_Screen_Driver*)Fl::screen_driver();
-          int ns = Fl_Window_Driver::driver(window)->screen_num();
-          sd->dpi[ns][0] = sd->dpi[ns][1] = HIWORD(wParam);
-          float f = HIWORD(wParam) / 96.f;
-          GetClientRect(hWnd, &r);
-          float old_f = float(r.right) / window->w();
-          Fl::screen_driver()->scale(ns, f);
-          Fl_Window_Driver::driver(window)->resize_after_scale_change(ns, old_f, f);
+          int centerX = (lParam_rect->left + lParam_rect->right)/2;
+          int centerY = (lParam_rect->top + lParam_rect->bottom)/2;
+          int ns = sd->screen_num_unscaled(centerX, centerY);
+          int old_ns = Fl_Window_Driver::driver(window)->screen_num();
+          if (sd->dpi[ns][0] != HIWORD(wParam) && ns == old_ns) { // change DPI of a screen
+            sd->dpi[ns][0] = sd->dpi[ns][1] = HIWORD(wParam);
+            float f = HIWORD(wParam) / 96.f;
+            GetClientRect(hWnd, &r);
+            float old_f = float(r.right) / window->w();
+            Fl::screen_driver()->scale(ns, f);
+            Fl_Window_Driver::driver(window)->resize_after_scale_change(ns, old_f, f);
+            sd->update_scaling_capability();
+          } else if (ns != old_ns) {
+            // jump window with Windows+Shift+L|R-arrow to other screen with other DPI
+            float scale = Fl::screen_driver()->scale(ns);
+            int bt, bx, by;
+            Fl_WinAPI_Window_Driver *wdr = (Fl_WinAPI_Window_Driver*)Fl_Window_Driver::driver(window);
+            wdr->border_width_title_bar_height(bx, by, bt);
+            window->position(int(round(lParam_rect->left/scale)),
+                                        int(round((lParam_rect->top + bt)/scale)));
+            wdr->resize_after_scale_change(ns, scale, scale);
+          }
         }
         return 0;
       }
@@ -1608,16 +1638,21 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         //             sd->scale(olds),news, s,
         //             Fl_WinAPI_Window_Driver::data_for_resize_window_between_screens_.busy);
         // fflush(LOG);
-        if (olds != news && !window->parent()) {
-          if (s != sd->scale(olds) &&
-              !Fl_WinAPI_Window_Driver::data_for_resize_window_between_screens_.busy &&
-              window->user_data() != &Fl_WinAPI_Screen_Driver::transient_scale_display) {
-            Fl_WinAPI_Window_Driver::data_for_resize_window_between_screens_.busy = true;
-            Fl_WinAPI_Window_Driver::data_for_resize_window_between_screens_.screen = news;
-            Fl::add_timeout(1, Fl_WinAPI_Window_Driver::resize_after_screen_change, window);
+        if (!window->parent()) {
+          if (olds != news) {
+            if (s != sd->scale(olds) &&
+                !Fl_WinAPI_Window_Driver::data_for_resize_window_between_screens_.busy &&
+                window->user_data() != &Fl_WinAPI_Screen_Driver::transient_scale_display) {
+              Fl_WinAPI_Window_Driver::data_for_resize_window_between_screens_.busy = true;
+              Fl_WinAPI_Window_Driver::data_for_resize_window_between_screens_.screen = news;
+              Fl::add_timeout(1, Fl_WinAPI_Window_Driver::resize_after_screen_change, window);
+            }
+            else if (!Fl_WinAPI_Window_Driver::data_for_resize_window_between_screens_.busy)
+              wd->screen_num(news);
+          } else if (Fl_WinAPI_Window_Driver::data_for_resize_window_between_screens_.busy) {
+            Fl::remove_timeout(Fl_WinAPI_Window_Driver::resize_after_screen_change, window);
+            Fl_WinAPI_Window_Driver::data_for_resize_window_between_screens_.busy = false;
           }
-          else if (!Fl_WinAPI_Window_Driver::data_for_resize_window_between_screens_.busy)
-            wd->screen_num(news);
         }
         window->position(int(round(nx/scale)), int(round(ny/scale)));
         break;
@@ -1726,6 +1761,8 @@ int Fl_WinAPI_Window_Driver::fake_X_wm(int &X, int &Y, int &bt, int &bx, int &by
 
   int fallback = 1;
   float s = Fl::screen_driver()->scale(screen_num());
+  int minw, minh, maxw, maxh;
+  pWindow->get_size_range(&minw, &minh, &maxw, &maxh, NULL, NULL, NULL);
   if (!w->parent()) {
     if (fl_xid(w) || style) {
       // The block below calculates the window borders by requesting the
@@ -1770,7 +1807,7 @@ int Fl_WinAPI_Window_Driver::fake_X_wm(int &X, int &Y, int &bt, int &bx, int &by
         yoff = by + bt;
         dx = W - int(w->w() * s);
         dy = H - int(w->h() * s);
-        if (maxw() != minw() || maxh() != minh())
+        if (maxw != minw || maxh != minh)
           ret = 2;
         else
           ret = 1;
@@ -1781,7 +1818,7 @@ int Fl_WinAPI_Window_Driver::fake_X_wm(int &X, int &Y, int &bt, int &bx, int &by
   // This is the original (pre 1.1.7) routine to calculate window border sizes.
   if (fallback) {
     if (w->border() && !w->parent()) {
-      if (maxw() != minw() || maxh() != minh()) {
+      if (maxw != minw || maxh != minh) {
         ret = 2;
         bx = GetSystemMetrics(SM_CXSIZEFRAME);
         by = GetSystemMetrics(SM_CYSIZEFRAME);
@@ -2111,9 +2148,9 @@ void Fl_WinAPI_Window_Driver::makeWindow() {
       parent = fl_xid(w);
       if (!w->visible())
         showit = 0;
-//      https://www.fltk.org/str.php?L1115+P0+S-2+C0+I0+O0+E0+V1.+Q
+//      https://www.fltk.org/str.php?L1115
 //      Mike added the code below to fix issues with tooltips that unfortunately
-//      he does not specify in detail. After extensive testing, I can'tt see
+//      he does not specify in detail. After extensive testing, I can't see
 //      how this fixes things, but I do see how a window opened by a timer will
 //      link that window to the current popup, which is wrong.
 //      Matt, Apr 30th, 2023
@@ -2174,7 +2211,7 @@ void Fl_WinAPI_Window_Driver::makeWindow() {
   if (!fl_clipboard_notify_empty() && clipboard_wnd == NULL)
     fl_clipboard_notify_target((HWND)x->xid);
 
-  wait_for_expose_value = 1;
+  wait_for_expose_value = ((wp == 0 || hp == 0) && !w->border() && !w->parent() ? 0 : 1); // issue #985
   if (show_iconic()) {
     showit = 0;
     show_iconic(0);
@@ -2221,16 +2258,18 @@ void Fl_WinAPI_Window_Driver::set_minmax(LPMINMAXINFO minmax) {
   hd *= 2;
   hd += td;
 
+  int minw, minh, maxw, maxh;
+  pWindow->get_size_range(&minw, &minh, &maxw, &maxh, NULL, NULL, NULL);
   float s = Fl::screen_driver()->scale(screen_num());
-  minmax->ptMinTrackSize.x = LONG(s * minw()) + wd;
-  minmax->ptMinTrackSize.y = LONG(s * minh()) + hd;
-  if (maxw()) {
-    minmax->ptMaxTrackSize.x = LONG(s * maxw()) + wd;
-    minmax->ptMaxSize.x = LONG(s * maxw()) + wd;
+  minmax->ptMinTrackSize.x = LONG(s * minw) + wd;
+  minmax->ptMinTrackSize.y = LONG(s * minh) + hd;
+  if (maxw) {
+    minmax->ptMaxTrackSize.x = LONG(s * maxw) + wd;
+    minmax->ptMaxSize.x = LONG(s * maxw) + wd;
   }
-  if (maxh()) {
-    minmax->ptMaxTrackSize.y = LONG(s * maxh()) + hd;
-    minmax->ptMaxSize.y = LONG(s * maxh()) + hd;
+  if (maxh) {
+    minmax->ptMaxTrackSize.y = LONG(s * maxh) + hd;
+    minmax->ptMaxSize.y = LONG(s * maxh) + hd;
   }
 }
 

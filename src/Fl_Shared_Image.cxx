@@ -48,7 +48,7 @@ extern "C" {
 }
 
 
-/** 
+/**
  Returns the Fl_Shared_Image* array.
 
  \return a pointer to an array of shared image pointers, sorted by name and size
@@ -221,6 +221,11 @@ void Fl_Shared_Image::release() {
   int   i;      // Looping var...
   Fl_Shared_Image *the_original = NULL;
 
+#ifdef SHIM_DEBUG
+  printf("----> Fl_Shared_Image::release() %d %s %d %d\n", original_, name_, w(), h());
+  print_pool();
+#endif
+
   if (refcount_ <= 0) return; // assert(refcount_>0);
   refcount_ --;
   if (refcount_ > 0) return;
@@ -257,6 +262,11 @@ void Fl_Shared_Image::release() {
     images_       = 0;
     alloc_images_ = 0;
   }
+#ifdef SHIM_DEBUG
+  printf("<---- Fl_Shared_Image::release() %d %s %d %d\n", original_, name_, w(), h());
+  print_pool();
+  printf("\n");
+#endif
 
   // Release one reference count in the original image as well.
   if (the_original)
@@ -392,7 +402,7 @@ Fl_Image *Fl_Shared_Image::copy() const {
 /**
  Averages the colors in the image with the provided FLTK color value.
 
- This method changes the pixel data of this specific image. 
+ This method changes the pixel data of this specific image.
 
  \note It does not change any of the resized copies of this image, nor does it
  necessarily apply the color changes if this image is resized later.
@@ -686,3 +696,22 @@ void Fl_Shared_Image::remove_handler(Fl_Shared_Handler f) {
            (num_handlers_ - i) * sizeof(Fl_Shared_Handler ));
   }
 }
+
+#ifdef SHIM_DEBUG
+/**
+ Print the contents of the shared image pool.
+ */
+void Fl_Shared_Image::print_pool() {
+  printf("Fl_Shared_Image: %d images stored in a pool of %d\n", num_images_, alloc_images_);
+  for (int i=0; i<num_images_; i++) {
+    Fl_Shared_Image *img = images_[i];
+    printf("%3d: %3d(%c) %4dx%4d: %s\n",
+           i,
+           img->refcount_,
+           img->original_ ? 'O' : '_',
+           img->w(), img->h(),
+           img->name()
+           );
+  }
+}
+#endif
