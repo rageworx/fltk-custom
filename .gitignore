@@ -16,9 +16,7 @@ bin/
 **/cmake_install.cmake
 **/CMakeCache.txt
 **/CMakeFiles/
-etc/UseFLTK.cmake
 cmake_uninstall.cmake
-UseFLTK.cmake
 FLTK.sln
 FLTK-Targets.cmake
 FLTKConfig.cmake
@@ -48,6 +46,7 @@ etc/FLTKConfig.cmake
 /fltk.spec
 /makeinclude
 /TAGS
+/configure~
 
 # /FL
 
