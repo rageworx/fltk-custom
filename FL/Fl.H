@@ -287,8 +287,8 @@ public:
     /// When switched on and when the keyboard in use has '+' in the shifted position of its key,
     /// pressing that key and ctrl triggers the zoom-in operation.
     /// When switched off (default), the zoom-in operation requires that also the shift key is pressed.
-    /// Under macOS, this option has no effect because the OS itself generates ?= followed
-    /// by ?+ when pressing ? and the '=|+' key without pressing shift.
+    /// Under macOS, this option has no effect because the OS itself generates ⌘= followed
+    /// by ⌘+ when pressing ⌘ and the '=|+' key without pressing shift.
     OPTION_SIMPLE_ZOOM_SHORTCUT,
       // don't change this, leave it always as the last element
       /// For internal use only.
@@ -479,6 +479,7 @@ public:
   static void repeat_timeout(double t, Fl_Timeout_Handler cb, void *data = 0);
   static int  has_timeout(Fl_Timeout_Handler cb, void *data = 0);
   static void remove_timeout(Fl_Timeout_Handler cb, void *data = 0);
+  static int remove_next_timeout(Fl_Timeout_Handler cb, void *data = 0, void **data_return = 0);
 
   static void add_check(Fl_Timeout_Handler, void* = 0);
   static int  has_check(Fl_Timeout_Handler, void* = 0);
@@ -1219,7 +1220,7 @@ public:
   // boxtypes:
   static Fl_Box_Draw_F *get_boxtype(Fl_Boxtype);
   static void set_boxtype(Fl_Boxtype, Fl_Box_Draw_F*,
-                          uchar, uchar, uchar, uchar, 
+                          uchar, uchar, uchar, uchar,
                           Fl_Box_Draw_Focus_F* =NULL);
   static void set_boxtype(Fl_Boxtype, Fl_Boxtype from);
   static int box_dx(Fl_Boxtype);
@@ -1262,22 +1263,22 @@ public:
     caused an FL_RELEASE event, you can use Fl::event_button() instead.
     \return a bit mask value like { [FL_BUTTON1] | [FL_BUTTON2] | [FL_BUTTON3] }
   */
-  static int event_buttons() {return e_state&0x7f000000;}
+  static int event_buttons() {return e_state & FL_BUTTONS;}
   /**
     Returns non-zero if mouse button 1 is currently held down.
     For more details, see Fl::event_buttons().
   */
-  static int event_button1() {return e_state&FL_BUTTON1;}
+  static int event_button1() {return e_state & FL_BUTTON1;}
   /**
     Returns non-zero if button 2 is currently held down.
     For more details, see Fl::event_buttons().
   */
-  static int event_button2() {return e_state&FL_BUTTON2;}
+  static int event_button2() {return e_state & FL_BUTTON2;}
   /**
     Returns non-zero if button 3 is currently held down.
     For more details, see Fl::event_buttons().
   */
-  static int event_button3() {return e_state&FL_BUTTON3;}
+  static int event_button3() {return e_state & FL_BUTTON3;}
   /**   @} */
 
   /**

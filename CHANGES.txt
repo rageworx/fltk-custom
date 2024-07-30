@@ -186,8 +186,8 @@ Changes in FLTK 1.4.0                            Released: Feb ?? 2024
   Other Improvements
 
   - (add new items here)
-  - Added support of macOS 14.0 "Sonoma", 13.0 "Ventura", 12.0 "Monterey",
-    and 11.0 "Big Sur".
+  - Added support of macOS 15.0 beta "Sequoia", 14.0 "Sonoma",
+    13.0 "Ventura", 12.0 "Monterey", and 11.0 "Big Sur".
   - Added macOS support for the arm64 architecture since 11.0 (Big Sur).
   - Added support for macOS 10.15 "Catalina"
   - Added support for macOS 10.14 "Mojave": all drawing to windows is done
@@ -248,6 +248,8 @@ Changes in FLTK 1.4.0                            Released: Feb ?? 2024
     keyboard focus (STR #2989).
   - Renamed test/help.cxx demo program to test/help_dialog.cxx to avoid
     name conflict with CMake's auto-generated target 'help'.
+  - Fl_Menu_Bar: left and right arrow keys now wrap to the menu at the
+    other end of the menubar when pressed in the first (resp. last) menu.
   - Many documentation fixes, clarifications, and enhancements.
 
 

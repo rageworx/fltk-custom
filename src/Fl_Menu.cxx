@@ -694,15 +694,19 @@ static void setitem(int m, int n) {
 
 static int forward(int menu) { // go to next item in menu menu if possible
   menustate &pp = *p;
-  // Fl_Menu_Button can generate menu=-1. This line fixes it and selectes the first item.
+  // Fl_Menu_Button can generate menu=-1. This line fixes it and selects the first item.
   if (menu==-1)
     menu = 0;
   menuwindow &m = *(pp.p[menu]);
   int item = (menu == pp.menu_number) ? pp.item_number : m.selected;
-  while (++item < m.numitems) {
-    const Fl_Menu_Item* m1 = m.menu->next(item);
-    if (m1->activevisible()) {setitem(m1, menu, item); return 1;}
+  do {
+    while (++item < m.numitems) {
+      const Fl_Menu_Item* m1 = m.menu->next(item);
+      if (m1->activevisible()) {setitem(m1, menu, item); return 1;}
+    }
+    item = -1;
   }
+  while (pp.menubar && Fl::event_key() == FL_Right);
   return 0;
 }
 
@@ -713,11 +717,14 @@ static int backward(int menu) { // previous item in menu menu if possible
   menustate &pp = *p;
   menuwindow &m = *(pp.p[menu]);
   int item = (menu == pp.menu_number) ? pp.item_number : m.selected;
-  if (item < 0) item = m.numitems;
-  while (--item >= 0) {
-    const Fl_Menu_Item* m1 = m.menu->next(item);
-    if (m1->activevisible()) {setitem(m1, menu, item); return 1;}
+  do {
+    while (--item >= 0) {
+      const Fl_Menu_Item* m1 = m.menu->next(item);
+      if (m1->activevisible()) {setitem(m1, menu, item); return 1;}
+    }
+    item = m.numitems;
   }
+  while (pp.menubar && Fl::event_key() == FL_Left);
   return 0;
 }
 
@@ -812,7 +819,7 @@ int menuwindow::handle_part1(int e) {
       }
       return 1;
     case FL_Right:
-      if (pp.menubar && (pp.menu_number<=0 || (pp.menu_number==1 && pp.nummenus==2)))
+      if (pp.menubar && (pp.menu_number<=0 || (pp.menu_number == pp.nummenus-1)))
         forward(0);
       else if (pp.menu_number < pp.nummenus-1) forward(pp.menu_number+1);
       return 1;

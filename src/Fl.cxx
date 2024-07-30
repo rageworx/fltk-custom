@@ -1,7 +1,7 @@
 //
 // Main event handling code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2023 by Bill Spitzak and others.
+// Copyright 1998-2024 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -344,23 +344,68 @@ int Fl::has_timeout(Fl_Timeout_Handler cb, void *data) {
 }
 
 /**
-  Removes a timeout callback from the timer queue.
+  Remove one or more matching timeout callbacks from the timer queue.
 
-  This method removes all matching timeouts, not just the first one.
-  This may change in the future.
+  This method removes \b all matching timeouts, not just the first one.
 
   If the \p data argument is \p NULL (the default!) only the callback
   \p cb must match, i.e. all timer entries with this callback are removed.
 
   It is harmless to remove a timeout callback that no longer exists.
 
+  If you want to remove only the next matching timeout you can use
+  Fl::remove_next_timeout(Fl_Timeout_Handler cb, void *data, void **data_return)
+  (available since FLTK 1.4.0).
+
   \param[in]  cb    Timer callback to be removed (must match)
   \param[in]  data  Wildcard if NULL (default), must match otherwise
+
+  \see Fl::remove_next_timeout(Fl_Timeout_Handler cb, void *data, void **data_return)
 */
 void Fl::remove_timeout(Fl_Timeout_Handler cb, void *data) {
   Fl_Timeout::remove_timeout(cb, data);
 }
 
+
+/**
+  Remove the next matching timeout callback and return its \p data pointer.
+
+  This method removes only the next matching timeout and returns in
+  \p data_return (if non-NULL) the \p data member given when the timeout
+  was scheduled.
+
+  This method is useful if you remove a timeout before it is scheduled
+  and you need to get and use its data value, for instance to free() or
+  delete the data associated with the timeout.
+
+  This method returns non-zero if a matching timeout was found and zero
+  if no timeout matched the request.
+
+  If the return value is \c N \> 1 then there are N - 1 more matching
+  timeouts pending.
+
+  If you need to remove all timeouts with a particular callback \p cb
+  you must repeat this call until it returns 1 (all timeouts removed)
+  or zero (no matching timeout), whichever occurs first.
+
+
+  \param[in]    cb    Timer callback to be removed (must match)
+  \param[in]    data  Wildcard if NULL, must match otherwise
+  \param[inout] data_return  Pointer to (void *) to receive the data value
+
+  \return       non-zero if a timer was found and removed
+  \retval   0   no matching timer was found
+  \retval   1   the last matching timeout was found and removed
+  \retval  N>1  a matching timeout was removed and there are \n
+                (N - 1) matching timeouts pending
+
+  \see Fl::remove_timeout(Fl_Timeout_Handler cb, void *data)
+
+  \since 1.4.0
+*/
+int Fl::remove_next_timeout(Fl_Timeout_Handler cb, void *data, void **data_return) {
+  return Fl_Timeout::remove_next_timeout(cb, data, data_return);
+}
 
 
 ////////////////////////////////////////////////////////////////
@@ -1954,12 +1999,22 @@ void Fl::clear_widget_pointer(Fl_Widget const *w)
 /**
  \brief FLTK library options management.
 
- This function needs to be documented in more detail. It can be used for more
- optional settings, such as using a native file chooser instead of the FLTK one
+ Options provide a way for the user to modify the behavior of an FLTK
+ application. For example, clearing the `OPTION_SHOW_TOOLTIPS` will disable
+ tooltips for all FLTK applications.
+
+ Options are set by the user or the administrator on user or machine level.
+ In 1.3, FLUID has an Options dialog for that. In 1.4, there is an app named
+ `fltk-options` that can be used from the command line or as a GUI tool.
+ The machine level setting is read first, and the user setting can override
+ the machine setting.
+
+ This function is used throughout FLTK to quickly query the user's wishes.
+ There are options for using a native file chooser instead of the FLTK one
  wherever possible, disabling tooltips, disabling visible focus, disabling
  FLTK file chooser preview, etc. .
 
- There should be a command line option interface.
+ See `Fl::Fl_Option` for a list of available options.
 
  Example:
  \code
@@ -1969,12 +2024,14 @@ void Fl::clear_widget_pointer(Fl_Widget const *w)
          { ..off..  }
  \endcode
 
- \note Options can be managed with the \c fltk-options program, new in FLTK 1.4.0.
+ \note Options can be managed with the \c fltk-options program, new in
+ FLTK 1.4.0. In 1.3.x, options can be set in FLUID.
 
  \param opt which option
  \return true or false
  \see enum Fl::Fl_Option
  \see Fl::option(Fl_Option, bool)
+ \see fltk-options application in command line and GUI mode
 
  \since FLTK 1.3.0
  */
@@ -2053,7 +2110,12 @@ bool Fl::option(Fl_Option opt)
 /**
  \brief Override an option while the application is running.
 
- This function does not change any system or user settings.
+ Apps can override the machine settings and the user settings by calling
+ `Fl::option(option, bool)`. The override takes effect immediately for this
+ option for all widgets in the app for the life time of the app.
+
+ The override is not saved anywhere, and relaunching the app will restore the
+ old settings.
 
  Example:
  \code
@@ -2063,6 +2125,7 @@ bool Fl::option(Fl_Option opt)
 
  \param opt which option
  \param val set to true or false
+
  \see enum Fl::Fl_Option
  \see bool Fl::option(Fl_Option)
  */
@@ -2071,7 +2134,7 @@ void Fl::option(Fl_Option opt, bool val)
   if (opt<0 || opt>=OPTION_LAST)
     return;
   if (!options_read_) {
-    // first read this option, so we don't override our setting later
+    // make sure that the options_ array is filled in
     option(opt);
   }
   options_[opt] = val;
@@ -2198,7 +2261,7 @@ void Fl::disable_im()
  Opens the display.
  Automatically called by the library when the first window is show()'n.
  Does nothing if the display is already open.
- \note Requires ##include <FL/platform.H>
+ \note Requires \#include <FL/platform.H>
  */
 void fl_open_display()
 {
@@ -2209,7 +2272,7 @@ void fl_open_display()
 You do \e not need to call this to exit, and in fact it is faster to not do so. It may be
 useful to call this if you want your program to continue without
 a GUI. You cannot open the display again, and cannot call any FLTK functions.
- \note Requires ##include <FL/platform.H>
+ \note Requires \#include <FL/platform.H>
 */
 void fl_close_display()
 {
