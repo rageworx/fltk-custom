@@ -482,6 +482,7 @@ void Fl_Tile::move_intersection(int oldx, int oldy, int newx, int newy) {
   }
 }
 
+
 /**
  Drags the intersection at (\p oldx,\p oldy) to (\p newx,\p newy).
 
