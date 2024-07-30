@@ -4,32 +4,66 @@
 
  \tableofcontents
 
- The Fast Light User Interface Designer, or FLUID, is a graphical editor that
- can produce ready to compile C++ source code and header files.
+<!-- ---------------------------------------------------------------------- -->
 
- This user manual will introduce FLUID, starting with the installation process,
- an overview of the main application window, and how to compile and run a
- simple program. I will explain how to generate a more complex user interface
- with three short tutorial, followed by some advanced subject like creating
- integrated reusable widget classes. The appendices will sum up node types
- and code generation in more detail.
+ \image latex fluid-128.png "FLUID" width=3cm
+
+ FLUID, short for Fast Light User Interface Designer, is a graphical editor
+ capable of generating C++ source code and header files ready for compilation.
+ These files ultimately create an FLTK based graphical user interface
+ for an application.
+
+ The FLTK programming manual is available at https://www.fltk.org/documentation.php .
+
+ This manual provides instructions on launching FLUID as a command line tool
+ and integrating `.fl` project files into the application build process.
+ FLTK utilizes _CMake_, but other build systems and IDEs capable of running
+ external tools can also build applications based on FLUID.
+
+ The majority of the manual focuses on using FLUID as an interactive GUI
+ design tool. It covers an overview of windows, menu items, and dialog boxes,
+ detailing how to create visually appealing and consistent user experiences
+ through drag and drop functionality, a "what you see is what you get" editor,
+ and alignment tools. The \ref page_setting_dialog will detail the process of initiating
+ a new project, creating an alignment template, and incorporating
+ internationalization.
+
+ Several tutorials will explain how to generate small apps in FLUID alone,
+ and how to create more complex user interfaces, followed by some advanced
+ subjects like creating integrated reusable widget classes.
+
+ The appendices contain additional technical information for reference.
+
+<!-- ---------------------------------------------------------------------- -->
 
  \section introduction_workflow Workflow
 
- FLUID has two modes of operation. When started from the shell without command
- line arguments, or when launched from the desktop, FLUID will open in
- interactive mode.
+ FLUID stores user interface designs within `.fl` project files. These files
+ are transformed into a binary application through a multi-step process.
+ Initially, FLUID converts `.fl` files into C++ source and header files.
+ Subsequently, these files are compiled into object files, which are then
+ linked with other object files to form an executable binary.
+ FLUID-generated header files give access to UI elements from other C++ modules
+ within the project. FLUID can also generate forward declarations to
+ variables and callback functions that are defined and implemented in other
+ C++ modules.
 
- If FLUID is started from the command line with `-u`, `-c`, or `cs`, it will
- not open any user interface, but instead behave like any shell-only tool that
- can be easily integrated into Makefiles and build systems like CMake.
+ \image html fluid_flow_chart_800.png "FLUID Workflow"
+ \image latex fluid_flow_chart.png "FLUID Workflow"
 
- \image html fluid_flow_chart_800.png
- \image latex fluid_flow_chart.png "" width=10cm
+ Small applications can be fully designed and developed with FLUID alone.
+ Users have the option to include shell scripts in FLUID projects, enabling
+ them to directly call compilers and linkers to produce the binaries.
 
- FLUID organization
+ For medium-sized projects, a build system such as _CMake_ or an IDE
+ with integrated build setup is recommended. FLUID in interactive mode
+ can pre-generate C++ code files for direct compilation by the IDE.
 
- More details on the command line arguments of FLUID can be found
- in the chapter \ref page_build_integration .
+ In larger projects, FLUID projects frequently reference external resources
+ such as graphics, binary data, and internationalized text.
+ In such scenarios, it is very useful to distribute the `.fl` project files
+ instead of prebuilt source files. FLUID in command-line mode can then be
+ called as an external tool, dynamically generating C++ source code from all
+ external resources at build time.
 
  */

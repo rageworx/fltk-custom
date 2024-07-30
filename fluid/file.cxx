@@ -27,7 +27,7 @@
 #include "Fl_Widget_Type.h"
 #include "Fl_Grid_Type.h"
 #include "Fl_Window_Type.h"
-#include "alignment_panel.h"
+#include "settings_panel.h"
 #include "widget_browser.h"
 #include "shell_command.h"
 #include "code.h"
@@ -75,9 +75,9 @@ int read_file(const char *filename, int merge, Strategy strategy) {
     is used to implement copy and paste.
  \return 0 if the operation failed, 1 if it succeeded
  */
-int write_file(const char *filename, int selected_only, bool to_sourceview) {
+int write_file(const char *filename, int selected_only, bool to_codeview) {
   Fd_Project_Writer out;
-  return out.write_project(filename, selected_only, to_sourceview);
+  return out.write_project(filename, selected_only, to_codeview);
 }
 
 /**
@@ -283,7 +283,7 @@ Fl_Type *Fd_Project_Reader::read_children(Fl_Type *p, int merge, Strategy strate
         goto CONTINUE;
       }
       if (!strcmp(c,"i18n_type")) {
-        g_project.i18n_type = atoi(read_word());
+        g_project.i18n_type = static_cast<Fd_I18n_Type>(atoi(read_word()));
         goto CONTINUE;
       }
       if (!strcmp(c,"i18n_gnu_function")) {
@@ -303,16 +303,16 @@ Fl_Type *Fd_Project_Reader::read_children(Fl_Type *p, int merge, Strategy strate
         goto CONTINUE;
       }
       if (!strcmp(c,"i18n_include")) {
-        if (g_project.i18n_type == 1)
+        if (g_project.i18n_type == FD_I18N_GNU)
           g_project.i18n_gnu_include = read_word();
-        else if (g_project.i18n_type == 2)
+        else if (g_project.i18n_type == FD_I18N_POSIX)
           g_project.i18n_pos_include = read_word();
         goto CONTINUE;
       }
       if (!strcmp(c,"i18n_conditional")) {
-        if (g_project.i18n_type == 1)
+        if (g_project.i18n_type == FD_I18N_GNU)
           g_project.i18n_gnu_conditional = read_word();
-        else if (g_project.i18n_type == 2)
+        else if (g_project.i18n_type == FD_I18N_POSIX)
           g_project.i18n_pos_conditional = read_word();
         goto CONTINUE;
       }
@@ -780,7 +780,7 @@ void Fd_Project_Reader::read_fdesign() {
 Fd_Project_Writer::Fd_Project_Writer()
 : fout(NULL),
   needspace(0),
-  write_sourceview_(false)
+  write_codeview_(false)
 {
 }
 
@@ -824,11 +824,11 @@ int Fd_Project_Writer::close_write() {
  \param[in] filename create this file, and if it exists, overwrite it
  \param[in] selected_only write only the selected nodes in the widget_tree. This
             is used to implement copy and paste.
- \param[in] sv if set, this file will be used by SourceView
+ \param[in] sv if set, this file will be used by codeview
  \return 0 if the operation failed, 1 if it succeeded
  */
 int Fd_Project_Writer::write_project(const char *filename, int selected_only, bool sv) {
-  write_sourceview_ = sv;
+  write_codeview_ = sv;
   undo_suspend();
   if (!open_write(filename)) {
     undo_resume();
@@ -847,13 +847,15 @@ int Fd_Project_Writer::write_project(const char *filename, int selected_only, bo
   if (g_project.i18n_type) {
     write_string("\ni18n_type %d", g_project.i18n_type);
     switch (g_project.i18n_type) {
-      case 1 : /* GNU gettext */
+      case FD_I18N_NONE:
+        break;
+      case FD_I18N_GNU : /* GNU gettext */
         write_string("\ni18n_include"); write_word(g_project.i18n_gnu_include.c_str());
         write_string("\ni18n_conditional"); write_word(g_project.i18n_gnu_conditional.c_str());
         write_string("\ni18n_gnu_function"); write_word(g_project.i18n_gnu_function.c_str());
         write_string("\ni18n_gnu_static_function"); write_word(g_project.i18n_gnu_static_function.c_str());
         break;
-      case 2 : /* POSIX catgets */
+      case FD_I18N_POSIX : /* POSIX catgets */
         write_string("\ni18n_include"); write_word(g_project.i18n_pos_include.c_str());
         write_string("\ni18n_conditional"); write_word(g_project.i18n_pos_conditional.c_str());
         if (!g_project.i18n_pos_file.empty()) {

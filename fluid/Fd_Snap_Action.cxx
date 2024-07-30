@@ -17,7 +17,7 @@
 #include "Fd_Snap_Action.h"
 
 #include "Fl_Group_Type.h"
-#include "alignment_panel.h"
+#include "settings_panel.h"
 #include "shell_command.h"  // get and set Fl_String preferences
 #include "file.h"
 
@@ -30,7 +30,7 @@
 
 // TODO: warning if the user wants to change builtin layouts
 // TODO: move panel to global settings panel (move load & save to main pulldown, or to toolbox?)
-// INFO: how about a small tool box for quick preset selection and disabeling of individual snaps?
+// INFO: how about a small tool box for quick preset selection and disabling of individual snaps?
 
 void select_layout_suite_cb(Fl_Widget *, void *user_data);
 

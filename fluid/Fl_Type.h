@@ -1,7 +1,7 @@
 //
 // Widget type header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2023 by Bill Spitzak and others.
+// Copyright 1998-2024 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -130,7 +130,7 @@ public: // things that should not be public:
   Fl_Type *parent;
   /** This type is rendered "selected" in the tree browser. */
   char new_selected; // browser highlight
-  /** Backup storage for selection if an error accured during some operation
+  /** Backup storage for selection if an error occurred during some operation
    (see `haderror`). It seems that this is often confused with new_selected
    which seems to hold the true and visible selection state. */
   char selected; // copied here by selection_changed()
@@ -146,7 +146,7 @@ public: // things that should not be public:
   Fl_Type *factory;
   const char *callback_name(Fd_Code_Writer& f);
 
-  // text positions of this type in code, header, and project file (see SourceView)
+  // text positions of this type in code, header, and project file (see codeview)
   int code_static_start, code_static_end;
   int code1_start, code1_end;
   int code2_start, code2_end;
@@ -218,6 +218,7 @@ public:
 
   // write code, these are called in order:
   virtual void write_static(Fd_Code_Writer& f); // write static stuff to .c file
+  virtual void write_static_after(Fd_Code_Writer& f); // write static stuff after children
   virtual void write_code1(Fd_Code_Writer& f); // code and .h before children
   virtual void write_code2(Fd_Code_Writer& f); // code and .h after children
   void write_comment_h(Fd_Code_Writer& f, const char *ind=""); // write the commentary text into the header file
@@ -225,9 +226,9 @@ public:
   void write_comment_inline_c(Fd_Code_Writer& f, const char *ind=0L); // write the commentary text
 
   // live mode
-  virtual Fl_Widget *enter_live_mode(int top=0); // build wdgets needed for live mode
+  virtual Fl_Widget *enter_live_mode(int top=0); // build widgets needed for live mode
   virtual void leave_live_mode(); // free allocated resources
-  virtual void copy_properties(); // copy properties from this type into a potetial live object
+  virtual void copy_properties(); // copy properties from this type into a potential live object
 
   // get message number for I18N
   int msgnum();

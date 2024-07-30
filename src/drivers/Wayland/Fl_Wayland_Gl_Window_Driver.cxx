@@ -107,35 +107,6 @@ void Fl_Wayland_Gl_Window_Driver::init() {
 }
 
 
-char *Fl_Wayland_Gl_Window_Driver::alpha_mask_for_string(const char *str, int n,
-                                                         int w, int h, Fl_Fontsize fs)
-{
-  // write str to a bitmap just big enough
-  Fl_Image_Surface *surf = new Fl_Image_Surface(w, h);
-  Fl_Font f = fl_font();
-  Fl_Surface_Device::push_current(surf);
-  fl_color(FL_BLACK);
-  fl_rectf(0, 0, w, h);
-  fl_color(FL_WHITE);
-  fl_font(f, fs);
-  fl_draw(str, n, 0, fl_height() - fl_descent());
-  // get the R channel only of the bitmap
-  char *alpha_buf = new char[w*h], *r = alpha_buf;
-  struct Fl_Wayland_Graphics_Driver::draw_buffer *off =
-    Fl_Wayland_Graphics_Driver::offscreen_buffer(surf->offscreen());
-  for (int i = 0; i < h; i++) {
-    uchar *q = off->buffer + i * off->stride;
-    for (int j = 0; j < w; j++) {
-      *r++ = *q;
-      q += 4;
-    }
-  }
-  Fl_Surface_Device::pop_current();
-  delete surf;
-  return alpha_buf;
-}
-
-
 Fl_Gl_Choice *Fl_Wayland_Gl_Window_Driver::find(int m, const int *alistp)
 {
   m |= FL_DOUBLE;
@@ -228,8 +199,8 @@ void Fl_Wayland_Gl_Window_Driver::set_gl_context(Fl_Window* w, GLContext context
     target_egl_surface = dr->gl_start_support_->egl_surface = eglCreateWindowSurface(
         egl_display, wld_egl_conf, dr->gl_start_support_->egl_window, NULL);
   }
-  if (context != cached_context || w != cached_window) {
-    cached_context = context;
+  GLContext current_context = eglGetCurrentContext();
+  if (context != current_context || w != cached_window) {
     cached_window = w;
     if (eglMakeCurrent(egl_display, target_egl_surface, target_egl_surface,
                        (EGLContext)context)) {
@@ -259,11 +230,11 @@ void Fl_Wayland_Gl_Window_Driver::apply_scissor() {
 
 
 void Fl_Wayland_Gl_Window_Driver::delete_gl_context(GLContext context) {
-  if (cached_context == context) {
-    cached_context = 0;
+  GLContext current_context = eglGetCurrentContext();
+  if (current_context == context) {
     cached_window = 0;
   }
-  if (eglGetCurrentContext() == (EGLContext)context) {
+  if (current_context == (EGLContext)context) {
     eglMakeCurrent(egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
   }
   eglDestroyContext(egl_display, (EGLContext)context);
@@ -299,6 +270,7 @@ void Fl_Wayland_Gl_Window_Driver::make_current_before() {
     Fl_Wayland_Gl_Choice *g = (Fl_Wayland_Gl_Choice*)this->g();
     egl_surface = eglCreateWindowSurface(egl_display, g->egl_conf, egl_window, NULL);
     wl_surface_set_buffer_scale(surface, scale);
+    if (mode() & FL_ALPHA) wl_surface_set_opaque_region(surface, NULL);
     // Tested apps: shape, glpuzzle, cube, fractals, gl_overlay, fullscreen, unittests,
     //   OpenGL3-glut-test, OpenGL3test.
     // Tested wayland compositors: mutter, kde-plasma, weston, sway on FreeBSD.
@@ -356,6 +328,13 @@ void Fl_Wayland_Gl_Window_Driver::swap_buffers() {
   }
 
   if (egl_surface) {
+    if (pWindow->parent()) {
+      struct wld_window *xid = fl_wl_xid(pWindow);
+      if (xid->frame_cb) return;
+      xid->frame_cb = wl_surface_frame(xid->wl_surface);
+      wl_callback_add_listener(xid->frame_cb, Fl_Wayland_Graphics_Driver::p_surface_frame_listener,
+                               xid);
+    }
     eglSwapBuffers(Fl_Wayland_Gl_Window_Driver::egl_display, egl_surface);
   }
 }
@@ -409,7 +388,7 @@ void Fl_Wayland_Gl_Window_Driver::resize(int is_a_resize, int W, int H) {
     struct wld_window *xid = fl_wl_xid(pWindow);
     if (xid->kind == Fl_Wayland_Window_Driver::DECORATED && !xid->frame_cb) {
       xid->frame_cb = wl_surface_frame(xid->wl_surface);
-      wl_callback_add_listener(xid->frame_cb, 
+      wl_callback_add_listener(xid->frame_cb,
                                Fl_Wayland_Graphics_Driver::p_surface_frame_listener, xid);
     }
     wl_egl_window_resize(egl_window, W, H, 0, 0);

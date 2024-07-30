@@ -63,34 +63,14 @@ void Fl_Light_Button::draw() {
       case _FL_PLASTIC_DOWN_BOX :
       case _FL_PLASTIC_UP_BOX :
         // Check box...
-#ifdef FLTK_EXT_VERSION        
-        // rageworx fix : why background color always set to FL_BACKGROUND2_COLOR ?
-        if (Fl::is_scheme("flat"))
-        {
-          draw_box( FL_UP_BOX, cx, cy, W, W, color() );
-        }
-        else
-        {
-          draw_box(down_box(), cx, cy, W, W, color() );
-        }
-#else
         draw_box(down_box(), cx, cy, W, W, FL_BACKGROUND2_COLOR);
-#endif /// of FLTK_EXT_VERSION
         if (value()) {
           // Check mark...
-          if (Fl::is_scheme("gtk+")) {
-            col = FL_SELECTION_COLOR;
-          }
-#ifdef FLTK_EXT_VERSION
-          else if (Fl::is_scheme("flat")) {
-            col = fl_lighter( color() );
-          }
-#endif /// of FLTK_EXT_VERSION
           // Calculate box position and size
           cx += Fl::box_dx(down_box());
           cy += Fl::box_dy(down_box());
           cw = W - Fl::box_dw(down_box());
-          fl_draw_check(Fl_Rect(cx, cy, cw, cw), col);
+          fl_draw_check(Fl_Rect(cx, cy, cw, cw), check_color);
         }
         break;
       case _FL_ROUND_DOWN_BOX :
