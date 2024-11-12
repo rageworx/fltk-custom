@@ -300,13 +300,21 @@ static void pointer_button(void *data,
   int b = 0;
   // Fl::e_state &= ~FL_BUTTONS;    // DO NOT reset the mouse button state!
   if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
-    if (button == BTN_LEFT) { Fl::e_state |= FL_BUTTON1; b = 1; }
-    else if (button == BTN_RIGHT) { Fl::e_state |= FL_BUTTON3; b = 3; }
-    else if (button == BTN_MIDDLE) { Fl::e_state |= FL_BUTTON2; b = 2; }
+    if (button == BTN_LEFT)         { Fl::e_state |= FL_BUTTON1; b = 1; }
+    else if (button == BTN_RIGHT)   { Fl::e_state |= FL_BUTTON3; b = 3; }
+    else if (button == BTN_MIDDLE)  { Fl::e_state |= FL_BUTTON2; b = 2; }
+    else if (button == BTN_BACK)    { Fl::e_state |= FL_BUTTON4; b = 4; } // ?
+    else if (button == BTN_SIDE)    { Fl::e_state |= FL_BUTTON4; b = 4; } // OK: Debian 12
+    else if (button == BTN_FORWARD) { Fl::e_state |= FL_BUTTON5; b = 5; } // ?
+    else if (button == BTN_EXTRA)   { Fl::e_state |= FL_BUTTON5; b = 5; } // OK: Debian 12
   } else { // must be WL_POINTER_BUTTON_STATE_RELEASED
-    if (button == BTN_LEFT) { Fl::e_state &= ~FL_BUTTON1; b = 1; }
-    else if (button == BTN_RIGHT) { Fl::e_state &= ~FL_BUTTON3; b = 3; }
-    else if (button == BTN_MIDDLE) { Fl::e_state &= ~FL_BUTTON2; b = 2; }
+    if (button == BTN_LEFT)         { Fl::e_state &= ~FL_BUTTON1; b = 1; }
+    else if (button == BTN_RIGHT)   { Fl::e_state &= ~FL_BUTTON3; b = 3; }
+    else if (button == BTN_MIDDLE)  { Fl::e_state &= ~FL_BUTTON2; b = 2; }
+    else if (button == BTN_BACK)    { Fl::e_state &= ~FL_BUTTON4; b = 4; } // ?
+    else if (button == BTN_SIDE)    { Fl::e_state &= ~FL_BUTTON4; b = 4; } // OK: Debian 12
+    else if (button == BTN_FORWARD) { Fl::e_state &= ~FL_BUTTON5; b = 5; } // ?
+    else if (button == BTN_EXTRA)   { Fl::e_state &= ~FL_BUTTON5; b = 5; } // OK: Debian 12
   }
   Fl::e_keysym = FL_Button + b;
   Fl::e_dx = Fl::e_dy = 0;
@@ -678,7 +686,12 @@ int Fl_Wayland_Screen_Driver::compose(int& del) {
   // letter+modifier key
   int condition = (Fl::e_state & (FL_ALT | FL_META | FL_CTRL)) && ascii < 128 ;
   // pressing modifier key
-  condition |= (Fl::e_keysym >= FL_Shift_L && Fl::e_keysym <= FL_Alt_R);
+  // FL_Shift_L, FL_Shift_R, FL_Control_L, FL_Control_R, FL_Caps_Lock
+  // FL_Meta_L, FL_Meta_R, FL_Alt_L, FL_Alt_R
+  condition |= ((Fl::e_keysym >= FL_Shift_L && Fl::e_keysym <= FL_Alt_R) ||
+                Fl::e_keysym == FL_Alt_Gr);
+  // FL_Home FL_Left FL_Up FL_Right FL_Down FL_Page_Up FL_Page_Down FL_End
+  // FL_Print FL_Insert FL_Menu FL_Help and more
   condition |= (Fl::e_keysym >= FL_Home && Fl::e_keysym <= FL_Help);
   condition |= Fl::e_keysym == FL_Tab;
 //fprintf(stderr, "compose: condition=%d e_state=%x ascii=%d\n", condition, Fl::e_state, ascii);
@@ -1330,7 +1343,11 @@ static const struct wl_registry_listener registry_listener = {
 };
 
 
+extern int fl_send_system_handlers(void *);
+
+
 static void wayland_socket_callback(int fd, struct wl_display *display) {
+  if (fl_send_system_handlers(NULL)) return;
   struct pollfd fds = (struct pollfd) { fd, POLLIN, 0 };
   do {
     if (wl_display_dispatch(display) == -1) {

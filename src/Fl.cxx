@@ -960,6 +960,7 @@ static system_handler_link *sys_handlers = 0;
    - X11: XEvent
    - Windows: MSG
    - OS X: NSEvent
+   - Wayland: NULL (FLTK runs the event handler(s) just before calling \e wl_display_dispatch())
 
  \param ha The event handler function to register
  \param data User data to include on each call
@@ -2024,8 +2025,8 @@ void Fl::clear_widget_pointer(Fl_Widget const *w)
          { ..off..  }
  \endcode
 
- \note Options can be managed with the \c fltk-options program, new in
- FLTK 1.4.0. In 1.3.x, options can be set in FLUID.
+ \note Since FLTK 1.4.0 options can be managed with the \c fltk-options program.
+   In FLTK 1.3.x options can be set in FLUID.
 
  \param opt which option
  \return true or false

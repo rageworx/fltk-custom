@@ -526,6 +526,7 @@ void Fl_Window::draw_backdrop() {
     l1.image = image();
     if (!active_r() && l1.image && l1.deimage) l1.image = l1.deimage;
     l1.type = labeltype();
+    l1.h_margin_ = l1.v_margin_ = l1.spacing = 0;
     l1.draw(0,0,w(),h(),align());
   }
 }
@@ -953,13 +954,14 @@ fl_uintptr_t Fl_Window::os_id() { return pWindowDriver->os_id();}
 
  This function is effective only with a show()'n, resizable, top-level window.
  Bordered and borderless windows can be used.
+ Fullscreen windows can't be used.
  \see Fl_Window::un_maximize(), Fl_Window::maximize_active()
  */
 void Fl_Window::maximize() {
-  if (!shown() || parent() || !is_resizable() || maximize_active()) return;
+  if (!shown() || parent() || !is_resizable() || maximize_active() || fullscreen_active())
+    return;
   set_flag(MAXIMIZED);
-  if (border()) pWindowDriver->maximize();
-  else pWindowDriver->Fl_Window_Driver::maximize();
+  pWindowDriver->maximize();
 }
 
 /**
@@ -967,10 +969,9 @@ void Fl_Window::maximize() {
  \see Fl_Window::maximize()
 */
 void Fl_Window::un_maximize() {
-  if (!shown() || parent() || !is_resizable() || !maximize_active()) return;
+  if (!shown() || parent() || !is_resizable() || !maximize_active() || fullscreen_active()) return;
   clear_flag(MAXIMIZED);
-  if (border()) pWindowDriver->un_maximize();
-  else pWindowDriver->Fl_Window_Driver::un_maximize();
+  pWindowDriver->un_maximize();
 }
 
 void Fl_Window::is_maximized_(bool b) {

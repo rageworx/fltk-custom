@@ -1351,12 +1351,19 @@ bool Fl_Wayland_Window_Driver::process_menu_or_tooltip(struct wld_window *new_wi
   xdg_positioner_set_anchor(positioner, XDG_POSITIONER_ANCHOR_BOTTOM_LEFT);
   xdg_positioner_set_gravity(positioner, XDG_POSITIONER_GRAVITY_BOTTOM_RIGHT);
   // prevent menuwindow from expanding beyond display limits
-  int constraint = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X |
-    XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y;
-  if (Fl_Window_Driver::menu_bartitle(pWindow) && !Fl_Window_Driver::menu_leftorigin(pWindow)) {
-    constraint |= XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y;
+  int constraint = 0;
+  if ( !(parent_win->fullscreen_active() &&
+        Fl_Wayland_Screen_Driver::compositor == Fl_Wayland_Screen_Driver::MUTTER &&
+        ((!Fl_Window_Driver::menu_title(pWindow) && !Fl_Window_Driver::menu_leftorigin(pWindow)) ||
+          Fl_Window_Driver::menu_bartitle(pWindow)))
+     ) {
+    // Condition above is only to bypass Mutter bug for fullscreen windows (see #1061)
+    constraint |= (XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y);
+    if (Fl_Window_Driver::menu_bartitle(pWindow) && !Fl_Window_Driver::menu_leftorigin(pWindow)) {
+      constraint |= XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y;
+    }
+    xdg_positioner_set_constraint_adjustment(positioner, constraint);
   }
-  xdg_positioner_set_constraint_adjustment(positioner, constraint);
   if (!(Fl_Window_Driver::menu_title(pWindow) && Fl_Window_Driver::menu_bartitle(pWindow))) {
     xdg_positioner_set_offset(positioner, 0, popup_y);
   }
@@ -1788,7 +1795,6 @@ static void surface_frame_done(void *data, struct wl_callback *cb, uint32_t time
     xid_rect->win->redraw();
   } else {
     xid_rect->win->Fl_Widget::resize(xid_rect->X, xid_rect->Y, xid_rect->W, xid_rect->H);
-    wl_surface_commit(xid_rect->xid->wl_surface);
   }
   delete xid_rect;
 }
@@ -1832,7 +1838,7 @@ void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
   // When moving or resizing a non-GL subwindow independently from its parent, this condition
   // delays application of X,Y,W,H values until the compositor signals
   // it's ready for a new frame using the frame callback mechanism.
-  if ((parent && parent->damage()) || depth > 1 || pWindow->as_gl_window() || !parent_xid || 
+  if ((parent && parent->damage()) || depth > 1 || pWindow->as_gl_window() || !parent_xid ||
       wait_for_expose_value || (parent_xid->frame_cb && !xid_rect)) {
     if (is_a_resize) {
       if (pWindow->parent()) {
@@ -1897,7 +1903,7 @@ void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
           Fl::pushed(NULL);
           Fl::e_state = 0;
         }
-      } else if (fl_win->kind == SUBWINDOW && fl_win->subsurface) {
+      } else if (pWindow->as_gl_window() && fl_win->kind == SUBWINDOW && fl_win->subsurface) {
         wl_subsurface_set_position(fl_win->subsurface, X * f, Y * f);
       }
     }
@@ -1909,7 +1915,7 @@ void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
         wl_callback_destroy(fl_win->frame_cb);
         fl_win->frame_cb = NULL;
       }
-      Fl_Wayland_Graphics_Driver::buffer_commit(parent_xid);
+      if (parent_xid->buffer) Fl_Wayland_Graphics_Driver::buffer_commit(parent_xid);
     } else {
       if (!(parent && parent->damage()) && !parent_xid->frame_cb) {
         // use the frame callback mechanism and memorize current X,Y,W,H values
@@ -1920,12 +1926,9 @@ void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
         wl_callback_add_listener(parent_xid->frame_cb, &surface_frame_listener, xid_rect);
         xid_rect->X = X; xid_rect->Y = Y; xid_rect->W = W; xid_rect->H = H;
         xid_rect->need_resize = is_a_resize;
+        wl_subsurface_set_position(fl_win->subsurface, X * f, Y * f);
         wl_surface_commit(parent_xid->wl_surface);
-      } else if (xid_rect) {
-        // update the active frame callback with new X,Y,W,H values
-        xid_rect->X = X; xid_rect->Y = Y; xid_rect->W = W; xid_rect->H = H;
-        xid_rect->need_resize |= is_a_resize;
-      } else {
+      } else if (!xid_rect) {
         wl_surface_commit(parent_xid->wl_surface);
       }
     }
@@ -2172,10 +2175,12 @@ Fl_Wayland_Plugin *Fl_Wayland_Window_Driver::gl_plugin() {
 void Fl_Wayland_Window_Driver::maximize() {
   struct wld_window *xid = (struct wld_window *)Fl_X::flx(pWindow)->xid;
   if (xid->kind == DECORATED) libdecor_frame_set_maximized(xid->frame);
+  else Fl_Window_Driver::maximize();
 }
 
 
 void Fl_Wayland_Window_Driver::un_maximize() {
   struct wld_window *xid = (struct wld_window *)Fl_X::flx(pWindow)->xid;
   if (xid->kind == DECORATED) libdecor_frame_unset_maximized(xid->frame);
+  else Fl_Window_Driver::un_maximize();
 }

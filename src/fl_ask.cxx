@@ -505,13 +505,7 @@ std::string fl_input_str(int &ret, int maxchar, const char *fmt, const char *def
  */
 std::string fl_input_str(int maxchar, const char *fmt, const char *defstr, ...) {
   Fl_Message msg("?");
-  if (maxchar < 0)
-    maxchar = 0;
-
-#ifdef FLTK_EXT_VERSION
-  _fl_ask_applycolor( &msg );
-#endif /// of FLTK_EXT_VERSION
-
+  if (maxchar < 0) maxchar = 0;
   va_list ap;
   va_start(ap, defstr);
   const char *r = msg.input_innards(fmt, ap, defstr, FL_NORMAL_INPUT, maxchar, true);

@@ -62,11 +62,18 @@ void Fl_GDI_Graphics_Driver::focus_rect(int x, int y, int w, int h) {
 }
 
 void Fl_GDI_Graphics_Driver::rect_unscaled(int x, int y, int w, int h) {
-  MoveToEx(fl_gc, x, y, 0L);
-  LineTo(fl_gc, x+w, y);
-  LineTo(fl_gc, x+w, y+h);
-  LineTo(fl_gc, x, y+h);
-  LineTo(fl_gc, x, y);
+  if (is_solid_ && line_width_ > 1) {
+    line_style_unscaled(FL_CAP_SQUARE, line_width_, 0); // see issue #1052
+  }
+  MoveToEx(gc_, x, y, 0L);
+  LineTo(gc_, x+w, y);
+  if (is_solid_ && line_width_ <= 1) LineTo(gc_, x+w, y+h+1); // see issue #1052
+  LineTo(gc_, x+w, y+h);
+  LineTo(gc_, x, y+h);
+  LineTo(gc_, x, y);
+  if (is_solid_ && line_width_ > 1) {
+    line_style_unscaled(style_, line_width_, 0);
+  }
 }
 
 void Fl_GDI_Graphics_Driver::rectf_unscaled(int x, int y, int w, int h) {

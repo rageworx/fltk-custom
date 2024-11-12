@@ -21,11 +21,14 @@ FLTK.sln
 FLTK-Targets.cmake
 FLTKConfig.cmake
 etc/FLTKConfig.cmake
+/CMakeSettings.json
+/CppProperties.json
 
-# MSVC
+# Visual Studio (MSVC) build artifacts
 
 *.tlog
 .vs/
+/out
 
 # VS Code (Visual Studio Code) Editor
 

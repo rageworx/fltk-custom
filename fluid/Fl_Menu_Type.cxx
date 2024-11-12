@@ -29,6 +29,8 @@
 #include "Fluid_Image.h"
 #include "custom_widgets.h"
 #include "mergeback.h"
+#include "undo.h"
+#include "widget_browser.h"
 
 #include <FL/Fl.H>
 #include <FL/fl_message.H>
@@ -51,9 +53,6 @@ Fl_Menu_Item menu_item_type_menu[] = {
   {"Toggle",0,0,(void*)FL_MENU_BOX},
   {"Radio",0,0,(void*)FL_MENU_RADIO},
   {0}};
-
-static char submenuflag;
-static uchar menuitemtype = 0;
 
 static void delete_dependents(Fl_Menu_Item *m) {
   if (!m)
@@ -87,7 +86,7 @@ void Fl_Input_Choice_Type::build_menu() {
   int n = 0;
   Fl_Type* q;
   for (q = next; q && q->level > level; q = q->next) {
-    if (q->is_parent()) n++; // space for null at end of submenu
+    if (q->can_have_children()) n++; // space for null at end of submenu
     n++;
   }
   if (!n) {
@@ -134,7 +133,7 @@ void Fl_Input_Choice_Type::build_menu() {
       m->labelfont(i->o->labelfont());
       m->labelsize(i->o->labelsize());
       m->labelcolor(i->o->labelcolor());
-      if (q->is_parent()) {lvl++; m->flags |= FL_SUBMENU;}
+      if (q->can_have_children()) {lvl++; m->flags |= FL_SUBMENU;}
       m++;
       int l1 =
         (q->next && q->next->is_a(ID_Menu_Item)) ? q->next->level : level;
@@ -151,29 +150,111 @@ void Fl_Input_Choice_Type::build_menu() {
  \return new Menu Item node
  */
 Fl_Type *Fl_Menu_Item_Type::make(Strategy strategy) {
-  // Find the current menu item:
-  Fl_Type* q = Fl_Type::current;
-  Fl_Type* p = q;
-  if (p) {
-    if ( (force_parent && q->is_a(ID_Menu_Item)) || !q->is_parent()) p = p->parent;
+  return Fl_Menu_Item_Type::make(0, strategy);
+}
+
+/**
+ Create an add a specific Menu Item node.
+ \param[in] flags set to 0, FL_MENU_RADIO, FL_MENU_TOGGLE, or FL_SUBMENU
+ \param[in] strategy add after current or as last child
+ \return new Menu Item node
+ */
+Fl_Type* Fl_Menu_Item_Type::make(int flags, Strategy strategy) {
+  // Find a good insert position based on the current marked node
+  Fl_Type *anchor = Fl_Type::current, *p = anchor;
+  if (p && (strategy == kAddAfterCurrent)) p = p->parent;
+  while (p && !(p->is_a(ID_Menu_Manager_) || p->is_a(ID_Submenu))) {
+    anchor = p;
+    strategy = kAddAfterCurrent;
+    p = p->parent;
   }
-  force_parent = 0;
-  if (!p || !(p->is_a(ID_Menu_Manager_) || p->is_a(ID_Submenu))) {
-    fl_message("Please select a menu to add to");
+  if (!p) {
+    fl_message("Please select a menu widget or a menu item");
     return 0;
   }
   if (!o) {
     o = new Fl_Button(0,0,100,20); // create template widget
   }
 
-  Fl_Menu_Item_Type* t = submenuflag ? new Fl_Submenu_Type() : new Fl_Menu_Item_Type();
+  Fl_Menu_Item_Type* t = NULL;
+  if (flags==FL_SUBMENU) {
+    t = new Fl_Submenu_Type();
+  } else {
+    t = new Fl_Menu_Item_Type();
+  }
   t->o = new Fl_Button(0,0,100,20);
-  t->o->type(menuitemtype);
+  t->o->type(flags);
   t->factory = this;
-  t->add(p, strategy);
-  if (!reading_file) t->label(submenuflag ? "submenu" : "item");
+  t->add(anchor, strategy);
+  if (!reading_file) {
+    if (flags==FL_SUBMENU) {
+      t->label("submenu");
+    } else {
+      t->label("item");
+    }
+  }
   return t;
 }
+
+void group_selected_menuitems() {
+  // The group will be created in the parent group of the current menuitem
+  if (!Fl_Type::current->is_a(ID_Menu_Item)) {
+    return;
+  }
+  Fl_Menu_Item_Type *q = static_cast<Fl_Menu_Item_Type*>(Fl_Type::current);
+  Fl_Type *qq = Fl_Type::current->parent;
+  if (!qq || !(qq->is_a(ID_Menu_Manager_) || qq->is_a(ID_Submenu))) {
+    fl_message("Can't create a new submenu here.");
+    return;
+  }
+  undo_checkpoint();
+  undo_suspend();
+  Fl_Widget_Type *n = (Fl_Widget_Type*)(q->make(FL_SUBMENU, kAddAfterCurrent));
+  for (Fl_Type *t = qq->next; t && (t->level > qq->level);) {
+    if (t->level != n->level || t == n || !t->selected) {
+      t = t->next;
+      continue;
+    }
+    Fl_Type *nxt = t->remove();
+    t->add(n, kAddAsLastChild);
+    t = nxt;
+  }
+  widget_browser->rebuild();
+  undo_resume();
+  set_modflag(1);
+}
+
+void ungroup_selected_menuitems() {
+  // Find the submenu
+  Fl_Type *qq = Fl_Type::current->parent;
+  Fl_Widget_Type *q = static_cast<Fl_Widget_Type*>(Fl_Type::current);
+  int q_level = q->level;
+  if (!qq || !qq->is_a(ID_Submenu)) {
+    fl_message("Only menu items inside a submenu can be ungrouped.");
+    return;
+  }
+  undo_checkpoint();
+  undo_suspend();
+  Fl_Type::current = qq;
+  for (Fl_Type *t = qq->next; t && (t->level > qq->level);) {
+    if (t->level != q_level || !t->selected) {
+      t = t->next;
+      continue;
+    }
+    Fl_Type *nxt = t->remove();
+    t->insert(qq);
+    t = nxt;
+  }
+  if (!qq->next || (qq->next->level <= qq->level)) {
+    qq->remove();
+    delete qq;   // qq has no children that need to be delete
+  }
+  Fl_Type::current = q;
+  widget_browser->rebuild();
+  undo_resume();
+  set_modflag(1);
+}
+
 
 /**
  Create and add a new Checkbox Menu Item node.
@@ -181,10 +262,7 @@ Fl_Type *Fl_Menu_Item_Type::make(Strategy strategy) {
  \return new node
  */
 Fl_Type *Fl_Checkbox_Menu_Item_Type::make(Strategy strategy) {
-    menuitemtype = FL_MENU_TOGGLE;
-    Fl_Type* t = Fl_Menu_Item_Type::make(strategy);
-    menuitemtype = 0;
-    return t;
+  return Fl_Menu_Item_Type::make(FL_MENU_TOGGLE, strategy);
 }
 
 /**
@@ -193,10 +271,7 @@ Fl_Type *Fl_Checkbox_Menu_Item_Type::make(Strategy strategy) {
  \return new node
  */
 Fl_Type *Fl_Radio_Menu_Item_Type::make(Strategy strategy) {
-    menuitemtype = FL_MENU_RADIO;
-    Fl_Type* t = Fl_Menu_Item_Type::make(strategy);
-    menuitemtype = 0;
-    return t;
+  return Fl_Menu_Item_Type::make(FL_MENU_RADIO, strategy);
 }
 
 /**
@@ -205,10 +280,7 @@ Fl_Type *Fl_Radio_Menu_Item_Type::make(Strategy strategy) {
  \return new node
  */
 Fl_Type *Fl_Submenu_Type::make(Strategy strategy) {
-  submenuflag = 1;
-  Fl_Type* t = Fl_Menu_Item_Type::make(strategy);
-  submenuflag = 0;
-  return t;
+  return Fl_Menu_Item_Type::make(FL_SUBMENU, strategy);
 }
 
 Fl_Menu_Item_Type Fl_Menu_Item_type;
@@ -234,7 +306,7 @@ const char* Fl_Menu_Item_Type::menu_name(Fd_Code_Writer& f, int& i) {
     // be sure to count the {0} that ends a submenu:
     if (t->level > t->next->level) i += (t->level - t->next->level);
     // detect empty submenu:
-    else if (t->level == t->next->level && t->is_parent()) i++;
+    else if (t->level == t->next->level && t->can_have_children()) i++;
     t = t->prev;
     i++;
   }
@@ -353,7 +425,7 @@ void Fl_Menu_Item_Type::write_static(Fd_Code_Writer& f) {
   Fl_Type* t = prev; while (t && t->is_a(ID_Menu_Item)) t = t->prev;
   for (Fl_Type* q = t->next; q && q->is_a(ID_Menu_Item); q = q->next) {
     ((Fl_Menu_Item_Type*)q)->write_item(f);
-    int thislevel = q->level; if (q->is_parent()) thislevel++;
+    int thislevel = q->level; if (q->can_have_children()) thislevel++;
     int nextlevel =
       (q->next && q->next->is_a(ID_Menu_Item)) ? q->next->level : t->level+1;
     while (thislevel > nextlevel) {f.write_c(" {0,0,0,0,0,0,0,0,0},\n"); thislevel--;}
@@ -387,7 +459,7 @@ int Fl_Menu_Item_Type::flags() {
   if (((Fl_Button*)o)->value()) i |= FL_MENU_VALUE;
   if (!o->active()) i |= FL_MENU_INACTIVE;
   if (!o->visible()) i |= FL_MENU_INVISIBLE;
-  if (is_parent()) {
+  if (can_have_children()) {
     if (user_data() == NULL) i |= FL_SUBMENU;
     else i |= FL_SUBMENU_POINTER;
   }
@@ -579,7 +651,7 @@ void Fl_Menu_Base_Type::build_menu() {
   int n = 0;
   Fl_Type* q;
   for (q = next; q && q->level > level; q = q->next) {
-    if (q->is_parent()) n++; // space for null at end of submenu
+    if (q->can_have_children()) n++; // space for null at end of submenu
     n++;
   }
   if (!n) {
@@ -626,7 +698,7 @@ void Fl_Menu_Base_Type::build_menu() {
       m->labelfont(i->o->labelfont());
       m->labelsize(i->o->labelsize());
       m->labelcolor(i->o->labelcolor());
-      if (q->is_parent()) {lvl++; m->flags |= FL_SUBMENU;}
+      if (q->can_have_children()) {lvl++; m->flags |= FL_SUBMENU;}
       m++;
       int l1 =
         (q->next && q->next->is_a(ID_Menu_Item)) ? q->next->level : level;
