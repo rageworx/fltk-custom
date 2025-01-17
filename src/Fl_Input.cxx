@@ -1,7 +1,7 @@
 //
 // Input widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2023 by Bill Spitzak and others.
+// Copyright 1998-2024 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -52,9 +52,9 @@ const char *Fl_Input::copy_menu_text = "Copy";
 const char *Fl_Input::paste_menu_text = "Paste";
 
 static Fl_Menu_Item rmb_menu[] = {
-  { Fl_Input::cut_menu_text,    0, NULL, (void*)1 },
-  { Fl_Input::copy_menu_text,   0, NULL, (void*)2 },
-  { Fl_Input::paste_menu_text,  0, NULL, (void*)3 },
+  { NULL, 0, NULL, (void*)1 },
+  { NULL, 0, NULL, (void*)2 },
+  { NULL, 0, NULL, (void*)3 },
   { NULL }
 };
 
@@ -320,13 +320,30 @@ int Fl_Input::kf_copy_cut() {
   class. It handles compose key sequences and can also be used e.g. in
   Fl_Multiline_Input, Fl_Float_Input and several more derived classes.
 
-  The details are way too complicated to be documented here and can be
-  changed as required. If in doubt, please consult the source code.
+  The method first checks in Fl::compose if the keystroke is a text entry or
+  a control key. If it is text, the method inserts the composed characters into
+  the input field, taking into account the input type (e.g., numeric fields).
+
+  If the keystroke is a control key as determined by Fl::compose, the method
+  handles key combinations for Insert, Enter, and Tab depending on the
+  widget's input_type().
+
+  The method then checks for Ctrl key combinations, such as Ctrl-A, Ctrl-C,
+  Ctrl-V, Ctrl-X, and Ctrl-Z, which are commonly used for select all, copy,
+  paste, cut, and undo operations.
+
+  Finally, the method checks for ASCII control characters, such as Ctrl-H,
+  Ctrl-I, Ctrl-J, Ctrl-L, and Ctrl-M, which can be used to insert literal
+  control characters into the input field.
+
+  If none of the above cases match, the method returns 0, indicating that the
+  keystroke was not handled.
 
   \returns  1 if the keystroke is handled by us, 0 if not.
 */
 int Fl_Input::handle_key() {
 
+  // This is unicode safe: only character codes < 128 are queried
   char ascii = Fl::event_text()[0];
 
   int del;
@@ -486,7 +503,7 @@ int Fl_Input::handle_key() {
  Simple function that determines if a character is a whitespace.
  \todo This function is not UTF-8-aware.
  */
-static int _isspace(char c) {
+static int fltk__isspace(char c) {
   return (c&128 || isspace(c));
 }
 
@@ -512,19 +529,24 @@ int Fl_Input::handle_rmb() {
         // if clicked to the right of the line or text end, clear the
         // selection and set the cursor at the end of the line
         insert_position(newpos, newpos);
-      } else if (_isspace(index(newpos))) {
+      } else if (fltk__isspace(index(newpos))) {
         // if clicked into a whitespace, select the entire whitespace
         oldpos = newpos;
-        while (oldpos > 0 && _isspace(index(oldpos-1))) oldpos--;
+        while (oldpos > 0 && fltk__isspace(index(oldpos-1))) oldpos--;
         oldmark = newpos+1;
-        while (oldmark < size() && _isspace(index(oldmark))) oldmark++;
+        while (oldmark < size() && fltk__isspace(index(oldmark))) oldmark++;
         insert_position(oldpos, oldmark);
       } else {
         // if clicked on a word, select the entire word
         insert_position(word_start(newpos), word_end(newpos));
       }
     }
-    if (readonly()) { // give only the menu options that make sense
+    // keep the menu labels current
+    rmb_menu[0].label(Fl_Input::cut_menu_text);
+    rmb_menu[1].label(Fl_Input::copy_menu_text);
+    rmb_menu[2].label(Fl_Input::paste_menu_text);
+    // give only the menu options that make sense
+    if (readonly()) {
       rmb_menu[0].deactivate(); // cut
       rmb_menu[2].deactivate(); // paste
     } else {

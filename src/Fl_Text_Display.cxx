@@ -85,6 +85,13 @@ static int scroll_amount = 0;
 static int scroll_y = 0;
 static int scroll_x = 0;
 
+static Fl_Menu_Item rmb_menu[] = {
+  { NULL, 0, NULL, (void*)1 },
+  { NULL, 0, NULL, (void*)2 },
+  { NULL, 0, NULL, (void*)3 },
+  { NULL }
+};
+
 // CET - FIXME
 #define TMPFONTWIDTH 6
 
@@ -152,6 +159,8 @@ Fl_Text_Display::Fl_Text_Display(int X, int Y, int W, int H, const char* l)
 
   mVScrollBar = new Fl_Scrollbar(0,0,1,1);
   mVScrollBar->callback((Fl_Callback*)v_scrollbar_cb, this);
+
+  display_needs_recalc_ = false;
 
   scrollbar_width_ = 0;         // 0: default from Fl::scrollbar_size()
   scrollbar_align_ = FL_ALIGN_BOTTOM_RIGHT;
@@ -229,7 +238,7 @@ Fl_Text_Display::~Fl_Text_Display() {
 void Fl_Text_Display::linenumber_width(int width) {
   if (width < 0) return;
   mLineNumWidth = width;
-  recalc_display();             // recalc line#s        // resize(x(), y(), w(), h());
+  display_needs_recalc(); // recalc line#s        // resize(x(), y(), w(), h());
   if (width > 0) reset_absolute_top_line_number();
 }
 
@@ -383,7 +392,7 @@ void Fl_Text_Display::buffer( Fl_Text_Buffer *buf ) {
   }
 
   /* Resize the widget to update the screen... */
-  recalc_display();             // resize(x(), y(), w(), h());
+  display_needs_recalc(); // resize(x(), y(), w(), h());
 }
 
 
@@ -441,7 +450,8 @@ void Fl_Text_Display::highlight_data(Fl_Text_Buffer *styleBuffer,
   mHighlightCBArg = cbArg;
   mColumnScale = 0;
 
-  mStyleBuffer->canUndo(0);
+  if (mStyleBuffer)
+    mStyleBuffer->canUndo(0);
   damage(FL_DAMAGE_EXPOSE);
 }
 
@@ -481,11 +491,23 @@ void Fl_Text_Display::resize(int X, int Y, int W, int H) {
 
   Fl_Widget::resize(X,Y,W,H);
   mColumnScale = 0; // force recomputation of the width of a column when display is rescaled
-  recalc_display();
+  display_needs_recalc();
 }
 
 /**
- Recalculate the display's visible lines and scrollbar sizes.
+  Schedule a recalc_display() to be done on next draw().
+  Call this from methods that might be called repeatedly, to defers potentially
+  CPU intensive recalc_display() until it's actually needed just before draw().
+*/
+void Fl_Text_Display::display_needs_recalc() {
+  display_needs_recalc_ = true;
+  redraw(); // ensure draw() gets called
+}
+
+/**
+  Recalculate the display's visible lines and scrollbar sizes.
+  Beware calling this directly may cause a lot of CPU if called repeatedly (issue 300).
+  Better to call display_needs_recalc() to flag a recalc to be done during next draw().
  */
 void Fl_Text_Display::recalc_display() {
   if (!buffer()) return;
@@ -552,9 +574,9 @@ void Fl_Text_Display::recalc_display() {
     if (mContinuousWrap && !mWrapMarginPix && text_area.w != oldTAWidth) {
 
       int oldFirstChar = mFirstChar;
-      mNBufferLines = count_lines(0, buffer()->length(), true);
       mFirstChar = line_start(mFirstChar);
       mTopLineNum = count_lines(0, mFirstChar, true)+1;
+      mNBufferLines = mTopLineNum-1 + count_lines(mFirstChar, buffer()->length(), true);
       absolute_top_line_number(oldFirstChar);
 #ifdef DEBUG2
       printf("    mNBufferLines=%d\n", mNBufferLines);
@@ -680,7 +702,7 @@ void Fl_Text_Display::recalc_display() {
     scroll_(mTopLineNumHint, mHorizOffsetHint);
 
   // everything will fit in the viewport
-  if (mNBufferLines < mNVisibleLines || mBuffer == NULL || mBuffer->length() == 0) {
+  if ((mNBufferLines+1 < mNVisibleLines) || (mBuffer == NULL) || (mBuffer->length() == 0)) {
     scroll_(1, mHorizOffset);
   /* if empty lines become visible, there may be an opportunity to
    display more text by scrolling down */
@@ -974,7 +996,7 @@ void Fl_Text_Display::wrap_mode(int wrap, int wrapMargin) {
     mAbsTopLineNum = 1;         // changed from 0 to 1 -- LZA / STR#2621
   }
 
-  recalc_display();             // resize(x(), y(), w(), h());
+  display_needs_recalc();             // resize(x(), y(), w(), h());
 }
 
 
@@ -1281,7 +1303,7 @@ void Fl_Text_Display::display_insert() {
  */
 void Fl_Text_Display::show_insert_position() {
   display_insert_position_hint = 1;
-  recalc_display();             // resize(x(), y(), w(), h());
+  display_needs_recalc();             // resize(x(), y(), w(), h());
 }
 
 
@@ -1428,16 +1450,66 @@ int Fl_Text_Display::count_lines(int startPos, int endPos,
   if (!mContinuousWrap)
     return buffer()->count_lines(startPos, endPos);
 
-  wrapped_line_counter(buffer(), startPos, endPos, INT_MAX,
-                       startPosIsLineStart, 0, &retPos, &retLines, &retLineStart,
-                       &retLineEnd);
+  /*
+   Correctly counting wrapped lines is very slow. We have to query the length
+   of every segment of text for every line change and style change and find
+   potential soft line breaks.
+
+   Most of the resulting information is needed for calculating the vertical
+   scroll bar size. After a certain text length, the scroll bar size is no
+   longer very precise anyway, so we optimize line count for all lines but
+   the visible ones (plus minus a few lines for rounding).
+
+   The optimized code is several magnitudes faster and makes scrolling and
+   window resizing of long texts quite responsive. There is a slight but IMHO
+   tollerable drawback: when walking huge files using arrow up and down, the
+   text display sometimes jumps 2 or 3 lines instead of 1, but the overall
+   buffer stays intact as well as the scroll position.
+   */
+  if (buffer()->length() > 16384) {
+    // Optimized line counting
+    int nLines = 0;
+    int firstVisibleChar = buffer()->rewind_lines(mFirstChar, 3);
+    int lastVisibleChar = buffer()->skip_lines(mLastChar, 3);
+    // Calculate the averga number of characters up to a soft line break
+    if (mColumnScale==0.0) x_to_col(1.0);
+    int avgCharsPerLine = mWrapMarginPix;
+    if (!avgCharsPerLine) avgCharsPerLine = text_area.w;
+    avgCharsPerLine = (int)(avgCharsPerLine / mColumnScale) + 1;
+
+    // first segment, lines up to display, count fast
+    if (startPos < firstVisibleChar) {
+      int tmpEnd = endPos<firstVisibleChar ? endPos : firstVisibleChar;
+      nLines += buffer()->estimate_lines(startPos, tmpEnd, avgCharsPerLine);
+      startPos = tmpEnd;
+    }
+    // second segement, count displayed liens
+    if (startPos < endPos && startPos < mLastChar) {
+      // Precisse line counting only for visible text:
+      int tmpEnd = endPos<lastVisibleChar ? endPos : lastVisibleChar;
+      wrapped_line_counter(buffer(), startPos, tmpEnd, INT_MAX,
+                           startPosIsLineStart, 0, &retPos, &retLines, &retLineStart,
+                           &retLineEnd);
+      nLines += retLines;
+      startPos = tmpEnd;
+    }
+    // third segement is everything after displayed lines
+    if (startPos < endPos && startPos >= lastVisibleChar) {
+      nLines += buffer()->estimate_lines(startPos, endPos, avgCharsPerLine);
+    }
+    return nLines;
+  } else {
+    // Precise line counting only for small text buffer sizes:
+    wrapped_line_counter(buffer(), startPos, endPos, INT_MAX,
+                         startPosIsLineStart, 0, &retPos, &retLines, &retLineStart,
+                         &retLineEnd);
 
 #ifdef DEBUG
-  printf("   # after WLC: retPos=%d, retLines=%d, retLineStart=%d, retLineEnd=%d\n",
-         retPos, retLines, retLineStart, retLineEnd);
+    printf("   # after WLC: retPos=%d, retLines=%d, retLineStart=%d, retLineEnd=%d\n",
+           retPos, retLines, retLineStart, retLineEnd);
 #endif // DEBUG
-
-  return retLines;
+    return retLines;
+  }
 }
 
 
@@ -1788,7 +1860,7 @@ void Fl_Text_Display::buffer_modified_cb( int pos, int nInserted, int nDeleted,
   }
 
   // refigure scrollbars & stuff
-  textD->resize(textD->x(), textD->y(), textD->w(), textD->h());
+  textD->display_needs_recalc(); // textD->resize(textD->x(), textD->y(), textD->w(), textD->h());
 
   // don't need to do anything else if not visible?
   if (!textD->visible_r()) return;
@@ -1827,7 +1899,7 @@ void Fl_Text_Display::buffer_modified_cb( int pos, int nInserted, int nDeleted,
     }
     if (linesInserted > 1) {
       // textD->draw_line_numbers(false); // can't do this b/c not called from virtual draw();
-      textD->damage(::FL_DAMAGE_EXPOSE);
+      textD->damage(FL_DAMAGE_EXPOSE);
     }
   } else {
     endDispPos = buf->next_char(textD->mLastChar);
@@ -2106,7 +2178,7 @@ int Fl_Text_Display::handle_vline(
             // find x pos inside block
             free(lineStr);
             if (cursor_pos && (startX+w/2<rightClip))  // STR #2788
-              return lineStartPos + startIndex + len;  // STR #2788
+              return lineStartPos + startIndex + 1;  // STR #2788
             return lineStartPos + startIndex;
           }
         } else {
@@ -3041,7 +3113,7 @@ void Fl_Text_Display::calc_last_char() {
 void Fl_Text_Display::scroll(int topLineNum, int horizOffset) {
   mTopLineNumHint = topLineNum;
   mHorizOffsetHint = horizOffset;
-  recalc_display();     // resize(x(), y(), w(), h());
+  display_needs_recalc();     // resize(x(), y(), w(), h());
 }
 
 
@@ -3886,6 +3958,12 @@ void Fl_Text_Display::draw(void) {
   // don't even try if there is no associated text buffer!
   if (!buffer()) { draw_box(); return; }
 
+  // recalc if needed -- issue #300
+  if (display_needs_recalc_ || (damage() & FL_DAMAGE_ALL)) {
+    display_needs_recalc_ = false;
+    recalc_display();
+  }
+
   fl_push_clip(x(),y(),w(),h());        // prevent drawing outside widget area
 
   // background color -- change if inactive
@@ -4116,12 +4194,6 @@ void Fl_Text_Display::scroll_timer_cb(void *user_data) {
   Fl::repeat_timeout(.1, scroll_timer_cb, user_data);
 }
 
-static Fl_Menu_Item rmb_menu[] = {
-  { Fl_Input::cut_menu_text,    0, NULL, (void*)1 },
-  { Fl_Input::copy_menu_text,   0, NULL, (void*)2 },
-  { Fl_Input::paste_menu_text,  0, NULL, (void*)3 },
-  { NULL }
-};
 
 /** Handle right mouse button down events.
  \return 0 for no op, 1 to cut, 2 to copy, 3 to paste
@@ -4146,7 +4218,12 @@ int Fl_Text_Display::handle_rmb(int readonly) {
       txtbuf->select(txtbuf->word_start(newpos), txtbuf->word_end(newpos));
     }
   }
-  if (readonly) { // give only the menu options that make sense
+  // keep the menu labels current
+  rmb_menu[0].label(Fl_Input::cut_menu_text);
+  rmb_menu[1].label(Fl_Input::copy_menu_text);
+  rmb_menu[2].label(Fl_Input::paste_menu_text);
+  // give only the menu options that make sense
+  if (readonly) {
     rmb_menu[0].deactivate(); // cut
     rmb_menu[2].deactivate(); // paste
   } else {
@@ -4169,7 +4246,7 @@ int Fl_Text_Display::handle(int event) {
   if (!Fl::event_inside(text_area.x, text_area.y, text_area.w, text_area.h) &&
       !dragging && event != FL_LEAVE && event != FL_ENTER &&
       event != FL_MOVE && event != FL_FOCUS && event != FL_UNFOCUS &&
-      event != FL_KEYBOARD && event != FL_KEYUP) {
+      event != FL_KEYBOARD && event != FL_KEYUP && event != FL_MOUSEWHEEL) {
     return Fl_Group::handle(event);
   }
 
@@ -4305,7 +4382,6 @@ int Fl_Text_Display::handle(int event) {
           scroll_direction = 0;
         }
         pos = xy_to_position(X, Y, CURSOR_POS);
-        pos = buffer()->next_char(pos);
       }
       fl_text_drag_me(pos, this);
       return 1;
@@ -4316,6 +4392,7 @@ int Fl_Text_Display::handle(int event) {
           buffer()->primary_selection()->includes(dragPos) && !(Fl::event_state()&FL_SHIFT) ) {
         buffer()->unselect(); // clicking in the selection: unselect and move cursor
         insert_position(dragPos);
+        dragType = DRAG_CHAR;
         return 1;
       } else if (Fl::event_clicks() == DRAG_LINE && Fl::event_button() == FL_LEFT_MOUSE) {
         buffer()->select(buffer()->line_start(dragPos), buffer()->next_char(buffer()->line_end(dragPos)));
@@ -4343,8 +4420,20 @@ int Fl_Text_Display::handle(int event) {
     }
 
     case FL_MOUSEWHEEL:
-      if (Fl::event_dy()) return mVScrollBar->handle(event);
-      else return mHScrollBar->handle(event);
+      if (Fl::e_dy && mVScrollBar->visible()) {
+        // Issue #879
+        Fl_Scrollbar *vs = mVScrollBar;
+        if ((Fl::e_dy < 0) && (vs->value() == int(vs->minimum()))) return 0;  // hit top? ignore
+        if ((Fl::e_dy > 0) && (vs->value() == int(vs->maximum()))) return 0;  // hit bot? ignore
+        return vs->handle(event);
+      } else if (Fl::e_dx && mHScrollBar->visible()) {
+        // Issue #879
+        Fl_Scrollbar *hs = mHScrollBar;
+        if ((Fl::e_dx < 0) && (hs->value() == int(hs->minimum()))) return 0;  // hit left? ignore
+        if ((Fl::e_dx > 0) && (hs->value() == int(hs->maximum()))) return 0;  // hit right? ignore
+        return hs->handle(event);
+      }
+      return 0;
 
     case FL_UNFOCUS:
       if (active_r() && window()) window()->cursor(FL_CURSOR_DEFAULT);

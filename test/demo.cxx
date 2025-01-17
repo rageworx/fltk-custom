@@ -91,7 +91,7 @@
 
 #define FORM_W 350
 #define FORM_H 440
-#define TTY_W  700
+#define TTY_W  780
 #define TTY_H  200
 
 /* The form description */
@@ -601,6 +601,7 @@ int main(int argc, char **argv) {
   // parse commandline
 
   int i = 0;
+  Fl::args_to_utf8(argc, argv); // for MSYS2/MinGW
   if (!Fl::args(argc, argv, i) || i < argc-1)
     Fl::fatal("Usage: %s <switches> <menufile>\n%s", argv[0], Fl::help);
   if (i < argc) {

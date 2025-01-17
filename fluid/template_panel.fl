@@ -1,5 +1,5 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0400
+version 1.0401
 header_name {.h}
 code_name {.cxx}
 comment {//
@@ -265,7 +265,7 @@ if (sample_templates_generated < 2) {
 "er\\n}\\n", f);
     fclose(f);
   }
-  
+
   template_install(path, "/FLTK_License.fl", tmpl_FLTK_License_fl, sizeof(tmpl_FLTK_License_fl), tmpl_FLTK_License_fl_size);
   template_install(path, "/1of7GUIs.fl", tmpl_1of7GUIs_fl, sizeof(tmpl_1of7GUIs_fl), tmpl_1of7GUIs_fl_size);
   sample_templates_generated = 2;

@@ -27,7 +27,7 @@
 #include "Fl_Widget_Type.h"
 #include "Fl_Grid_Type.h"
 #include "Fl_Window_Type.h"
-#include "alignment_panel.h"
+#include "settings_panel.h"
 #include "widget_browser.h"
 #include "shell_command.h"
 #include "code.h"
@@ -75,9 +75,9 @@ int read_file(const char *filename, int merge, Strategy strategy) {
     is used to implement copy and paste.
  \return 0 if the operation failed, 1 if it succeeded
  */
-int write_file(const char *filename, int selected_only, bool to_sourceview) {
+int write_file(const char *filename, int selected_only, bool to_codeview) {
   Fd_Project_Writer out;
-  return out.write_project(filename, selected_only, to_sourceview);
+  return out.write_project(filename, selected_only, to_codeview);
 }
 
 /**
@@ -227,6 +227,7 @@ int Fd_Project_Reader::read_quoted() {      // read whatever character is after 
 Fl_Type *Fd_Project_Reader::read_children(Fl_Type *p, int merge, Strategy strategy, char skip_options) {
   Fl_Type::current = p;
   Fl_Type *last_child_read = NULL;
+  Fl_Type *t = NULL;
   for (;;) {
     const char *c = read_word();
   REUSE_C:
@@ -283,7 +284,7 @@ Fl_Type *Fd_Project_Reader::read_children(Fl_Type *p, int merge, Strategy strate
         goto CONTINUE;
       }
       if (!strcmp(c,"i18n_type")) {
-        g_project.i18n_type = atoi(read_word());
+        g_project.i18n_type = static_cast<Fd_I18n_Type>(atoi(read_word()));
         goto CONTINUE;
       }
       if (!strcmp(c,"i18n_gnu_function")) {
@@ -303,16 +304,16 @@ Fl_Type *Fd_Project_Reader::read_children(Fl_Type *p, int merge, Strategy strate
         goto CONTINUE;
       }
       if (!strcmp(c,"i18n_include")) {
-        if (g_project.i18n_type == 1)
+        if (g_project.i18n_type == FD_I18N_GNU)
           g_project.i18n_gnu_include = read_word();
-        else if (g_project.i18n_type == 2)
+        else if (g_project.i18n_type == FD_I18N_POSIX)
           g_project.i18n_pos_include = read_word();
         goto CONTINUE;
       }
       if (!strcmp(c,"i18n_conditional")) {
-        if (g_project.i18n_type == 1)
+        if (g_project.i18n_type == FD_I18N_GNU)
           g_project.i18n_gnu_conditional = read_word();
-        else if (g_project.i18n_type == 2)
+        else if (g_project.i18n_type == FD_I18N_POSIX)
           g_project.i18n_pos_conditional = read_word();
         goto CONTINUE;
       }
@@ -353,44 +354,43 @@ Fl_Type *Fd_Project_Reader::read_children(Fl_Type *p, int merge, Strategy strate
         goto CONTINUE;
       }
     }
-    {
-      Fl_Type *t = add_new_widget_from_file(c, strategy);
-      if (!t) {
-        read_error("Unknown word \"%s\"", c);
-        continue;
-      }
-      last_child_read = t;
-      // After reading the first widget, we no longer need to look for options
-      skip_options = 1;
+    t = add_new_widget_from_file(c, strategy);
+    if (!t) {
+      read_error("Unknown word \"%s\"", c);
+      continue;
+    }
+    last_child_read = t;
+    // After reading the first widget, we no longer need to look for options
+    skip_options = 1;
 
-      t->name(read_word());
+    t->name(read_word());
 
+    c = read_word(1);
+    if (strcmp(c,"{") && t->is_class()) {   // <prefix> <name>
+      ((Fl_Class_Type*)t)->prefix(t->name());
+      t->name(c);
       c = read_word(1);
-      if (strcmp(c,"{") && t->is_class()) {   // <prefix> <name>
-        ((Fl_Class_Type*)t)->prefix(t->name());
-        t->name(c);
-        c = read_word(1);
-      }
+    }
 
-      if (strcmp(c,"{")) {
-        read_error("Missing property list for %s\n",t->title());
-        goto REUSE_C;
-      }
+    if (strcmp(c,"{")) {
+      read_error("Missing property list for %s\n",t->title());
+      goto REUSE_C;
+    }
 
-      t->open_ = 0;
-      for (;;) {
-        const char *cc = read_word();
-        if (!cc || !strcmp(cc,"}")) break;
-        t->read_property(*this, cc);
-      }
+    t->folded_ = 1;
+    for (;;) {
+      const char *cc = read_word();
+      if (!cc || !strcmp(cc,"}")) break;
+      t->read_property(*this, cc);
+    }
 
-      if (!t->is_parent()) continue;
+    if (t->can_have_children()) {
       c = read_word(1);
       if (strcmp(c,"{")) {
         read_error("Missing child list for %s\n",t->title());
         goto REUSE_C;
       }
-      read_children(t, 0, strategy, skip_options);
+      read_children(t, 0, kAddAsLastChild, skip_options);
       t->postprocess_read();
       // FIXME: this has no business in the file reader!
       // TODO: this is called whenever something is pasted from the top level into a grid
@@ -406,7 +406,14 @@ Fl_Type *Fd_Project_Reader::read_children(Fl_Type *p, int merge, Strategy strate
       t->layout_widget();
     }
 
-    Fl_Type::current = p;
+    if (strategy == kAddAsFirstChild) {
+      strategy = kAddAfterCurrent;
+    }
+    if (strategy == kAddAfterCurrent) {
+      Fl_Type::current = t;
+    } else {
+      Fl_Type::current = p;
+    }
 
   CONTINUE:;
   }
@@ -780,7 +787,7 @@ void Fd_Project_Reader::read_fdesign() {
 Fd_Project_Writer::Fd_Project_Writer()
 : fout(NULL),
   needspace(0),
-  write_sourceview_(false)
+  write_codeview_(false)
 {
 }
 
@@ -824,11 +831,11 @@ int Fd_Project_Writer::close_write() {
  \param[in] filename create this file, and if it exists, overwrite it
  \param[in] selected_only write only the selected nodes in the widget_tree. This
             is used to implement copy and paste.
- \param[in] sv if set, this file will be used by SourceView
+ \param[in] sv if set, this file will be used by codeview
  \return 0 if the operation failed, 1 if it succeeded
  */
 int Fd_Project_Writer::write_project(const char *filename, int selected_only, bool sv) {
-  write_sourceview_ = sv;
+  write_codeview_ = sv;
   undo_suspend();
   if (!open_write(filename)) {
     undo_resume();
@@ -847,13 +854,15 @@ int Fd_Project_Writer::write_project(const char *filename, int selected_only, bo
   if (g_project.i18n_type) {
     write_string("\ni18n_type %d", g_project.i18n_type);
     switch (g_project.i18n_type) {
-      case 1 : /* GNU gettext */
+      case FD_I18N_NONE:
+        break;
+      case FD_I18N_GNU : /* GNU gettext */
         write_string("\ni18n_include"); write_word(g_project.i18n_gnu_include.c_str());
         write_string("\ni18n_conditional"); write_word(g_project.i18n_gnu_conditional.c_str());
         write_string("\ni18n_gnu_function"); write_word(g_project.i18n_gnu_function.c_str());
         write_string("\ni18n_gnu_static_function"); write_word(g_project.i18n_gnu_static_function.c_str());
         break;
-      case 2 : /* POSIX catgets */
+      case FD_I18N_POSIX : /* POSIX catgets */
         write_string("\ni18n_include"); write_word(g_project.i18n_pos_include.c_str());
         write_string("\ni18n_conditional"); write_word(g_project.i18n_pos_conditional.c_str());
         if (!g_project.i18n_pos_file.empty()) {

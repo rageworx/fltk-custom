@@ -1,7 +1,7 @@
 //
 // Widget type code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2023 by Bill Spitzak and others.
+// Copyright 1998-2024 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -24,7 +24,7 @@
 #include "file.h"
 #include "code.h"
 #include "Fluid_Image.h"
-#include "alignment_panel.h"
+#include "settings_panel.h"
 #include "widget_panel.h"
 #include "undo.h"
 #include "mergeback.h"
@@ -54,12 +54,17 @@ int Fl_Widget_Type::is_widget() const {return 1;}
 int Fl_Widget_Type::is_public() const {return public_;}
 
 const char* subclassname(Fl_Type* l) {
+  if (l->is_a(ID_Menu_Bar)) {
+    Fl_Menu_Bar_Type *mb = static_cast<Fl_Menu_Bar_Type*>(l);
+    if (mb->is_sys_menu_bar())
+      return mb->sys_menubar_name();
+  }
   if (l->is_widget()) {
     Fl_Widget_Type* p = (Fl_Widget_Type*)l;
     const char* c = p->subclass();
     if (c) return c;
     if (l->is_class()) return "Fl_Group";
-    if (p->o->type() == FL_WINDOW+1) return "Fl_Double_Window";
+    if (p->o->type() == FL_DOUBLE_WINDOW) return "Fl_Double_Window";
     if (p->id() == ID_Input) {
       if (p->o->type() == FL_FLOAT_INPUT) return "Fl_Float_Input";
       if (p->o->type() == FL_INT_INPUT) return "Fl_Int_Input";
@@ -82,19 +87,20 @@ Fl_Widget_Type::ideal_size(int &w, int &h) {
  \return new node
  */
 Fl_Type *Fl_Widget_Type::make(Strategy strategy) {
-  // Find the current widget, or widget to copy:
-  Fl_Type *qq = Fl_Type::current;
-  while (qq && (!qq->is_true_widget() || !qq->is_parent())) qq = qq->parent;
-  if (!qq) {
+  Fl_Type *anchor = Fl_Type::current, *pp = anchor;
+  if (pp && (strategy == kAddAfterCurrent)) pp = pp->parent;
+  while (pp && !pp->is_a(ID_Group)) {
+    anchor = pp;
+    strategy = kAddAfterCurrent;
+    pp = pp->parent;
+  }
+  if (!pp || !pp->is_true_widget() || !anchor->is_true_widget()) {
     fl_message("Please select a group widget or window");
     return 0;
   }
-  Fl_Widget_Type* q = (Fl_Widget_Type*)qq;
-  // find the parent widget:
-  Fl_Widget_Type* p = q;
-  if ((force_parent || !p->is_a(ID_Group)) && p->parent && p->parent->is_widget())
-    p = (Fl_Widget_Type*)(p->parent);
-  force_parent = 0;
+
+  Fl_Widget_Type* p = (Fl_Widget_Type*)pp;
+  Fl_Widget_Type* q = (Fl_Widget_Type*)anchor;
 
   // Figure out a border between widget and window:
   int B = p->o->w()/2; if (p->o->h()/2 < B) B = p->o->h()/2; if (B>25) B = 25;
@@ -141,7 +147,7 @@ Fl_Type *Fl_Widget_Type::make(Strategy strategy) {
   // Put it in the parent:
   //  ((Fl_Group *)(p->o))->add(t->o); (done by Fl_Type::add())
   // add to browser:
-  t->add(p, strategy);
+  t->add(anchor, strategy);
   t->redraw();
   return t;
 }
@@ -151,8 +157,17 @@ void Fl_Widget_Type::setimage(Fluid_Image *i) {
   if (image) image->decrement();
   if (i) i->increment();
   image = i;
-  if (i) i->image(o);
-  else o->image(0);
+  if (i) {
+    i->image(o);
+    if (o->image() && (scale_image_w_ || scale_image_h_)) {
+      int iw = scale_image_w_>0 ? scale_image_w_ : o->image()->data_w();
+      int ih = scale_image_h_>0 ? scale_image_h_ : o->image()->data_h();
+      o->image()->scale(iw, ih, 0, 1);
+    }
+  } else {
+    o->image(0);
+    //scale_image_w_ = scale_image_h_ = 0;
+  }
   redraw();
 }
 
@@ -161,8 +176,17 @@ void Fl_Widget_Type::setinactive(Fluid_Image *i) {
   if (inactive) inactive->decrement();
   if (i) i->increment();
   inactive = i;
-  if (i) i->deimage(o);
-  else o->deimage(0);
+  if (i) {
+    i->deimage(o);
+    if (o->deimage()) {
+      int iw = scale_deimage_w_>0 ? scale_deimage_w_ : o->deimage()->data_w();
+      int ih = scale_deimage_h_>0 ? scale_deimage_h_ : o->deimage()->data_h();
+      o->deimage()->scale(iw, ih, 0, 1);
+    }
+  } else {
+    o->deimage(0);
+    //scale_deimage_w_ = scale_deimage_h_ = 0;
+  }
   redraw();
 }
 
@@ -188,6 +212,10 @@ Fl_Widget_Type::Fl_Widget_Type()
   compress_image_ = 1;
   bind_deimage_ = 0;
   compress_deimage_ = 1;
+  scale_image_w_ = 0;
+  scale_image_h_ = 0;
+  scale_deimage_w_ = 0;
+  scale_deimage_h_ = 0;
 }
 
 Fl_Widget_Type::~Fl_Widget_Type() {
@@ -255,7 +283,7 @@ void Fl_Widget_Type::redraw() {
 Fl_Type *sort(Fl_Type *parent) {
   Fl_Type *f,*n=0;
   for (f = parent ? parent->next : Fl_Type::first; ; f = n) {
-    if (!f || (parent && f->level <= parent->level)) return f;
+    if (!f || (parent && f->level <= parent->level)) break;
     n = sort(f);
     if (!f->selected || !f->is_true_widget()) continue;
     Fl_Widget* fw = ((Fl_Widget_Type*)f)->o;
@@ -268,7 +296,9 @@ Fl_Type *sort(Fl_Type *parent) {
     }
     if (g != f) f->move_before(g);
   }
-  parent->layout_widget();
+  if (parent)
+    parent->layout_widget();
+  return f;
 }
 
 ////////////////////////////////////////////////////////////////
@@ -359,7 +389,7 @@ void name_public_cb(Fl_Choice* i, void* v) {
 /* Treating UNDO for text widget.
 
  Goal: we want to continuously update the UI while the user is typing text
- (changing the label, in this case). Source View does deferred updates, and
+ (changing the label, in this case). Code View does deferred updates, and
  the widget browser and widget panel update on every keystroke. At the same
  time, we want to limit undo actions to few and logical units.
 
@@ -455,7 +485,7 @@ void image_browse_cb(Fl_Button* b, void *v) {
   }
 }
 
-void bind_image_cb(Fl_Button* b, void *v) {
+void bind_image_cb(Fl_Check_Button* b, void *v) {
   if (v == LOAD) {
     if (current_widget->is_widget() && !current_widget->is_a(ID_Window)) {
       b->activate();
@@ -475,11 +505,11 @@ void bind_image_cb(Fl_Button* b, void *v) {
   }
 }
 
-void compress_image_cb(Fl_Button* b, void *v) {
+void compress_image_cb(Fl_Check_Button* b, void *v) {
   if (v == LOAD) {
     if (current_widget->is_widget() && !current_widget->is_a(ID_Window)) {
       b->activate();
-      b->value(current_widget->compress_image_);
+      b->value(!current_widget->compress_image_);
     } else {
       b->deactivate();
     }
@@ -487,7 +517,7 @@ void compress_image_cb(Fl_Button* b, void *v) {
     int mod = 0;
     for (Fl_Type *o = Fl_Type::first; o; o = o->next) {
       if (o->selected && o->is_widget()) {
-        ((Fl_Widget_Type*)o)->compress_image_ = b->value();
+        ((Fl_Widget_Type*)o)->compress_image_ = !b->value();
         mod = 1;
       }
     }
@@ -537,7 +567,7 @@ void inactive_browse_cb(Fl_Button* b, void *v) {
   }
 }
 
-void bind_deimage_cb(Fl_Button* b, void *v) {
+void bind_deimage_cb(Fl_Check_Button* b, void *v) {
   if (v == LOAD) {
     if (current_widget->is_widget() && !current_widget->is_a(ID_Window)) {
       b->activate();
@@ -557,11 +587,11 @@ void bind_deimage_cb(Fl_Button* b, void *v) {
   }
 }
 
-void compress_deimage_cb(Fl_Button* b, void *v) {
+void compress_deimage_cb(Fl_Check_Button* b, void *v) {
   if (v == LOAD) {
     if (current_widget->is_widget() && !current_widget->is_a(ID_Window)) {
       b->activate();
-      b->value(current_widget->compress_deimage_);
+      b->value(!current_widget->compress_deimage_);
     } else {
       b->deactivate();
     }
@@ -569,7 +599,7 @@ void compress_deimage_cb(Fl_Button* b, void *v) {
     int mod = 0;
     for (Fl_Type *o = Fl_Type::first; o; o = o->next) {
       if (o->selected && o->is_widget()) {
-        ((Fl_Widget_Type*)o)->compress_deimage_ = b->value();
+        ((Fl_Widget_Type*)o)->compress_deimage_ = !b->value();
         mod = 1;
       }
     }
@@ -1938,6 +1968,93 @@ void textcolor_menu_cb(Fl_Menu_Button* i, void* v) {
   }
 }
 
+void image_spacing_cb(Fl_Value_Input* i, void* v) {
+  int s;
+  if (v == LOAD) {
+    if (!current_widget->is_true_widget()) {
+      i->deactivate();
+      i->value(0);
+    } else {
+      i->activate();
+      i->value(((Fl_Widget_Type*)current_widget)->o->label_image_spacing());
+    }
+  } else {
+    int mod = 0;
+    s = int(i->value());
+    for (Fl_Type *o = Fl_Type::first; o; o = o->next) {
+      if (o->selected && o->is_true_widget()) {
+        Fl_Widget_Type* q = (Fl_Widget_Type*)o;
+        if (q->o->label_image_spacing() != s) {
+          q->o->label_image_spacing(s);
+          if (!(q->o->align() & FL_ALIGN_INSIDE) && q->o->window())
+            q->o->window()->damage(FL_DAMAGE_EXPOSE); // outside labels
+          q->o->redraw();
+          mod = 1;
+        }
+      }
+    }
+    if (mod) set_modflag(1);
+  }
+}
+
+void h_label_margin_cb(Fl_Value_Input* i, void* v) {
+  int s;
+  if (v == LOAD) {
+    if (!current_widget->is_true_widget()) {
+      i->deactivate();
+      i->value(0);
+    } else {
+      i->activate();
+      i->value(((Fl_Widget_Type*)current_widget)->o->horizontal_label_margin());
+    }
+  } else {
+    int mod = 0;
+    s = int(i->value());
+    for (Fl_Type *o = Fl_Type::first; o; o = o->next) {
+      if (o->selected && o->is_true_widget()) {
+        Fl_Widget_Type* q = (Fl_Widget_Type*)o;
+        if (q->o->horizontal_label_margin() != s) {
+          q->o->horizontal_label_margin(s);
+          if (!(q->o->align() & FL_ALIGN_INSIDE) && q->o->window())
+            q->o->window()->damage(FL_DAMAGE_EXPOSE); // outside labels
+          q->o->redraw();
+          mod = 1;
+        }
+      }
+    }
+    if (mod) set_modflag(1);
+  }
+}
+
+void v_label_margin_cb(Fl_Value_Input* i, void* v) {
+  int s;
+  if (v == LOAD) {
+    if (!current_widget->is_true_widget()) {
+      i->deactivate();
+      i->value(0);
+    } else {
+      i->activate();
+      i->value(((Fl_Widget_Type*)current_widget)->o->vertical_label_margin());
+    }
+  } else {
+    int mod = 0;
+    s = int(i->value());
+    for (Fl_Type *o = Fl_Type::first; o; o = o->next) {
+      if (o->selected && o->is_true_widget()) {
+        Fl_Widget_Type* q = (Fl_Widget_Type*)o;
+        if (q->o->vertical_label_margin() != s) {
+          q->o->vertical_label_margin(s);
+          if (!(q->o->align() & FL_ALIGN_INSIDE) && q->o->window())
+            q->o->window()->damage(FL_DAMAGE_EXPOSE); // outside labels
+          q->o->redraw();
+          mod = 1;
+        }
+      }
+    }
+    if (mod) set_modflag(1);
+  }
+}
+
 ////////////////////////////////////////////////////////////////
 // Kludges to the panel for subclasses:
 
@@ -2703,7 +2820,7 @@ void Fl_Widget_Type::open() {
 extern void redraw_overlays();
 extern void check_redraw_corresponding_parent(Fl_Type*);
 extern void redraw_browser();
-extern void update_sourceview_position();
+extern void update_codeview_position();
 
 // Called when ui changes what objects are selected:
 // p is selected object, null for all deletions (we must throw away
@@ -2737,8 +2854,8 @@ void selection_changed(Fl_Type *p) {
   redraw_overlays();
   // load the panel with the new settings:
   load_panel();
-  // update the source viewer to show the code for the selected object
-  update_sourceview_position();
+  // update the code viewer to show the code for the selected object
+  update_codeview_position();
 }
 
 ////////////////////////////////////////////////////////////////
@@ -2905,7 +3022,7 @@ void Fl_Widget_Type::write_code1(Fd_Code_Writer& f) {
   f.varused = wused;
 
   if (!name() && !f.varused) {
-    f.varused |= is_parent();
+    f.varused |= can_have_children();
 
     if (!f.varused) {
       f.varused_test = 1;
@@ -2967,23 +3084,30 @@ void Fl_Widget_Type::write_code1(Fd_Code_Writer& f) {
       f.write_c("new %s(0, 0, %d, %d", t, o->w(), o->h());
     else
       f.write_c("new %s(%d, %d", t, o->w(), o->h());
+  } else if (is_a(ID_Menu_Bar)
+             && ((Fl_Menu_Bar_Type*)this)->is_sys_menu_bar()
+             && is_in_class()) {
+    f.write_c("(%s*)new %s(%d, %d, %d, %d",
+              t, ((Fl_Menu_Bar_Type*)this)->sys_menubar_proxy_name(),
+              o->x(), o->y(), o->w(), o->h());
   } else {
     f.write_c("new %s(%d, %d, %d, %d", t, o->x(), o->y(), o->w(), o->h());
   }
   if (label() && *label()) {
     f.write_c(", ");
     switch (g_project.i18n_type) {
-    case 0 : /* None */
+    case FD_I18N_NONE : /* None */
         f.write_cstring(label());
         break;
-    case 1 : /* GNU gettext */
+    case FD_I18N_GNU : /* GNU gettext */
         f.write_c("%s(", g_project.i18n_gnu_function.c_str());
         f.write_cstring(label());
         f.write_c(")");
         break;
-    case 2 : /* POSIX catgets */
-        f.write_c("catgets(%s,%s,%d,", g_project.i18n_pos_file[0] ? g_project.i18n_pos_file.c_str() : "_catalog",
-                g_project.i18n_pos_set.c_str(), msgnum());
+    case FD_I18N_POSIX : /* POSIX catgets */
+        f.write_c("catgets(%s,%s,%d,",
+                  g_project.i18n_pos_file.empty() ? "_catalog" : g_project.i18n_pos_file.c_str(),
+                  g_project.i18n_pos_set.c_str(), msgnum());
         f.write_cstring(label());
         f.write_c(")");
         break;
@@ -3046,17 +3170,19 @@ void Fl_Widget_Type::write_widget_code(Fd_Code_Writer& f) {
   if (tooltip() && *tooltip()) {
     f.write_c("%s%s->tooltip(",f.indent(), var);
     switch (g_project.i18n_type) {
-    case 0 : /* None */
+    case FD_I18N_NONE : /* None */
         f.write_cstring(tooltip());
         break;
-    case 1 : /* GNU gettext */
+    case FD_I18N_GNU : /* GNU gettext */
         f.write_c("%s(", g_project.i18n_gnu_function.c_str());
         f.write_cstring(tooltip());
         f.write_c(")");
         break;
-    case 2 : /* POSIX catgets */
-        f.write_c("catgets(%s,%s,%d,", g_project.i18n_pos_file[0] ? g_project.i18n_pos_file.c_str() : "_catalog",
-                g_project.i18n_pos_set.c_str(), msgnum() + 1);
+    case FD_I18N_POSIX : /* POSIX catgets */
+        f.write_c("catgets(%s,%s,%d,",
+                  g_project.i18n_pos_file.empty() ? "_catalog" : g_project.i18n_pos_file.c_str(),
+                  g_project.i18n_pos_set.c_str(),
+                  msgnum() + 1);
         f.write_cstring(tooltip());
         f.write_c(")");
         break;
@@ -3078,14 +3204,21 @@ void Fl_Widget_Type::write_widget_code(Fd_Code_Writer& f) {
   else if (is_a(ID_Value_Input)) shortcut = ((Fl_Value_Input*)o)->shortcut();
   else if (is_a(ID_Text_Display)) shortcut = ((Fl_Text_Display*)o)->shortcut();
   if (shortcut) {
-    if (g_project.use_FL_COMMAND && (shortcut & (FL_CTRL|FL_META))) {
-      f.write_c("%s%s->shortcut(", f.indent(), var);
-      if (shortcut & FL_COMMAND) f.write_c("FL_COMMAND|");
-      if (shortcut & FL_CONTROL) f.write_c("FL_CONTROL|");
-      f.write_c("0x%x);\n", shortcut & ~(FL_CTRL|FL_META));
+    int s = shortcut;
+    f.write_c("%s%s->shortcut(", f.indent(), var);
+    if (g_project.use_FL_COMMAND) {
+      if (s & FL_CTRL) { f.write_c("FL_CONTROL|"); s &= ~FL_CTRL; }
+      if (s & FL_META) { f.write_c("FL_COMMAND|"); s &= ~FL_META; }
     } else {
-      f.write_c("%s%s->shortcut(0x%x);\n", f.indent(), var, shortcut);
+      if (s & FL_CTRL) { f.write_c("FL_CTRL|"); s &= ~FL_CTRL; }
+      if (s & FL_META) { f.write_c("FL_META|"); s &= ~FL_META; }
     }
+    if (s & FL_SHIFT) { f.write_c("FL_SHIFT|"); s &= ~FL_SHIFT; }
+    if (s & FL_ALT) { f.write_c("FL_ALT|"); s &= ~FL_ALT; }
+    if ((s < 127) && isprint(s))
+      f.write_c("'%c');\n", s);
+    else
+      f.write_c("0x%x);\n", s);
   }
 
   if (is_a(ID_Button)) {
@@ -3107,8 +3240,34 @@ void Fl_Widget_Type::write_widget_code(Fd_Code_Writer& f) {
     write_color(f, "color", o->color());
   if (o->selection_color() != tplate->selection_color() || subclass())
     write_color(f, "selection_color", o->selection_color());
-  if (image) image->write_code(f, bind_image_, var);
-  if (inactive) inactive->write_code(f, bind_deimage_, var, 1);
+  if (image) {
+    image->write_code(f, bind_image_, var);
+    if (scale_image_w_ || scale_image_h_) {
+      f.write_c("%s%s->image()->scale(", f.indent(), var);
+      if (scale_image_w_>0)
+        f.write_c("%d, ", scale_image_w_);
+      else
+        f.write_c("%s->image()->data_w(), ", var);
+      if (scale_image_h_>0)
+        f.write_c("%d, 0, 1);\n", scale_image_h_);
+      else
+        f.write_c("%s->image()->data_h(), 0, 1);\n", var);
+    }
+  }
+  if (inactive) {
+    inactive->write_code(f, bind_deimage_, var, 1);
+    if (scale_deimage_w_ || scale_deimage_h_) {
+      f.write_c("%s%s->deimage()->scale(", f.indent(), var);
+      if (scale_deimage_w_>0)
+        f.write_c("%d, ", scale_deimage_w_);
+      else
+        f.write_c("%s->deimage()->data_w(), ", var);
+      if (scale_deimage_h_>0)
+        f.write_c("%d, 0, 1);\n", scale_deimage_h_);
+      else
+        f.write_c("%s->deimage()->data_h(), 0, 1);\n", var);
+    }
+  }
   if (o->labeltype() != tplate->labeltype() || subclass())
     f.write_c("%s%s->labeltype(FL_%s);\n", f.indent(), var,
             item_name(labeltypemenu, o->labeltype()));
@@ -3118,6 +3277,12 @@ void Fl_Widget_Type::write_widget_code(Fd_Code_Writer& f) {
     f.write_c("%s%s->labelsize(%d);\n", f.indent(), var, o->labelsize());
   if (o->labelcolor() != tplate->labelcolor() || subclass())
     write_color(f, "labelcolor", o->labelcolor());
+  if (o->horizontal_label_margin() != tplate->horizontal_label_margin())
+    f.write_c("%s%s->horizontal_label_margin(%d);\n", f.indent(), var, o->horizontal_label_margin());
+  if (o->vertical_label_margin() != tplate->vertical_label_margin())
+    f.write_c("%s%s->vertical_label_margin(%d);\n", f.indent(), var, o->vertical_label_margin());
+  if (o->label_image_spacing() != tplate->label_image_spacing())
+    f.write_c("%s%s->label_image_spacing(%d);\n", f.indent(), var, o->label_image_spacing());
   if (is_a(ID_Valuator_)) {
     Fl_Valuator* v = (Fl_Valuator*)o;
     Fl_Valuator* t = (Fl_Valuator*)(tplate);
@@ -3178,8 +3343,6 @@ void Fl_Widget_Type::write_widget_code(Fd_Code_Writer& f) {
     f.write_c("));\n");
   }
   Fl_When ww = o->when();
-  if (ww==FL_WHEN_NOT_CHANGED)
-    ww = FL_WHEN_NEVER;
   if (ww != tplate->when() || subclass())
     f.write_c("%s%s->when(%s);\n", f.indent(), var, when_symbol_name(ww));
   if (!o->visible() && o->parent())
@@ -3230,12 +3393,16 @@ void Fl_Widget_Type::write_properties(Fd_Project_Writer &f) {
     f.write_word(tooltip());
   }
   if (image_name() && *image_name()) {
+    if (scale_image_w_ || scale_image_h_)
+      f.write_string("scale_image {%d %d}", scale_image_w_, scale_image_h_);
     f.write_string("image");
     f.write_word(image_name());
     f.write_string("compress_image %d", compress_image_);
   }
   if (bind_image_) f.write_string("bind_image 1");
   if (inactive_name() && *inactive_name()) {
+    if (scale_deimage_w_ || scale_deimage_h_)
+      f.write_string("scale_deimage {%d %d}", scale_deimage_w_, scale_deimage_h_);
     f.write_string("deimage");
     f.write_word(inactive_name());
     f.write_string("compress_deimage %d", compress_deimage_);
@@ -3295,6 +3462,12 @@ void Fl_Widget_Type::write_properties(Fd_Project_Writer &f) {
     f.write_string("labelcolor %d", o->labelcolor());
   if (o->align()!=tplate->align())
     f.write_string("align %d", o->align());
+  if (o->horizontal_label_margin()!=tplate->horizontal_label_margin())
+    f.write_string("h_label_margin %d", o->horizontal_label_margin());
+  if (o->vertical_label_margin()!=tplate->vertical_label_margin())
+    f.write_string("v_label_margin %d", o->vertical_label_margin());
+  if (o->label_image_spacing()!=tplate->label_image_spacing())
+    f.write_string("image_spacing %d", o->label_image_spacing());
   if (o->when() != tplate->when())
     f.write_string("when %d", o->when());
   if (is_a(ID_Valuator_)) {
@@ -3359,12 +3532,18 @@ void Fl_Widget_Type::read_property(Fd_Project_Reader &f, const char *c) {
     }
   } else if (!strcmp(c,"tooltip")) {
     tooltip(f.read_word());
+  } else if (!strcmp(c,"scale_image")) {
+    if (sscanf(f.read_word(),"%d %d",&w,&h) == 2) {
+      scale_image_w_ = w;
+      scale_image_h_ = h;
+    }
   } else if (!strcmp(c,"image")) {
     image_name(f.read_word());
     // starting in 2023, `image` is always followed by `compress_image`
     // the code below is for compatibility with older .fl files
     const char *ext = fl_filename_ext(image_name_);
     if (   strcmp(ext, ".jpg")
+        && strcmp(ext, ".png")
         && strcmp(ext, ".svg")
         && strcmp(ext, ".svgz"))
       compress_image_ = 0; // if it is neither of those, default to uncompressed
@@ -3372,12 +3551,18 @@ void Fl_Widget_Type::read_property(Fd_Project_Reader &f, const char *c) {
     bind_image_ = (int)atol(f.read_word());
   } else if (!strcmp(c,"compress_image")) {
     compress_image_ = (int)atol(f.read_word());
+  } else if (!strcmp(c,"scale_deimage")) {
+    if (sscanf(f.read_word(),"%d %d",&w,&h) == 2) {
+      scale_deimage_w_ = w;
+      scale_deimage_h_ = h;
+    }
   } else if (!strcmp(c,"deimage")) {
     inactive_name(f.read_word());
     // starting in 2023, `deimage` is always followed by `compress_deimage`
     // the code below is for compatibility with older .fl files
     const char *ext = fl_filename_ext(inactive_name_);
     if (   strcmp(ext, ".jpg")
+        && strcmp(ext, ".png")
         && strcmp(ext, ".svg")
         && strcmp(ext, ".svgz"))
       compress_deimage_ = 0; // if it is neither of those, default to uncompressed
@@ -3452,6 +3637,12 @@ void Fl_Widget_Type::read_property(Fd_Project_Reader &f, const char *c) {
     if (sscanf(f.read_word(),"%d",&x) == 1) o->labelcolor(x);
   } else if (!strcmp(c,"align")) {
     if (sscanf(f.read_word(),"%d",&x) == 1) o->align(x);
+  } else if (!strcmp(c,"h_label_margin")) {
+    if (sscanf(f.read_word(),"%d",&x) == 1) o->horizontal_label_margin(x);
+  } else if (!strcmp(c,"v_label_margin")) {
+    if (sscanf(f.read_word(),"%d",&x) == 1) o->vertical_label_margin(x);
+  } else if (!strcmp(c,"image_spacing")) {
+    if (sscanf(f.read_word(),"%d",&x) == 1) o->label_image_spacing(x);
   } else if (!strcmp(c,"when")) {
     if (sscanf(f.read_word(),"%d",&x) == 1) o->when(x);
   } else if (!strcmp(c,"minimum")) {
@@ -3643,6 +3834,8 @@ Fl_Widget* Fl_Widget_Type::propagate_live_mode(Fl_Group* grp) {
     }
   }
   grp->end();
+  live_widget = grp;
+  copy_properties_for_children();
   return live_widget;
 }
 
@@ -3657,9 +3850,9 @@ void Fl_Widget_Type::copy_properties() {
   if (!live_widget)
     return;
 
-  Fl_Font ff;
-  int fs;
-  Fl_Color fc;
+  Fl_Font ff = 0;
+  int fs = 0;
+  Fl_Color fc = 0;
   textstuff(0, ff, fs, fc);
 
   // copy all attributes common to all widget types

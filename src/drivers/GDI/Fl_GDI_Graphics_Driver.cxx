@@ -96,6 +96,8 @@ Fl_GDI_Graphics_Driver::Fl_GDI_Graphics_Driver() {
   long_point = NULL;
   depth = -1;
   origins = NULL;
+  is_solid_ = true;
+  style_ = FL_SOLID;
 }
 
 Fl_GDI_Graphics_Driver::~Fl_GDI_Graphics_Driver() {
@@ -264,6 +266,7 @@ void Fl_GDI_Graphics_Driver::scale(float f) {
   if (f != scale()) {
     size_ = 0;
     Fl_Graphics_Driver::scale(f);
+    color(FL_BLACK);
     line_style(FL_SOLID); // scale also default line width
   }
 }

@@ -91,8 +91,8 @@ struct Fl_Menu_Item;
   The appearance of each "tab" is taken from the label() and color() of the
   child group corresponding to that "tab" and panel. Where the "tabs" appear
   depends on the position and size of the child groups that make up the
-  panels within the Fl_Tab, i.e. whether there is more space above or
-  below them. The height of the "tabs" depends on how much free space
+  panels within the Fl_Tabs widget, i.e. whether there is more space above
+  or below them. The height of the "tabs" depends on how much free space
   is available.
 
   \image html  tabs_default.png "Fl_Tabs Default Appearance"
@@ -251,6 +251,8 @@ protected:
   Fl_Align tab_align_;  ///< tab label alignment
   int has_overflow_menu;///< set in OVERFLOW_PULLDOWN mode if tabs overflow. The actual menu array is created only on demand
 
+  void take_focus(Fl_Widget *o);
+  int maybe_do_callback(Fl_Widget *o);
   void check_overflow_menu();
   void handle_overflow_menu();
   void draw_overflow_menu_button();
@@ -258,7 +260,6 @@ protected:
   int on_insert(Fl_Widget*, int) FL_OVERRIDE;
   int on_move(int, int) FL_OVERRIDE;
   void on_remove(int) FL_OVERRIDE;
-  void resize(int, int, int, int) FL_OVERRIDE;
 
   virtual void redraw_tabs();
   virtual int tab_positions();  // allocate and calculate tab positions
@@ -274,7 +275,10 @@ protected:
 public:
 
   Fl_Tabs(int X, int Y, int W, int H, const char *L = 0);
-  virtual ~Fl_Tabs();
+  ~Fl_Tabs() FL_OVERRIDE;
+
+  void resize(int, int, int, int) FL_OVERRIDE;
+  void show() FL_OVERRIDE;
 
   int handle(int) FL_OVERRIDE;
   Fl_Widget *value();

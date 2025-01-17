@@ -868,7 +868,7 @@ public:
   int tsize_;
   Fl_Color tcolor_;
   Fl_Batchmode_Terminal(int x, int y, int w, int h, const char *l=NULL)
-  : Fl_Group(x, y, w, h, l) 
+  : Fl_Group(x, y, w, h, l)
   { // set the defaults that Fl_Terminal would set
     box(FL_DOWN_BOX);
     color(FL_FOREGROUND_COLOR);
@@ -889,9 +889,9 @@ public:
 /**
  \brief Manage a terminal widget.
  */
-class Fl_Terminal_Type : public Fl_Group_Type
+class Fl_Terminal_Type : public Fl_Widget_Type
 {
-  typedef Fl_Group_Type super;
+  typedef Fl_Widget_Type super;
 public:
   const char *type_name() FL_OVERRIDE { return "Fl_Terminal"; }
   // Older .fl files with Fl_Simple_Terminal will create a Fl_Terminal instead.
@@ -929,7 +929,6 @@ public:
     return 1;
   }
   Fl_Widget_Type *_make() FL_OVERRIDE {return new Fl_Terminal_Type();}
-  int is_parent() const FL_OVERRIDE { return 0; }
   ID id() const FL_OVERRIDE { return ID_Terminal; }
   bool is_a(ID inID) const FL_OVERRIDE { return (inID==ID_Terminal) ? true : super::is_a(inID); }
 };
@@ -1209,7 +1208,7 @@ static Fl_Type *known_types[] = {
  add_new_widget_from_user(Fl_Type*, int)
  add_new_widget_from_user(const char*, int)
  */
-Fl_Type *add_new_widget_from_user(Fl_Type *inPrototype, Strategy strategy) {
+Fl_Type *add_new_widget_from_user(Fl_Type *inPrototype, Strategy strategy, bool and_open) {
   undo_checkpoint();
   undo_suspend();
   Fl_Type *t = ((Fl_Type*)inPrototype)->make(strategy);
@@ -1243,7 +1242,8 @@ Fl_Type *add_new_widget_from_user(Fl_Type *inPrototype, Strategy strategy) {
       if (changed && t->is_a(ID_Menu_Item)) {
         Fl_Type * tt = t->parent;
         while (tt && !tt->is_a(ID_Menu_Manager_)) tt = tt->parent;
-        ((Fl_Menu_Manager_Type*)tt)->build_menu();
+        if (tt)
+          ((Fl_Menu_Manager_Type*)tt)->build_menu();
       }
     }
     if (t->is_true_widget() && !t->is_a(ID_Window)) {
@@ -1314,7 +1314,8 @@ Fl_Type *add_new_widget_from_user(Fl_Type *inPrototype, Strategy strategy) {
     // make the new widget visible
     select_only(t);
     set_modflag(1);
-    t->open();
+    if (and_open)
+      t->open();
   } else {
     undo_current --;
     undo_last --;
@@ -1332,20 +1333,20 @@ Fl_Type *add_new_widget_from_user(Fl_Type *inPrototype, Strategy strategy) {
  add_new_widget_from_user(Fl_Type*, int)
  add_new_widget_from_user(const char*, int)
  */
-Fl_Type *add_new_widget_from_user(const char *inName, Strategy strategy) {
+Fl_Type *add_new_widget_from_user(const char *inName, Strategy strategy, bool and_open) {
   Fl_Type *prototype = typename_to_prototype(inName);
   if (prototype)
-    return add_new_widget_from_user(prototype, strategy);
+    return add_new_widget_from_user(prototype, strategy, and_open);
   else
     return NULL;
 }
 
 /**
- Callback for all menu items.
+ Callback for all non-widget menu items.
  */
 static void cbf(Fl_Widget *, void *v) {
   Fl_Type *t = NULL;
-  if (Fl_Type::current && Fl_Type::current->is_a(ID_Group))
+  if (Fl_Type::current && Fl_Type::current->can_have_children())
     t = ((Fl_Type*)v)->make(kAddAsLastChild);
   else
     t = ((Fl_Type*)v)->make(kAddAfterCurrent);
@@ -1353,11 +1354,11 @@ static void cbf(Fl_Widget *, void *v) {
 }
 
 /**
- Callback for all menu items.
+ Callback for all widget menu items.
  */
 static void cb(Fl_Widget *, void *v) {
   Fl_Type *t = NULL;
-  if (Fl_Type::current && Fl_Type::current->is_a(ID_Group))
+  if (Fl_Type::current && Fl_Type::current->can_have_children())
     t = add_new_widget_from_user((Fl_Type*)v, kAddAsLastChild);
   else
     t = add_new_widget_from_user((Fl_Type*)v, kAddAfterCurrent);

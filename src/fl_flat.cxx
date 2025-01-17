@@ -76,7 +76,7 @@ static void flat_thin_down_box(int x, int y, int w, int h, Fl_Color c)
 	fl_color( co );
 }
 
-extern void fl_internal_boxtype(Fl_Boxtype, Fl_Box_Draw_F*);
+extern void fl_internal_boxtype(Fl_Boxtype, Fl_Box_Draw_F*, Fl_Box_Draw_Focus_F* =NULL);
 
 Fl_Boxtype fl_define_FL_FLAT_UP_BOX() {
   fl_internal_boxtype(_FL_FLAT_UP_BOX, flat_up_box);

@@ -1,7 +1,7 @@
 //
 // Widget type header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2023 by Bill Spitzak and others.
+// Copyright 1998-2024 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -29,8 +29,25 @@ class Fl_Window_Type;
 class Fd_Project_Reader;
 class Fd_Project_Writer;
 
+/**
+ Declare where a new type is placed in the hierarchy.
+
+ Note that a type can also be the start of a hierarchy of types. In that case,
+
+ \see Fl_Type *Fl_..._Type::make(Strategy strategy) calls `add()`
+ Add single Type:
+    Fl_Type *add_new_widget_from_user(Fl_Type *inPrototype, Strategy strategy, bool and_open)
+    Fl_Type *add_new_widget_from_user(const char *inName, Strategy strategy, bool and_open)
+    Fl_Type *add_new_widget_from_file(const char *inName, Strategy strategy)
+ Add a hierarchy of Types
+    void Fl_Type::add(Fl_Type *p, Strategy strategy)
+    int read_file(const char *filename, int merge, Strategy strategy)
+    Fl_Type *Fd_Project_Reader::read_children(Fl_Type *p, int merge, Strategy strategy, char skip_options)
+    int Fd_Project_Reader::read_project(const char *filename, int merge, Strategy strategy)
+ */
 typedef enum {
-  kAddAsLastChild = 0,
+  kAddAsFirstChild = 0,
+  kAddAsLastChild,
   kAddAfterCurrent
 } Strategy;
 
@@ -75,6 +92,13 @@ void select_all_cb(Fl_Widget *,void *);
 void select_none_cb(Fl_Widget *,void *);
 void earlier_cb(Fl_Widget*,void*);
 void later_cb(Fl_Widget*,void*);
+
+#ifndef NDEBUG
+void print_project_tree();
+bool validate_project_tree();
+bool validate_independent_branch(class Fl_Type *root);
+bool validate_branch(class Fl_Type *root);
+#endif
 
 /**
  \brief This is the base class for all elements in the project tree.
@@ -130,11 +154,11 @@ public: // things that should not be public:
   Fl_Type *parent;
   /** This type is rendered "selected" in the tree browser. */
   char new_selected; // browser highlight
-  /** Backup storage for selection if an error accured during some operation
+  /** Backup storage for selection if an error occurred during some operation
    (see `haderror`). It seems that this is often confused with new_selected
    which seems to hold the true and visible selection state. */
   char selected; // copied here by selection_changed()
-  char open_;   // state of triangle in browser
+  char folded_;  // if set, children are not shown in browser
   char visible; // true if all parents are open
   int level;    // number of parents over this
   static Fl_Type *first, *last;
@@ -146,7 +170,7 @@ public: // things that should not be public:
   Fl_Type *factory;
   const char *callback_name(Fd_Code_Writer& f);
 
-  // text positions of this type in code, header, and project file (see SourceView)
+  // text positions of this type in code, header, and project file (see codeview)
   int code_static_start, code_static_end;
   int code1_start, code1_end;
   int code2_start, code2_end;
@@ -195,7 +219,7 @@ public:
   virtual void move_child(Fl_Type*, Fl_Type* beforethis) { }
   virtual void remove_child(Fl_Type*) { }
 
-  /** Give widgets a change to arrange their children after all children were add.
+  /** Give widgets a chance to arrange their children after all children were added.
    If adding individual children, this is called immediately, but if children
    are read via a project file, we wait until all children are read and then
    lay out the group.
@@ -218,6 +242,7 @@ public:
 
   // write code, these are called in order:
   virtual void write_static(Fd_Code_Writer& f); // write static stuff to .c file
+  virtual void write_static_after(Fd_Code_Writer& f); // write static stuff after children
   virtual void write_code1(Fd_Code_Writer& f); // code and .h before children
   virtual void write_code2(Fd_Code_Writer& f); // code and .h after children
   void write_comment_h(Fd_Code_Writer& f, const char *ind=""); // write the commentary text into the header file
@@ -225,15 +250,16 @@ public:
   void write_comment_inline_c(Fd_Code_Writer& f, const char *ind=0L); // write the commentary text
 
   // live mode
-  virtual Fl_Widget *enter_live_mode(int top=0); // build wdgets needed for live mode
+  virtual Fl_Widget *enter_live_mode(int top=0); // build widgets needed for live mode
   virtual void leave_live_mode(); // free allocated resources
-  virtual void copy_properties(); // copy properties from this type into a potetial live object
+  virtual void copy_properties(); // copy properties from this type into a potential live object
+  virtual void copy_properties_for_children() { } // copy remaining properties after children were added
 
   // get message number for I18N
   int msgnum();
 
   /** Return 1 if the Type can have children. */
-  virtual int is_parent() const {return 0;}
+  virtual int can_have_children() const {return 0;}
   /** Return 1 if the type is a widget or menu item. */
   virtual int is_widget() const {return 0;}
   /** Return 1 if the type is a widget but not a menu item. */

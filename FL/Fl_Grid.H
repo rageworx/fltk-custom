@@ -98,7 +98,7 @@ const Fl_Grid_Align  FL_GRID_BOTTOM_RIGHT    =  FL_GRID_BOTTOM |  FL_GRID_RIGHT;
   Fl_Group::resizable() widget is ignored (if set). Calling init_sizes()
   is not necessary.
 
-  \note Fl_Grid is, as of FLTK 1.4.0, still in experimental state and
+  \note Fl_Grid is, as of FLTK 1.4.1, still in experimental state and
     should be used with caution. The API can still be changed although it is
     assumed to be almost stable - as stable as possible for a first release.
 
@@ -139,6 +139,10 @@ const Fl_Grid_Align  FL_GRID_BOTTOM_RIGHT    =  FL_GRID_BOTTOM |  FL_GRID_RIGHT;
 
   \image html  Fl_Grid.png
   \image latex Fl_Grid.png "Simple 3x3 Fl_Grid" width=7cm
+
+  \image html  Fl_Grid_show_grid_1.png
+  \image latex Fl_Grid_show_grid_1.png "show_grid() set to 1" width=7cm
+
 */
 class FL_EXPORT Fl_Grid : public Fl_Group {
   friend class Fl_Grid_Type;
@@ -147,7 +151,7 @@ public:
   class Cell {
     friend class Fl_Grid;
   private:
-    Cell *next_;                // next cell in row
+    Cell *next_;                // next cell in the same row
     short row_;                 // row number
     short col_;                 // column number
     short rowspan_;             // row span (1 - n)
@@ -159,7 +163,7 @@ public:
 
   public:
 
-    void Cell_() {
+    void Cell_() {              // common initialization
       next_ = NULL;
       row_ = 0;
       col_ = 0;
@@ -171,20 +175,48 @@ public:
       align_ = 0;
     }
 
-    Cell(int row, int col) {
+    Cell(int row, int col) {    // constructor
       Cell_();
       row_ = row;
       col_ = col;
     }
 
-    Cell(Fl_Widget *w, int row, int col) {
+    Cell(Fl_Widget *w, int row, int col) {  // widget assignment
       Cell_();
       widget_ = w;
       row_ = row;
       col_ = col;
     }
 
+    /**
+      The destructor deletes the cell.
+
+      \todo Fl_Grid's cell destructor should remove the cell from the grid.
+            Currently it does nothing!
+    */
     ~Cell() {}
+
+    /**
+      Returns the next widget cell of the same row of this cell.
+    */
+    Cell *next() {
+      return next_;
+    }
+
+    /**
+      Sets the \c next pointer of a grid's cell.
+
+      \b Internal use only!
+
+      Do not use this method, it may corrupt the allocated memory.
+
+      \internal
+        This method is public due to issue #937 but should be private or
+        at least protected. For more info see GitHub issue #937.
+    */
+    void next(Cell *c) {
+      next_ = c;
+    }
 
     Fl_Widget *widget() const { return widget_; }
 

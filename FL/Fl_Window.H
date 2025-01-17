@@ -98,8 +98,13 @@ protected:
   /** Stores the last window that was made current. See current() const */
   static Fl_Window *current_;
   void draw() FL_OVERRIDE;
+
+public:
+
   /** Forces the window to be drawn, this window is also made current and calls draw(). */
   virtual void flush();
+
+protected:
 
   /**
     Sets an internal flag that tells FLTK and the window manager to
@@ -174,8 +179,12 @@ public:
     \see Fl::screen_xywh(int &X, int &Y, int &W, int &H, int n)
 
    \note Under Wayland, it's generally not possible for the client app to control
-   the position of a window in the system. It's only possible to specify on what screen
-   should the compositor place a fullscreen window.
+   the position of a window in the system. It's possible to specify on what screen
+   should the compositor place a fullscreen window. It's also possible to make an
+   Fl_Window the child of another window or group and control with \p x and \p y
+   its screen position relatively to the enclosing window. Apply member function
+   Fl_Window::allow_expand_outside_parent() to the child window to allow it
+   to expand partially or totally outside its parent.
   */
     Fl_Window(int x, int y, int w, int h, const char *title = 0);
   /**
@@ -208,7 +217,9 @@ public:
   */
   void resize(int X,int Y,int W,int H) FL_OVERRIDE;
   /** Sets whether or not the window manager border is around the window.
-  The default value is true. <I>With some X window
+  The default value is true. The macOS platform ignores requests to change the
+  border state of a fullscreen or maximized window.
+   <I>With some X window
   managers, this does not work after show() has been called.</I>
   */
   void border(int b);
@@ -346,6 +357,8 @@ public:
   void free_position()  {clear_flag(FORCE_POSITION);}
 
   void size_range(int minw, int minh, int maxw=0, int maxh=0, int dw=0, int dh=0, int aspect=0);
+
+  uchar get_size_range(int *minw, int *minh, int *maxw=NULL, int *maxh=NULL, int *dw=NULL, int *dh=NULL, int *aspect=NULL);
 
   /** See void Fl_Window::label(const char*)   */
   const char* label() const     {return Fl_Widget::label();}
@@ -623,6 +636,9 @@ public:
   static char show_next_window_iconic() {
     return show_next_window_iconic_;
   }
+
+  void allow_expand_outside_parent();
+
 };
 
 #endif

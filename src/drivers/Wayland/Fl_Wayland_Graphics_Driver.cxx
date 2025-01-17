@@ -22,10 +22,10 @@
 #include <unistd.h> // for close()
 #include <errno.h>
 #include <string.h> // for strerror()
-
+#include <cairo/cairo.h>
 
 extern "C" {
-#  include "../../../libdecor/src/os-compatibility.h" // for os_create_anonymous_file()
+#  include "../../../libdecor/src/os-compatibility.h" // for libdecor_os_create_anonymous_file()
 }
 
 // used by create_shm_buffer and do_buffer_release
@@ -76,9 +76,9 @@ void Fl_Wayland_Graphics_Driver::create_shm_buffer(Fl_Wayland_Graphics_Driver::w
     pool_size = default_pool_size;
     if (buffer->draw_buffer.data_size > pool_size)
       pool_size = 2 * buffer->draw_buffer.data_size; // a larger pool is needed
-    int fd = os_create_anonymous_file(pool_size);
+    int fd = libdecor_os_create_anonymous_file(pool_size);
     if (fd < 0) {
-      Fl::fatal("os_create_anonymous_file failed: %s\n", strerror(errno));
+      Fl::fatal("libdecor_os_create_anonymous_file failed: %s\n", strerror(errno));
     }
     pool_data = (struct wld_shm_pool_data*)calloc(1, sizeof(struct wld_shm_pool_data));
     pool_data->pool_memory = (char*)mmap(NULL, pool_size, PROT_READ | PROT_WRITE,
@@ -118,15 +118,13 @@ struct Fl_Wayland_Graphics_Driver::wld_buffer *
 }
 
 
-// used to support both normal and progressive drawing
+// used to support both normal and progressive drawing and for top-level GL windows
 static void surface_frame_done(void *data, struct wl_callback *cb, uint32_t time) {
   struct wld_window *window = (struct wld_window *)data;
   wl_callback_destroy(cb);
-  if (window->buffer) { // fix for issue #712
-    window->buffer->cb = NULL;
-    if (window->buffer->draw_buffer_needs_commit) {
-      Fl_Wayland_Graphics_Driver::buffer_commit(window);
-    }
+  window->frame_cb = NULL;
+  if (window->buffer && window->buffer->draw_buffer_needs_commit) {
+    Fl_Wayland_Graphics_Driver::buffer_commit(window);
   }
 }
 
@@ -136,16 +134,27 @@ static const struct wl_callback_listener surface_frame_listener = {
 };
 
 
+const struct wl_callback_listener *Fl_Wayland_Graphics_Driver::p_surface_frame_listener =
+  &surface_frame_listener;
+
+
 // copy pixels in region r from the Cairo surface to the Wayland buffer
-static void copy_region(struct wld_window *window, struct flCairoRegion *r) {
+static void copy_region(struct wld_window *window, cairo_region_t *r) {
   struct Fl_Wayland_Graphics_Driver::wld_buffer *buffer = window->buffer;
-  float f = Fl::screen_scale(window->fl_win->screen_num()) *
-    Fl_Wayland_Window_Driver::driver(window->fl_win)->wld_scale();
-  for (int i = 0; i < r->count; i++) {
-    int left = r->rects[i].x * f;
-    int top = r->rects[i].y * f;
-    int width = r->rects[i].width * f;
-    int height = r->rects[i].height * f;
+  float f = Fl::screen_scale(window->fl_win->screen_num());
+  int d = Fl_Wayland_Window_Driver::driver(window->fl_win)->wld_scale();
+  int count = cairo_region_num_rectangles(r);
+  cairo_rectangle_int_t rect;
+  for (int i = 0; i < count; i++) {
+    cairo_region_get_rectangle(r, i, &rect);
+    int left = d * int(rect.x * f);
+    int top = d * int(rect.y * f);
+    int right = d * ceil((rect.x + rect.width) * f);
+    if (right > d * int(window->fl_win->w() * f)) right = d * int(window->fl_win->w() * f);
+    int width = right - left;
+    int bottom = d * ceil((rect.y + rect.height) * f);
+    if (bottom > d * int(window->fl_win->h() * f)) bottom = d * int(window->fl_win->h() * f);
+    int height = bottom - top;
     int offset = top * buffer->draw_buffer.stride + 4 * left;
     int W4 = 4 * width;
     for (int l = 0; l < height; l++) {
@@ -161,7 +170,7 @@ static void copy_region(struct wld_window *window, struct flCairoRegion *r) {
 }
 
 
-void Fl_Wayland_Graphics_Driver::buffer_commit(struct wld_window *window, struct flCairoRegion *r)
+void Fl_Wayland_Graphics_Driver::buffer_commit(struct wld_window *window, cairo_region_t *r)
 {
   if (!window->buffer->wl_buffer) create_shm_buffer(window->buffer);
   cairo_surface_t *surf = cairo_get_target(window->buffer->draw_buffer.cairo_);
@@ -176,8 +185,10 @@ void Fl_Wayland_Graphics_Driver::buffer_commit(struct wld_window *window, struct
   wl_surface_attach(window->wl_surface, window->buffer->wl_buffer, 0, 0);
   wl_surface_set_buffer_scale( window->wl_surface,
       Fl_Wayland_Window_Driver::driver(window->fl_win)->wld_scale() );
-  window->buffer->cb = wl_surface_frame(window->wl_surface);
-  wl_callback_add_listener(window->buffer->cb, &surface_frame_listener, window);
+  if (!window->covered) { // see issue #878
+    window->frame_cb = wl_surface_frame(window->wl_surface);
+    wl_callback_add_listener(window->frame_cb, p_surface_frame_listener, window);
+  }
   wl_surface_commit(window->wl_surface);
   window->buffer->draw_buffer_needs_commit = false;
 }
@@ -235,7 +246,7 @@ void Fl_Wayland_Graphics_Driver::buffer_release(struct wld_window *window)
 {
   if (window->buffer && !window->buffer->released) {
     window->buffer->released = true;
-    if (window->buffer->cb) wl_callback_destroy(window->buffer->cb);
+    if (window->frame_cb) { wl_callback_destroy(window->frame_cb); window->frame_cb = NULL; }
     delete[] window->buffer->draw_buffer.buffer;
     window->buffer->draw_buffer.buffer = NULL;
     cairo_destroy(window->buffer->draw_buffer.cairo_);
@@ -257,8 +268,10 @@ void Fl_Wayland_Graphics_Driver::copy_offscreen(int x, int y, int w, int h,
   cairo_get_matrix(cairo_, &matrix);
   double s = matrix.xx;
   cairo_save(cairo_);
-  cairo_rectangle(cairo_, x, y, w, h);
+  cairo_rectangle(cairo_, x - 0.5, y - 0.5, w, h);
+  cairo_set_antialias(cairo_, CAIRO_ANTIALIAS_NONE);
   cairo_clip(cairo_);
+  cairo_set_antialias(cairo_, CAIRO_ANTIALIAS_DEFAULT);
   cairo_surface_t *surf = cairo_get_target((cairo_t *)src);
   cairo_pattern_t *pat = cairo_pattern_create_for_surface(surf);
   cairo_set_source(cairo_, pat);
@@ -268,6 +281,7 @@ void Fl_Wayland_Graphics_Driver::copy_offscreen(int x, int y, int w, int h,
   cairo_paint(cairo_);
   cairo_pattern_destroy(pat);
   cairo_restore(cairo_);
+  surface_needs_commit();
 }
 
 

@@ -5,7 +5,7 @@
 // for interacting with the overlay, which allows the user to
 // select, move, and resize the children widgets.
 //
-// Copyright 1998-2023 by Bill Spitzak and others.
+// Copyright 1998-2024 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -25,7 +25,7 @@
 #include "fluid.h"
 #include "widget_browser.h"
 #include "undo.h"
-#include "alignment_panel.h"
+#include "settings_panel.h"
 #include "file.h"
 #include "code.h"
 #include "widget_panel.h"
@@ -73,19 +73,19 @@ void i18n_type_cb(Fl_Choice *c, void *v) {
     c->value(g_project.i18n_type);
   } else {
     undo_checkpoint();
-    g_project.i18n_type = c->value();
+    g_project.i18n_type = static_cast<Fd_I18n_Type>(c->value());
     set_modflag(1);
   }
   switch (g_project.i18n_type) {
-  case 0 : /* None */
+  case FD_I18N_NONE : /* None */
       i18n_gnu_group->hide();
       i18n_posix_group->hide();
       break;
-  case 1 : /* GNU gettext */
+  case FD_I18N_GNU : /* GNU gettext */
       i18n_gnu_group->show();
       i18n_posix_group->hide();
       break;
-  case 2 : /* POSIX cat */
+  case FD_I18N_POSIX : /* POSIX cat */
       i18n_gnu_group->hide();
       i18n_posix_group->show();
       break;
@@ -108,7 +108,7 @@ void show_settings_cb(Fl_Widget *, void *) {
 
 Fl_Menu_Item window_type_menu[] = {
   {"Single",0,0,(void*)FL_WINDOW},
-  {"Double",0,0,(void*)(FL_WINDOW+1)},
+  {"Double",0,0,(void*)(FL_DOUBLE_WINDOW)},
   {0}};
 
 static int overlays_invisible;
@@ -227,8 +227,13 @@ int Overlay_Window::handle(int e) {
  \return new node
  */
 Fl_Type *Fl_Window_Type::make(Strategy strategy) {
-  Fl_Type *p = Fl_Type::current;
-  while (p && (!p->is_code_block() || p->is_a(ID_Widget_Class))) p = p->parent;
+  Fl_Type *anchor = Fl_Type::current, *p = anchor;
+  if (p && (strategy == kAddAfterCurrent)) p = p->parent;
+  while (p && (!p->is_code_block() || p->is_a(ID_Widget_Class))) {
+    anchor = p;
+    strategy = kAddAfterCurrent;
+    p = p->parent;
+  }
   if (!p) {
     fl_message("Please select a function");
     return 0;
@@ -245,7 +250,7 @@ Fl_Type *Fl_Window_Type::make(Strategy strategy) {
   w->size_range(10, 10);
   w->window = myo;
   myo->o = w;
-  myo->add(p, strategy);
+  myo->add(anchor, strategy);
   myo->modal = 0;
   myo->non_modal = 0;
   return myo;
@@ -322,7 +327,7 @@ uchar *Fl_Window_Type::read_image(int &ww, int &hh) {
 }
 
 void Fl_Window_Type::ideal_size(int &w, int &h) {
-  w = 480, h = 320;
+  w = 480; h = 320;
   if (main_window) {
     int sx, sy, sw, sh;
     Fl_Window *win = main_window;
@@ -408,7 +413,19 @@ Fl_Window_Type Fl_Window_type;
 
 // Resize from window manager...
 void Overlay_Window::resize(int X,int Y,int W,int H) {
-  Fl_Widget* t = resizable(); resizable(0);
+  // Make sure we don't create undo checkpoints if the window does not actually change.
+  // Some WMs seem to send spurious resize events.
+  if (X!=x() || Y!=y() || W!=w() || H!=h()) {
+    // Set a checkpoint on the first resize event, ignore further resizes until
+    // a different type of checkpoint is triggered.
+    if (undo_checkpoint_once(kUndoWindowResize))
+      set_modflag(1);
+  }
+
+  Fl_Widget* t = resizable();
+  if (Fl_Type::allow_layout == 0) {
+    resizable(0);
+  }
 
   // do not set the mod flag if the window was not resized. In FLUID, all
   // windows are opened without a given x/y position, so modifying x/y
@@ -1358,8 +1375,13 @@ Fl_Widget_Class_Type *current_widget_class = 0;
  \return new node
  */
 Fl_Type *Fl_Widget_Class_Type::make(Strategy strategy) {
-  Fl_Type *p = Fl_Type::current;
-  while (p && (!p->is_decl_block() || (p->is_widget() && p->is_class()))) p = p->parent;
+  Fl_Type *anchor = Fl_Type::current, *p = anchor;
+  if (p && (strategy == kAddAfterCurrent)) p = p->parent;
+  while (p && (!p->is_decl_block() || (p->is_widget() && p->is_class()))) {
+    anchor = p;
+    strategy = kAddAfterCurrent;
+    p = p->parent;
+  }
   Fl_Widget_Class_Type *myo = new Fl_Widget_Class_Type();
   myo->name("UserInterface");
 
@@ -1374,7 +1396,7 @@ Fl_Type *Fl_Widget_Class_Type::make(Strategy strategy) {
   w->size_range(10, 10);
   w->window = myo;
   myo->o = w;
-  myo->add(p, strategy);
+  myo->add(anchor, strategy);
   myo->modal = 0;
   myo->non_modal = 0;
   myo->wc_relative = 0;
@@ -1519,7 +1541,7 @@ void Fl_Widget_Class_Type::write_code2(Fd_Code_Writer& f) {
 // live mode support
 
 Fl_Widget *Fl_Window_Type::enter_live_mode(int) {
-  Fl_Window *win = new Fl_Window(o->x(), o->y(), o->w(), o->h());
+  Fl_Window *win = new Fl_Window(10, 10, o->w(), o->h());
   return propagate_live_mode(win);
 }
 
@@ -1530,6 +1552,9 @@ void Fl_Window_Type::leave_live_mode() {
  copy all properties from the edit widget to the live widget
  */
 void Fl_Window_Type::copy_properties() {
+  Fl_Window *self = static_cast<Fl_Window*>(o);
+  Fl_Window *live = static_cast<Fl_Window*>(live_widget);
+  if (self->resizable() == self)
+    live->resizable(live);
   Fl_Widget_Type::copy_properties();
-  /// \todo copy resizing constraints over
 }

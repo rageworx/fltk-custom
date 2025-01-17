@@ -1166,6 +1166,48 @@ int Fl_Text_Buffer::count_lines(int startPos, int endPos) const {
   return lineCount;
 }
 
+/**
+ Estimate the number of newlines between \p startPos and \p endPos in buffer.
+ This call takes line wrapping into account. It assumes a line break at every
+ `lineLen` characters after the beginning of a line.
+ */
+int Fl_Text_Buffer::estimate_lines(int startPos, int endPos, int lineLen) const
+{
+  IS_UTF8_ALIGNED2(this, (startPos))
+  IS_UTF8_ALIGNED2(this, (endPos))
+
+  int gapLen = mGapEnd - mGapStart;
+  int lineCount = 0;
+  int softLineBreaks = 0, softLineBreakCount = lineLen;
+
+  int pos = startPos;
+  while (pos < mGapStart)
+  {
+    if (pos == endPos)
+      return lineCount + softLineBreaks;
+    if (mBuf[pos++] == '\n') {
+      softLineBreakCount = lineLen;
+      lineCount++;
+    }
+    if (--softLineBreakCount == 0) {
+      softLineBreakCount = lineLen;
+      softLineBreaks++;
+    }
+  }
+  while (pos < mLength) {
+    if (pos == endPos)
+      return lineCount + softLineBreaks;
+    if (mBuf[pos++ + gapLen] == '\n') {
+      softLineBreakCount = lineLen;
+      lineCount++;
+    }
+    if (--softLineBreakCount == 0) {
+      softLineBreakCount = lineLen;
+      softLineBreaks++;
+    }
+  }
+  return lineCount + softLineBreaks;
+}
 
 /*
  Skip to the first character, n lines ahead.
@@ -1406,11 +1448,11 @@ int Fl_Text_Buffer::insert_(int pos, const char *text, int insertedLength)
 /*
  Remove a string from the buffer.
  Unicode safe. Start and end must be at a character boundary.
+ Start must be less than end.
  */
 void Fl_Text_Buffer::remove_(int start, int end)
 {
-  /* if the gap is not contiguous to the area to remove, move it there */
-
+  if (start >= end) return;
   if (mCanUndo) {
     if (mUndo->undoat == end && mUndo->undocut) {
       // continue to remove text at the same cursor position

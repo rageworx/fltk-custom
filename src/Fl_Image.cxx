@@ -84,6 +84,10 @@ void Fl_Image::draw_empty(int X, int Y) {
 /**
   Creates a resized copy of the image.
 
+  It is recommended not to call this member function to reduce the size
+  of an image to the size of the area where this image will be drawn,
+  and to use Fl_Image::scale() instead.
+
   The new image should be released when you are done with it.
 
   Note: since FLTK 1.4.0 you can use Fl_Image::release() for all types
@@ -108,7 +112,7 @@ void Fl_Image::draw_empty(int X, int Y) {
 
   \note Since FLTK 1.4.0 this method is 'const'. If you derive your own class
     from Fl_Image or any subclass your overridden methods of 'Fl_Image::copy() const'
-    and 'Fl_Image::copy(int, int) const' \b must also be 'const' for inheritage
+    and 'Fl_Image::copy(int, int) const' \b must also be 'const' for inheritance
     to work properly. This is different than in FLTK 1.3.x and earlier where these
     methods have not been 'const'.
 */
@@ -709,8 +713,38 @@ void Fl_RGB_Image::desaturate() {
   d(new_d);
 }
 
+#define fl_max(a,b) ((a) > (b) ? (a) : (b))
+#define fl_min(a,b) ((a) < (b) ? (a) : (b))
+
+typedef struct {int x; int y; int width; int height;} rectangle_int_t;
+static void crect_intersect(rectangle_int_t *to, rectangle_int_t *with) {
+  int x = fl_max(to->x, with->x);
+  to->width = fl_min(to->x + to->width, with->x + with->width) - x;
+  if (to->width < 0) to->width = 0;
+  int y = fl_max(to->y, with->y);
+  to->height = fl_min(to->y + to->height, with->y + with->height) - y;
+  if (to->height < 0) to->height = 0;
+  to->x = x;
+  to->y = y;
+}
+
+
 void Fl_RGB_Image::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
-  fl_graphics_driver->draw_rgb(this, XP, YP, WP, HP, cx, cy);
+  float s = fl_graphics_driver->scale();
+  if (s != int(s) && (cx || cy || WP != w() || HP != h())) {
+    // See issue #1128: clipping to a part of the image while the scaling
+    // has a fractional value creates problems
+    rectangle_int_t r1 = { XP-cx, YP-cy, w(), h() };
+    rectangle_int_t r2 = { XP, YP, WP, HP };
+    crect_intersect(&r1, &r2);
+    // After this, r1.x,r1.y = position of top-left of drawn image part;
+    // r1.width,r1.height = size of drawn image part, in FLTK units;
+    // fl_max(cx, 0),fl_max(cy, 0) = top-left of drawn part in image.
+    int l = (ld() ? ld() : d() * w());
+    const uchar *p = array + fl_max(cy, 0) * l + fl_max(cx, 0) * d();
+    fl_graphics_driver->draw_image(p, XP, YP, WP, HP, d(), l);
+  } else
+    fl_graphics_driver->draw_rgb(this, XP, YP, WP, HP, cx, cy);
 }
 
 void Fl_RGB_Image::label(Fl_Widget* widget) {

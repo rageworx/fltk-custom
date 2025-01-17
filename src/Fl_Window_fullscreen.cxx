@@ -36,10 +36,13 @@ void Fl_Window::border(int b) {
    borders should not be *visible*.
 */
 void Fl_Window::fullscreen() {
-  no_fullscreen_x = x();
-  no_fullscreen_y = y();
-  no_fullscreen_w = w();
-  no_fullscreen_h = h();
+  if (!is_resizable()) return;
+  if (!maximize_active()) {
+    no_fullscreen_x = x();
+    no_fullscreen_y = y();
+    no_fullscreen_w = w();
+    no_fullscreen_h = h();
+  }
   if (shown() && !(flags() & Fl_Widget::FULLSCREEN)) {
     pWindowDriver->fullscreen_on();
   } else {
@@ -53,7 +56,8 @@ void Fl_Window::fullscreen_off(int X,int Y,int W,int H) {
   } else {
     clear_flag(FULLSCREEN);
   }
-  no_fullscreen_x = no_fullscreen_y = no_fullscreen_w = no_fullscreen_h = 0;
+  if (!maximize_active())
+    no_fullscreen_x = no_fullscreen_y = no_fullscreen_w = no_fullscreen_h = 0;
 }
 
 void Fl_Window::fullscreen_off() {
