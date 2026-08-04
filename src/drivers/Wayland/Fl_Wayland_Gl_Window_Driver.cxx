@@ -1,7 +1,7 @@
 //
 // Class Fl_Wayland_Gl_Window_Driver for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2021-2023 by Bill Spitzak and others.
+// Copyright 2021-2026 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -76,6 +76,7 @@ Fl_Wayland_Gl_Window_Driver::Fl_Wayland_Gl_Window_Driver(Fl_Gl_Window *win) :
   if (egl_display == EGL_NO_DISPLAY) init();
   egl_window = NULL;
   egl_surface = NULL;
+  need_swap = false;
 }
 
 
@@ -265,6 +266,10 @@ void Fl_Wayland_Gl_Window_Driver::make_current_before() {
   if (!egl_window) {
     struct wld_window *win = fl_wl_xid(pWindow);
     struct wl_surface *surface = win->wl_surface;
+    if (pWindow->parent()) { // force toplevel win to enter its display before sizing GL subwin
+      win = fl_wl_xid(pWindow->top_window());
+      while (wl_list_empty(&win->outputs)) wl_display_dispatch(fl_wl_display());
+    }
     int W = pWindow->pixel_w();
     int H = pWindow->pixel_h();
     int scale = Fl_Wayland_Window_Driver::driver(pWindow)->wld_scale();
@@ -279,8 +284,6 @@ void Fl_Wayland_Gl_Window_Driver::make_current_before() {
     // Tested apps: shape, glpuzzle, cube, fractals, gl_overlay, fullscreen, unittests,
     //   OpenGL3-glut-test, OpenGL3test.
     // Tested wayland compositors: mutter, kde-plasma, weston, sway on FreeBSD.
-    if (pWindow->parent()) win = fl_wl_xid(pWindow->top_window());
-    while (wl_list_empty(&win->outputs)) wl_display_dispatch(fl_wl_display());
   }
 }
 
@@ -298,6 +301,23 @@ int Fl_Wayland_Gl_Window_Driver::mode_(int m, const int *a) {
   mode(m | FL_DOUBLE);
   return 1;
 }
+
+
+void Fl_Wayland_Gl_Window_Driver::surface_frame_done(void *data, struct wl_callback *cb, uint32_t time) {
+  Fl_Wayland_Gl_Window_Driver *gl_dr = (Fl_Wayland_Gl_Window_Driver *)data;
+  wl_callback_destroy(cb);
+  struct wld_window *window = fl_wl_xid(gl_dr->pWindow);
+  window->frame_cb = NULL;
+  if (gl_dr->need_swap) {
+    eglSwapBuffers(Fl_Wayland_Gl_Window_Driver::egl_display, gl_dr->egl_surface);
+    gl_dr->need_swap = false;
+  }
+}
+
+
+static const struct wl_callback_listener surface_frame_listener = {
+  .done = Fl_Wayland_Gl_Window_Driver::surface_frame_done,
+};
 
 
 void Fl_Wayland_Gl_Window_Driver::swap_buffers() {
@@ -333,14 +353,21 @@ void Fl_Wayland_Gl_Window_Driver::swap_buffers() {
   }
 
   if (egl_surface) {
-    if (pWindow->parent()) { // issue #967
+    Fl_Window *parent = pWindow->parent() ? pWindow->window() : NULL;
+    struct wld_window *parent_xid = parent ? fl_wl_xid(parent) : NULL;
+    if (parent_xid) { // issue #967
       struct wld_window *xid = fl_wl_xid(pWindow);
-      if (xid->frame_cb) return;
-      xid->frame_cb = wl_surface_frame(xid->wl_surface);
-      wl_callback_add_listener(xid->frame_cb, Fl_Wayland_Graphics_Driver::p_surface_frame_listener,
-                               xid);
+      if (xid->frame_cb) {
+        need_swap = true;
+        return;
+      }
+      if (!parent_xid->frame_cb) {
+        xid->frame_cb = wl_surface_frame(xid->wl_surface);
+        wl_callback_add_listener(xid->frame_cb, &surface_frame_listener, this);
+      }
     }
     eglSwapBuffers(Fl_Wayland_Gl_Window_Driver::egl_display, egl_surface);
+    need_swap = false;
   }
 }
 
@@ -404,6 +431,7 @@ void Fl_Wayland_Gl_Window_Driver::resize(int is_a_resize, int W, int H) {
     Fl::add_timeout(0.01, (Fl_Timeout_Handler)delayed_scissor, this);
   }*/
 }
+
 
 char Fl_Wayland_Gl_Window_Driver::swap_type() {
   return copy;

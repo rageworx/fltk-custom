@@ -50,28 +50,25 @@ static void innards(const uchar *buf, int X, int Y, int W, int H,
 {
   if (!linedelta) linedelta = W*abs(delta);
 
-  uchar *tmpBuf = 0;
   if (!cb) {
     if (delta < 0) buf -= (W-1)*(-delta);
     if (linedelta < 0) buf -= (H-1)*abs(linedelta);
   }
   const void *array = buf;
-  if (cb || driver->has_feature(Fl_Quartz_Graphics_Driver::PRINTER)) {
-    tmpBuf = new uchar[ H*W*abs(delta) ];
-    if (cb) {
-      for (int i=0; i<H; i++) {
-        cb(userdata, 0, i, W, tmpBuf+i*W*abs(delta));
-      }
-    } else {
-      uchar *p = tmpBuf;
-      for (int i=0; i<H; i++) {
-        memcpy(p, buf+i*abs(linedelta), W*abs(delta));
-        p += W*abs(delta);
-        }
+  uchar *tmpBuf = new uchar[ H*W*abs(delta) ];
+  if (cb) {
+    for (int i=0; i<H; i++) {
+      cb(userdata, 0, i, W, tmpBuf+i*W*abs(delta));
     }
-    array = (void*)tmpBuf;
-    linedelta = W*abs(delta);
+  } else {
+    uchar *p = tmpBuf;
+    for (int i=0; i<H; i++) {
+      memcpy(p, buf+i*abs(linedelta), W*abs(delta));
+      p += W*abs(delta);
+    }
   }
+  array = (void*)tmpBuf;
+  linedelta = W*abs(delta);
   // create an image context
   CGColorSpaceRef   lut = 0;
   if (abs(delta)<=2)
@@ -81,8 +78,7 @@ static void innards(const uchar *buf, int X, int Y, int W, int H,
   // a release callback is necessary when the gc is a print context because the image data
   // must be kept until the page is closed. Thus tmpBuf can't be deleted here. It's too early.
   CGDataProviderRef src = CGDataProviderCreateWithData( 0L, array, abs(linedelta)*H,
-                                                       tmpBuf ? dataReleaseCB : NULL
-                                                       );
+                                                       dataReleaseCB);
   CGImageRef        img = CGImageCreate( W, H, 8, 8*abs(delta), abs(linedelta),
                             lut, abs(delta)&1?kCGImageAlphaNone:kCGImageAlphaLast,
                             src, 0L, false, kCGRenderingIntentDefault);
@@ -107,7 +103,8 @@ static void innards(const uchar *buf, int X, int Y, int W, int H,
 }
 
 void Fl_Quartz_Graphics_Driver::draw_image(const uchar* buf, int x, int y, int w, int h, int d, int l){
-  d &= ~FL_IMAGE_WITH_ALPHA;
+  if (d > 0) d &= ~FL_IMAGE_WITH_ALPHA;
+  else if (!(d & FL_IMAGE_WITH_ALPHA)) d |= FL_IMAGE_WITH_ALPHA;
   innards(buf,x,y,w,h,d,l,(d<3&&d>-3),0,0,gc_,this);
 }
 void Fl_Quartz_Graphics_Driver::draw_image(Fl_Draw_Image_Cb cb, void* data,

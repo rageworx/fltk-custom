@@ -116,9 +116,9 @@ void Fl_Tabs::show() {
         were documented as 1 based index and 0 if there were no children. This
         was actually never the case. It always returned a 0 based index and
         the (useless) value of also 0 if there were no children. The current
-        version return -1 if there are no children.
+        version returns -1 if there are no children.
 
-  \note For this method to work, only on single child should be selected.
+  \note For this method to work, only a single child should be selected.
         Calling the method \ref value() before calling \ref tab_positions()
         will ensure that exactly one child is selected and return a pointer
         to that child.
@@ -251,8 +251,8 @@ int Fl_Tabs::tab_positions() {
   negative and the tabs should be placed at the bottom.
 
   \returns Vertical space that can be used for the tabs.
-  \retval  > 0  To put the tabs at the top of the widget.
-  \retval  < 0  To put the tabs on the bottom.
+  \retval  >0  To put the tabs at the top of the widget.
+  \retval  <0  To put the tabs on the bottom.
   \retval Full height, if children() == 0.
 */
 int Fl_Tabs::tab_height() {
@@ -373,7 +373,12 @@ int Fl_Tabs::hit_tabs_area(int event_x, int event_y) {
  */
 void Fl_Tabs::check_overflow_menu() {
   int nc = children();
-  int H = tab_height(); if (H < 0) H = -H;
+  if (nc == 0) {
+    has_overflow_menu = 0;
+    return;
+  }
+  int H = tab_height();
+  if (H < 0) H = -H;
   if (tab_pos[nc] > w()-H+OV_BORDER) {
     has_overflow_menu = 1;
   } else {
@@ -393,9 +398,9 @@ void Fl_Tabs::take_focus(Fl_Widget *o) {
 }
 
 /**
- Set tab o as selected an call callbacks if needed.
+ Set tab o as selected and call callbacks if needed.
  \param[in] o the newly selected tab
- \return 0 if o is invalide or was deleted by the callback and must no longer be used
+ \return 0 if o is invalid or was deleted by the callback and must no longer be used
  */
 int Fl_Tabs::maybe_do_callback(Fl_Widget *o) {
   // chaeck if o is valid
@@ -429,13 +434,13 @@ int Fl_Tabs::maybe_do_callback(Fl_Widget *o) {
  The menu is then presented until the user selects an item or cancels.
  The chosen tab is then selected and made visible.
 
- The menu item array is the deleted.
+ The menu item array is then deleted.
  */
 void Fl_Tabs::handle_overflow_menu() {
   int nc = children();
+  if (nc <= 0) return;
   int H = tab_height(); if (H < 0) H = -H;
   int i, fv=-1, lv=nc; // first and last visible tab
-  if (nc <= 0) return;
 
   // count visible children
   for (i = 0; i < nc; i++) {
@@ -535,8 +540,9 @@ int Fl_Tabs::handle(int event) {
   switch (event) {
 
   case FL_MOUSEWHEEL:
-    if (   ( (overflow_type == OVERFLOW_DRAG) || (overflow_type == OVERFLOW_PULLDOWN) )
-        && hit_tabs_area(Fl::event_x(), Fl::event_y()) ) {
+    if (((overflow_type == OVERFLOW_DRAG) || (overflow_type == OVERFLOW_PULLDOWN)) &&
+        (children() > 0) &&
+        hit_tabs_area(Fl::event_x(), Fl::event_y()) ) {
       int original_tab_offset = tab_offset;
       tab_offset -= 2 * Fl::event_dx();
       if (tab_offset > 0)
@@ -573,7 +579,8 @@ int Fl_Tabs::handle(int event) {
     if (event == FL_RELEASE && o != o_push_drag) { // see issue #1075
       return 1;
     }
-    if ( (overflow_type == OVERFLOW_DRAG) || (overflow_type == OVERFLOW_PULLDOWN) ) {
+    if (((overflow_type == OVERFLOW_DRAG) || (overflow_type == OVERFLOW_PULLDOWN)) &&
+        (children() > 0)) {
       if (tab_pos[children()] < w() && tab_offset == 0) {
         // fall through
       } else if (!Fl::event_is_click()) {
@@ -730,7 +737,7 @@ Fl_Widget* Fl_Tabs::value() {
   return v;
 }
 
-/** Sets the widget to become the current visible widget/tab.
+/** Sets the widget to become the currently visible widget/tab.
 
   The Fl_Tabs::value() method allows you to set a particular child widget of
   the Fl_Tabs container to be the currently visible widget. If the specified

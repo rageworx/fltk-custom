@@ -441,6 +441,8 @@ void Fl_WinAPI_Window_Driver::label(const char *name,const char *iname) {
 
 extern void fl_clipboard_notify_retarget(HWND wnd);
 extern void fl_update_clipboard(void);
+extern char fl_i_own_selection[2];
+
 
 void Fl_WinAPI_Window_Driver::hide() {
   Fl_X* ip = Fl_X::flx(pWindow);
@@ -474,6 +476,8 @@ void Fl_WinAPI_Window_Driver::hide() {
 
   // Issue #569: undo RegisterDragDrop()
   RevokeDragDrop((HWND)ip->xid);
+
+  fl_i_own_selection[1] = 0; // issue #1233
 
   // make sure any custom icons get freed
   // icons(NULL, 0); // free_icons() is called by the Fl_Window destructor
@@ -712,17 +716,6 @@ int Fl_WinAPI_Window_Driver::scroll(int src_x, int src_y, int src_w, int src_h, 
   return 0;
 }
 
-Fl_WinAPI_Window_Driver::type_for_resize_window_between_screens Fl_WinAPI_Window_Driver::data_for_resize_window_between_screens_ = {0, false};
-
-void Fl_WinAPI_Window_Driver::resize_after_screen_change(void *data) {
-  Fl_Window *win = (Fl_Window*)data;
-  RECT r;
-  GetClientRect(fl_xid(win), &r);
-  float old_f = float(r.right)/win->w();
-  int ns = data_for_resize_window_between_screens_.screen;
-  Fl_Window_Driver::driver(win)->resize_after_scale_change(ns, old_f, Fl::screen_driver()->scale(ns));
-  data_for_resize_window_between_screens_.busy = false;
-}
 
 const Fl_Image* Fl_WinAPI_Window_Driver::shape() {
   return shape_data_ ? shape_data_->shape_ : NULL;

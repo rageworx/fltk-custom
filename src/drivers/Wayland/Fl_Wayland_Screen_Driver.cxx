@@ -221,6 +221,7 @@ static void pointer_enter(void *data, struct wl_pointer *wl_pointer, uint32_t se
     }
   }
   if (!win) return;
+  seat->pointer_focus = surface;
   // use custom cursor if present
   struct wl_cursor *cursor =
     fl_wl_xid(win)->custom_cursor ? fl_wl_xid(win)->custom_cursor->wl_cursor : NULL;
@@ -228,9 +229,9 @@ static void pointer_enter(void *data, struct wl_pointer *wl_pointer, uint32_t se
   seat->serial = serial;
   seat->pointer_enter_serial = serial;
   set_event_xy(win);
+  // Caution: with an Fl_Tooltip this call can hide the window being entered (#1317)
   Fl::handle(FL_ENTER, win);
   //fprintf(stderr, "pointer_enter window=%p\n", win);
-  seat->pointer_focus = surface;
 }
 
 
@@ -545,6 +546,8 @@ static int process_wld_key(struct xkb_state *xkb_state, uint32_t key,
   uint32_t keycode = key + 8;
   xkb_keysym_t sym = xkb_state_key_get_one_sym(xkb_state, keycode);
   if (sym == 0xfe20) sym = FL_Tab;
+  if (sym == 0xffeb) sym = FL_Meta_L; // repair value libxkb gives for FL_Meta_L
+  if (sym == 0xffec) sym = FL_Meta_R; // repair value libxkb gives for FL_Meta_R
   if (sym >= 'A' && sym <= 'Z') sym += 32; // replace uppercase by lowercase letter
   int for_key_vector = sym; // for support of Fl::event_key(int)
   // special processing for number keys == keycodes 10-19 :
@@ -557,6 +560,9 @@ static int process_wld_key(struct xkb_state *xkb_state, uint32_t key,
   if (p_sym) *p_sym = sym;
   return for_key_vector;
 }
+
+
+static uint32_t last_keydown_serial = 0; // serial of last keydown event
 
 
 static void wl_keyboard_enter(void *data, struct wl_keyboard *wl_keyboard,
@@ -582,6 +588,7 @@ static void wl_keyboard_enter(void *data, struct wl_keyboard *wl_keyboard,
 //fprintf(stderr, "\n");
   seat->keyboard_surface = surface;
   seat->keyboard_enter_serial = serial;
+  last_keydown_serial = 0;
   Fl_Window *win = Fl_Wayland_Window_Driver::surface_to_window(surface);
   if (win) {
     Fl::handle(FL_FOCUS, win);
@@ -594,7 +601,6 @@ struct key_repeat_data_t {
   uint32_t serial;
   Fl_Window *window;
 };
-static uint32_t last_keydown_serial = 0; // serial of last keydown event
 
 #define KEY_REPEAT_DELAY 0.5 // sec
 #define KEY_REPEAT_INTERVAL 0.05 // sec
@@ -640,7 +646,7 @@ static void send_commit(struct zwp_text_input_v3 *zwp_text_input_v3) {
 void Fl_Wayland_Screen_Driver::insertion_point_location(int x, int y, int height) {
 //printf("insertion_point_location %dx%d\n",x,y);
   Fl_Wayland_Screen_Driver *scr_driver = (Fl_Wayland_Screen_Driver*)Fl::screen_driver();
-  if (scr_driver->seat->text_input && !current_pre_edit &&
+  if (scr_driver->seat->text_input /*&& !current_pre_edit*/ &&
         (x != previous_cursor_x || y != previous_cursor_y  || height != previous_cursor_h)) {
     previous_cursor_x = x;
     previous_cursor_y = y;
@@ -692,8 +698,9 @@ int Fl_Wayland_Screen_Driver::compose(int& del) {
                 Fl::e_keysym == FL_Alt_Gr);
   // FL_Home FL_Left FL_Up FL_Right FL_Down FL_Page_Up FL_Page_Down FL_End
   // FL_Print FL_Insert FL_Menu FL_Help and more
-  condition |= (Fl::e_keysym >= FL_Home && Fl::e_keysym <= FL_Help);
-  condition |= Fl::e_keysym == FL_Tab;
+  condition |= (Fl::e_keysym >= FL_Home && Fl::e_keysym <= FL_Num_Lock);
+  condition |= (Fl::e_keysym >= FL_F && Fl::e_keysym <= FL_F_Last);
+  condition |= (Fl::e_keysym == FL_Tab || Fl::e_keysym == FL_Scroll_Lock || Fl::e_keysym == FL_Pause);
 //fprintf(stderr, "compose: condition=%d e_state=%x ascii=%d\n", condition, Fl::e_state, ascii);
   if (condition) { del = 0; return 0;}
 //fprintf(stderr, "compose: del=%d compose_state=%d next_marked_length=%d \n", del, Fl::compose_state, next_marked_length);
@@ -877,13 +884,15 @@ static void wl_keyboard_modifiers(void *data, struct wl_keyboard *wl_keyboard,
     (struct Fl_Wayland_Screen_Driver::seat*)data;
   xkb_state_update_mask(seat->xkb_state, mods_depressed, mods_latched, mods_locked,
                         0, 0, group);
-  Fl::e_state &= ~(FL_SHIFT+FL_CTRL+FL_ALT+FL_CAPS_LOCK+FL_NUM_LOCK);
+  Fl::e_state &= ~(FL_SHIFT+FL_CTRL+FL_ALT+FL_META+FL_CAPS_LOCK+FL_NUM_LOCK);
   if (xkb_state_mod_name_is_active(seat->xkb_state, XKB_MOD_NAME_SHIFT,
                                    XKB_STATE_MODS_DEPRESSED)) Fl::e_state |= FL_SHIFT;
   if (xkb_state_mod_name_is_active(seat->xkb_state, XKB_MOD_NAME_CTRL,
                                    XKB_STATE_MODS_DEPRESSED)) Fl::e_state |= FL_CTRL;
   if (xkb_state_mod_name_is_active(seat->xkb_state, XKB_MOD_NAME_ALT,
                                    XKB_STATE_MODS_DEPRESSED)) Fl::e_state |= FL_ALT;
+  if (xkb_state_mod_name_is_active(seat->xkb_state, XKB_MOD_NAME_LOGO,
+                                   XKB_STATE_MODS_DEPRESSED)) Fl::e_state |= FL_META;
   if (xkb_state_mod_name_is_active(seat->xkb_state, XKB_MOD_NAME_CAPS,
                                    XKB_STATE_MODS_LOCKED)) Fl::e_state |= FL_CAPS_LOCK;
   if (xkb_state_mod_name_is_active(seat->xkb_state, XKB_MOD_NAME_NUM,
@@ -1133,6 +1142,8 @@ static void output_done(void *data, struct wl_output *wl_output)
     xp = xp->next;
   }
   output->done = true;
+  output->x *= output->wld_scale;
+  output->y *= output->wld_scale;
 
   Fl_Wayland_Screen_Driver *scr_driver = (Fl_Wayland_Screen_Driver*)Fl::screen_driver();
   if (scr_driver->seat) try_update_cursor(scr_driver->seat);
@@ -1343,27 +1354,28 @@ static const struct wl_registry_listener registry_listener = {
 };
 
 
-extern int fl_send_system_handlers(void *);
-
-
-static void wayland_socket_callback(int fd, struct wl_display *display) {
-  if (fl_send_system_handlers(NULL)) return;
-  struct pollfd fds = (struct pollfd) { fd, POLLIN, 0 };
-  do {
-    if (wl_display_dispatch(display) == -1) {
-      int err = wl_display_get_error(display);
-      if (err == EPROTO) {
-        const struct wl_interface *interface;
-        int code = wl_display_get_protocol_error(display, &interface, NULL);
-        Fl::fatal("Fatal error no %d in Wayland protocol: %s", code, interface->name);
-      } else {
-        Fl::fatal("Fatal error while communicating with the Wayland server: %s",
-                  strerror(errno));
-      }
-    }
+static void libdecor_fd_callback(int fd, struct libdecor *libdecor_context) {
+  if (libdecor_dispatch(libdecor_context, 0) >= 0) return;
+  if (wl_display_get_error(Fl_Wayland_Screen_Driver::wl_display) == EPROTO) {
+    const struct wl_interface *interface;
+    int code = wl_display_get_protocol_error(Fl_Wayland_Screen_Driver::wl_display, &interface, NULL);
+    Fl::fatal("Fatal error no %d in Wayland protocol: %s", code,
+              (interface ? interface->name : "unknown") );
+  } else {
+    Fl::fatal("Fatal error while communicating with the Wayland server: %s",
+              strerror(errno));
   }
-  while (poll(&fds, 1, 0) > 0);
 }
+
+
+static void handle_error(struct libdecor *libdecor_context, enum libdecor_error error, const char *message)
+{
+  Fl::fatal("Caught error (%d): %s\n", error, message);
+}
+
+static struct libdecor_interface libdecor_iface = {
+  .error = handle_error,
+};
 
 
 Fl_Wayland_Screen_Driver::Fl_Wayland_Screen_Driver() : Fl_Unix_Screen_Driver() {
@@ -1394,8 +1406,11 @@ static const struct wl_callback_listener sync_listener = {
 
 
 static void do_atexit() {
-  if (Fl_Wayland_Screen_Driver::wl_display) {
-    wl_display_roundtrip(Fl_Wayland_Screen_Driver::wl_display);
+  // Issue #821 no longer seems to require extra operations under gnome version < 44.
+  Fl_Wayland_Screen_Driver *scr_driver = (Fl_Wayland_Screen_Driver*)Fl::screen_driver();
+  if (scr_driver->libdecor_context) { // libdecor recommends a call to libdecor_unref()
+    libdecor_unref(scr_driver->libdecor_context);
+    scr_driver->libdecor_context = NULL;
   }
 }
 
@@ -1421,15 +1436,10 @@ void Fl_Wayland_Screen_Driver::open_display_platform() {
   struct wl_callback *registry_cb = wl_display_sync(wl_display);
   wl_callback_add_listener(registry_cb, &sync_listener, &registry_cb);
   while (registry_cb) wl_display_dispatch(wl_display);
-  Fl::add_fd(wl_display_get_fd(wl_display), FL_READ, (Fl_FD_Handler)wayland_socket_callback,
-             wl_display);
+  libdecor_context = libdecor_new(wl_display, &libdecor_iface);
+  Fl::add_fd(libdecor_get_fd(libdecor_context), FL_READ, (Fl_FD_Handler)libdecor_fd_callback,
+             libdecor_context);
   fl_create_print_window();
-  /* This is useful to avoid crash of the Wayland compositor after
-   FLTK apps terminate in certain situations:
-   - gnome-shell version < 44 (e.g. version 42.9)
-   - focus set to "follow-mouse"
-   See issue #821 for details.
-  */
   atexit(do_atexit);
 }
 
@@ -1509,21 +1519,20 @@ void Fl_Wayland_Screen_Driver::close_display() {
   wl_seat_destroy(seat->wl_seat); seat->wl_seat = NULL;
   if (seat->name) free(seat->name);
   free(seat); seat = NULL;
-  if (libdecor_context) {
-    libdecor_unref(libdecor_context);
-    libdecor_context = NULL;
-  }
   xdg_wm_base_destroy(xdg_wm_base); xdg_wm_base = NULL;
   Fl_Wayland_Plugin *plugin = Fl_Wayland_Window_Driver::gl_plugin();
   if (plugin) plugin->terminate();
 
-  Fl::remove_fd(wl_display_get_fd(Fl_Wayland_Screen_Driver::wl_display));
+  if (libdecor_context) {
+      Fl::remove_fd(libdecor_get_fd(libdecor_context));
+      libdecor_unref(libdecor_context);
+      libdecor_context = NULL;
+  }
   wl_registry_destroy(wl_registry); wl_registry = NULL;
   wl_display_disconnect(Fl_Wayland_Screen_Driver::wl_display);
   Fl_Wayland_Screen_Driver::wl_display = NULL;
   delete Fl_Display_Device::display_device()->driver();
   delete Fl_Display_Device::display_device();
-  delete Fl::system_driver();
   delete this;
 }
 

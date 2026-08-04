@@ -478,8 +478,8 @@ Fl_Image *Fl_RGB_Image::copy(int W, int H) const {
       !w() || !h() || !d() || !array) {
     if (array) {
       // Make a copy of the image data and return a new Fl_RGB_Image...
-      new_array = new uchar[W * H * d()];
-      if (ld() && (ld() != W  *d())) {
+      new_array = new uchar[((long)W) * H * d()];
+      if (ld() && (ld() != W*d())) {
         const uchar *src = array;
         uchar *dst = new_array;
         int dy, dh = H, wd = W*d(), wld = ld();
@@ -489,7 +489,7 @@ Fl_Image *Fl_RGB_Image::copy(int W, int H) const {
           dst += wd;
         }
       } else {
-        memcpy(new_array, array, W * H * d());
+        memcpy(new_array, array, ((long)W) * H * d());
       }
       new_image = new Fl_RGB_Image(new_array, W, H, d());
       new_image->alloc_array = 1;
@@ -507,7 +507,7 @@ Fl_Image *Fl_RGB_Image::copy(int W, int H) const {
                 line_d;         // stride from line to line
 
   // Allocate memory for the new image...
-  new_array = new uchar [W * H * d()];
+  new_array = new uchar [((long)W) * H * d()];
   new_image = new Fl_RGB_Image(new_array, W, H, d());
   new_image->alloc_array = 1;
 
@@ -529,7 +529,7 @@ Fl_Image *Fl_RGB_Image::copy(int W, int H) const {
 
     // Scale the image using a nearest-neighbor algorithm...
     for (dy = H, sy = 0, yerr = H, new_ptr = new_array; dy > 0; dy --) {
-      for (dx = W, xerr = W, old_ptr = array + sy * line_d; dx > 0; dx --) {
+      for (dx = W, xerr = W, old_ptr = array + ((long)sy) * line_d; dx > 0; dx --) {
         for (c = 0; c < d(); c ++) *new_ptr++ = old_ptr[c];
 
         old_ptr += xstep;
@@ -559,7 +559,7 @@ Fl_Image *Fl_RGB_Image::copy(int W, int H) const {
       const float yfract = oldy - (unsigned) oldy;
 
       for (dx = 0; dx < W; dx++) {
-        new_ptr = new_array + dy * W * d() + dx * d();
+        new_ptr = new_array + ((long)dy) * W * d() + dx * d();
 
         float oldx = dx * xscale;
         if (oldx >= data_w())
@@ -576,10 +576,10 @@ Fl_Image *Fl_RGB_Image::copy(int W, int H) const {
         const unsigned drighty = (unsigned)dlefty;
 
         uchar left[4], right[4], downleft[4], downright[4];
-        memcpy(left, array + lefty * line_d + leftx * d(), d());
-        memcpy(right, array + righty * line_d + rightx * d(), d());
-        memcpy(downleft, array + dlefty * line_d + dleftx * d(), d());
-        memcpy(downright, array + drighty * line_d + drightx * d(), d());
+        memcpy(left, array + ((long)lefty) * line_d + leftx * d(), d());
+        memcpy(right, array + ((long)righty) * line_d + rightx * d(), d());
+        memcpy(downleft, array + ((long)dlefty) * line_d + dleftx * d(), d());
+        memcpy(downright, array + ((long)drighty) * line_d + drightx * d(), d());
 
         int i;
         if (d() == 4) {
@@ -730,19 +730,25 @@ static void crect_intersect(rectangle_int_t *to, rectangle_int_t *with) {
 
 
 void Fl_RGB_Image::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
-  float s = fl_graphics_driver->scale();
-  if (s != int(s) && (cx || cy || WP != w() || HP != h())) {
+  if ((cx || cy || WP != w() || HP != h()) && w() == data_w() && h() == data_h()) {
     // See issue #1128: clipping to a part of the image while the scaling
     // has a fractional value creates problems
     rectangle_int_t r1 = { XP-cx, YP-cy, w(), h() };
     rectangle_int_t r2 = { XP, YP, WP, HP };
     crect_intersect(&r1, &r2);
+    if (!r1.width || !r1.height) return;
     // After this, r1.x,r1.y = position of top-left of drawn image part;
     // r1.width,r1.height = size of drawn image part, in FLTK units;
     // fl_max(cx, 0),fl_max(cy, 0) = top-left of drawn part in image.
     int l = (ld() ? ld() : d() * w());
     const uchar *p = array + fl_max(cy, 0) * l + fl_max(cx, 0) * d();
-    fl_graphics_driver->draw_image(p, XP, YP, WP, HP, d(), l);
+    if (d() % 2) { // use draw_image() without transparenvy
+      fl_graphics_driver->draw_image(p, r1.x, r1.y, r1.width, r1.height, d(), l);
+    } else { // with transparency, build temporary RGB image and draw it
+      Fl_RGB_Image *temp_rgb = new Fl_RGB_Image(p, r1.width, r1.height, d(), l);
+      fl_graphics_driver->draw_rgb(temp_rgb, r1.x, r1.y, r1.width, r1.height, 0, 0);
+      delete temp_rgb;
+    }
   } else
     fl_graphics_driver->draw_rgb(this, XP, YP, WP, HP, cx, cy);
 }

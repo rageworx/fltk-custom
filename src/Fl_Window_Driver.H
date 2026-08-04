@@ -2,7 +2,7 @@
 // A base class for platform specific window handling code
 // for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2010-2024 by Bill Spitzak and others.
+// Copyright 2010-2025 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -152,6 +152,7 @@ public:
   virtual void unmap() {}
   virtual void fullscreen_on() {}
   virtual void fullscreen_off(int /*X*/, int /*Y*/, int /*W*/, int /*H*/) {}
+  virtual void fullscreen_screens(bool /*on_off*/) {}
   virtual void maximize();
   virtual void un_maximize();
   virtual bool maximize_needs_hide() { return false; }
@@ -196,6 +197,7 @@ public:
   // when that's not the case, as with Wayland.
   virtual void reposition_menu_window(int x, int y);
   virtual void menu_window_area(int &X, int &Y, int &W, int &H, int nscreen = -1);
+  static bool to_menutitle(Fl_Window*);
   static Fl_Window *menu_parent(int *display_height = NULL);
   static Fl_Window *menu_leftorigin(Fl_Window*);
   static Fl_Window *menu_title(Fl_Window*);
@@ -205,6 +207,8 @@ public:
   static int *menu_offset_y(Fl_Window*);
   static bool is_floating_title(Fl_Window *);
   static void scroll_to_selected_item(Fl_Window *);
+  // non-NULL when an Fl_Menu_Button is being pulled down
+  static class Fl_Menu_Button *current_menu_button;
 
   virtual fl_uintptr_t os_id() { return 0; }
   virtual void allow_expand_outside_parent() {}

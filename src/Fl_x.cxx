@@ -1,7 +1,7 @@
 //
 // X specific code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2024 by Bill Spitzak and others.
+// Copyright 1998-2026 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -388,7 +388,7 @@ void Fl_X11_Screen_Driver::new_ic()
       }
     }
   }
-  XFree(xim_styles);
+  if (xim_styles) XFree(xim_styles);
 
   if (sarea) {
     xim_ic = XCreateIC(xim_im,
@@ -521,7 +521,7 @@ void Fl_X11_Screen_Driver::enable_im() {
   if (win && win->shown()) {
     xim_activate(fl_xid(win));
     XSetICFocus(xim_ic);
-  } else {
+  } else if (xim_im) {
     new_ic();
   }
 }
@@ -2215,7 +2215,11 @@ int fl_handle(const XEvent& thisevent)
     int num = d->screen_num_unscaled(X+ actual.width/2, Y +actual.height/2);
     if (num == -1) num = olds;
     float s = d->scale(num);
-    if (num != olds) {
+    if (num != olds && !window->menu_window()) {
+      if (Fl::modal() && Fl::modal()->menu_window()) { // is a menu window active?
+        Fl::e_x_root = 1000000;
+        Fl::modal()->handle(FL_PUSH); // simulate a distant click to close menus
+      }
       if (s != d->scale(olds) &&
           !Fl_X11_Window_Driver::data_for_resize_window_between_screens_.busy &&
           window->user_data() != &Fl_X11_Screen_Driver::transient_scale_display) {
@@ -2238,7 +2242,7 @@ int fl_handle(const XEvent& thisevent)
     resize_bug_fix = window;
 #if USE_XFT
     if (!Fl_X11_Window_Driver::data_for_resize_window_between_screens_.busy &&
-      ( ceil(W/s) != window->w() || ceil(H/s) != window->h() ) ) {
+      ( ceil(W/s) != window->w() || ceil(H/s) != window->h() ) && !window->menu_window()) {
         window->resize(rint(X/s), rint(Y/s), ceil(W/s), ceil(H/s));
     } else {
       window->position(rint(X/s), rint(Y/s));
@@ -2319,9 +2323,9 @@ void Fl_X11_Window_Driver::resize(int X,int Y,int W,int H) {
     pWindow->Fl_Group::resize(X,Y,W,H);
     if (shown()) {
 #if FLTK_USE_CAIRO
-      if (!pWindow->as_gl_window() && cairo_) {
+      if (xlib_cairo_) {
         float s = Fl::screen_driver()->scale(screen_num());
-        cairo_xlib_surface_set_size(cairo_get_target(cairo_), (W>0 ? int(W*s) : 1), (H>0 ? int(H*s) : 1));
+        cairo_xlib_surface_set_size(cairo_get_target(xlib_cairo_), (W>0 ? int(W*s) : 1), (H>0 ? int(H*s) : 1));
       }
 #endif
       pWindow->redraw();
@@ -2494,17 +2498,7 @@ void Fl_X11_Window_Driver::maximize() {
     send_wm_event(fl_xid(pWindow), fl_NET_WM_STATE, _NET_WM_STATE_ADD,
                   fl_NET_WM_STATE_MAXIMIZED_VERT, fl_NET_WM_STATE_MAXIMIZED_HORZ);
   } else {
-    *no_fullscreen_x() = x();
-    *no_fullscreen_y() = y();
-    *no_fullscreen_w() = w();
-    *no_fullscreen_h() = h();
-    int X,Y,W,H;
-    Fl::screen_work_area(X, Y, W, H, screen_num());
-    int width, height;
-    decorated_win_size(width, height);
-    int dw = (width - w());
-    int dh = (height - h() - dw);
-    resize(X + dw/2, Y + dh + dw/2, W - dw, H - dh - dw);
+    Fl_Window_Driver::maximize();
   }
 }
 
@@ -2513,12 +2507,7 @@ void Fl_X11_Window_Driver::un_maximize() {
     send_wm_event(fl_xid(pWindow), fl_NET_WM_STATE, _NET_WM_STATE_REMOVE,
                   fl_NET_WM_STATE_MAXIMIZED_VERT, fl_NET_WM_STATE_MAXIMIZED_HORZ);
   } else {
-    resize(*no_fullscreen_x(), *no_fullscreen_y(),
-           *no_fullscreen_w(), *no_fullscreen_h());
-    *no_fullscreen_x() = 0;
-    *no_fullscreen_y() = 0;
-    *no_fullscreen_w() = 0;
-    *no_fullscreen_h() = 0;
+    Fl_Window_Driver::un_maximize();
   }
 }
 
@@ -3156,7 +3145,8 @@ int Fl_X11_Window_Driver::set_cursor(const Fl_RGB_Image *image, int hotx, int ho
   if (!cursor)
     return 0;
 
-  image = (Fl_RGB_Image*)image->copy();
+  image = (Fl_RGB_Image*)image->copy(image->w(), image->h());
+  ((Fl_RGB_Image*)image)->normalize();
   const int extra_data = image->ld() ? (image->ld()-image->w()*image->d()) : 0;
   const uchar *i = (const uchar*)*image->data();
   XcursorPixel *o = cursor->pixels;

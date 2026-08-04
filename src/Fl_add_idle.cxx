@@ -1,7 +1,7 @@
 //
 // Idle routine support for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2022 by Bill Spitzak and others.
+// Copyright 1998-2025 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -61,6 +61,9 @@ static void call_idle() {
   Fl::check(), and Fl::ready().
 
   FLTK will not recursively call the idle callback.
+
+  \param[in] cb   your idle callback
+  \param[in] data an arbitrary data value provided to your callback
 */
 void Fl::add_idle(Fl_Idle_Handler cb, void* data) {
   idle_cb* p = freelist;
@@ -81,6 +84,16 @@ void Fl::add_idle(Fl_Idle_Handler cb, void* data) {
 
 /**
   Returns true if the specified idle callback is currently installed.
+
+  An idle callback matches the request only if \p data matches the \p data
+  argument when the callback was installed. There is no "wildcard" search.
+
+  \param[in]  cb    idle callback in question
+  \param[in]  data  optional data. Default: zero / nullptr.
+
+  \returns    Whether the given callback \p cb is queued with \p data.
+  \retval  1  The callback is currently in the callback queue.
+  \retval  0  The callback is not queued, or \p data doesn't match.
 */
 int Fl::has_idle(Fl_Idle_Handler cb, void* data) {
   idle_cb* p = first;
@@ -91,9 +104,6 @@ int Fl::has_idle(Fl_Idle_Handler cb, void* data) {
   }
 }
 
-/**
-  Removes the specified idle callback, if it is installed.
-*/
 void Fl::remove_idle(Fl_Idle_Handler cb, void* data) {
   idle_cb* p = first;
   if (!p) return;

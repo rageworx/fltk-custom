@@ -911,8 +911,8 @@ void Fl_Terminal::RingBuffer::scroll(int rows, const CharStyle& style) {
 //
 // Example:
 //   // Walk ALL rows in the ring buffer..
-//   for (int row=0; row<ring.rows(); row++) {
-//     Utf8Char *u8c = ring.u8c_ring_row(row);
+//   for (int row=0; row<ring_rows(); row++) {
+//     Utf8Char *u8c = u8c_ring_row(row);
 //     ..
 //   }
 //
@@ -925,7 +925,7 @@ const Fl_Terminal::Utf8Char* Fl_Terminal::RingBuffer::u8c_ring_row(int row) cons
 // Return UTF-8 char for beginning of 'row' in the history buffer.
 //   Example:
 //     // Walk ALL rows in history..
-//     for (int hrow=0; hrow<ring.hrows(); hrow++) {
+//     for (int hrow=0; hrow<hist_rows(); hrow++) {
 //       Utf8Char *u8c = u8c_hist_row(hrow);
 //       ..
 //     }
@@ -940,7 +940,7 @@ const Fl_Terminal::Utf8Char* Fl_Terminal::RingBuffer::u8c_hist_row(int hrow) con
 // Special case to walk the "in use" rows of the history
 //   Example:
 //     // Walk the "in use" rows of history..
-//     for (int hrow=0; hrow<ring.hist_use(); hrow++) {
+//     for (int hrow=0; hrow<hist_use(); hrow++) {
 //       Utf8Char *u8c = u8c_hist_use_row(hrow);
 //       ..
 //     }
@@ -957,7 +957,7 @@ const Fl_Terminal::Utf8Char* Fl_Terminal::RingBuffer::u8c_hist_use_row(int hurow
 // Return UTF-8 char for beginning of 'row' in the display buffer
 //   Example:
 //     // Walk ALL rows in display..
-//     for (int drow=0; drow<ring.drows(); drow++) {
+//     for (int drow=0; drow<disp_rows(); drow++) {
 //         Utf8Char *u8c = u8c_disp_row(drow);
 //         ..
 //     }
@@ -975,8 +975,8 @@ const Fl_Terminal::Utf8Char* Fl_Terminal::RingBuffer::u8c_disp_row(int drow) con
 // Scrolling offset is NOT applied; this is raw access to the ring's rows.
 // Example:
 //   // Walk ALL rows in the ring buffer..
-//   for (int row=0; row<ring.rows(); row++) {
-//     Utf8Char *u8c = ring.u8c_ring_row(row);
+//   for (int row=0; row<ring_rows(); row++) {
+//     Utf8Char *u8c = u8c_ring_row(row);
 //     ..
 //   }
 //
@@ -992,7 +992,7 @@ Fl_Terminal::Utf8Char* Fl_Terminal::RingBuffer::u8c_hist_use_row(int hurow)
 // Return UTF-8 char for beginning of 'row' in the display buffer
 // Example:
 //   // Walk ALL rows in display..
-//   for (int drow=0; drow<ring.drows(); drow++) {
+//   for (int drow=0; drow<disp_rows(); drow++) {
 //     Utf8Char *u8c = u8c_disp_row(drow);
 //     ..
 //   }
@@ -1081,10 +1081,15 @@ const Fl_Terminal::Utf8Char* Fl_Terminal::u8c_disp_row(int drow) const
 
   Example:
   \code
-  // Walk ALL rows and cols in the ring buffer..
-  for (int row=0; row<ring.rows(); row++) {
-      Utf8Char *u8c = ring.u8c_ring_row(row);
-      for (int col=0; col<ring.cols(); col++,u8c++) {
+  // Walk ALL rows and cols in the raw ring buffer..
+  //    These will not necessarily be in order as they appear
+  //    on-screen.
+  //    For walking the terminal lines in order, see examples
+  //    for u8c_hist_use_row() and u8c_disp_row().
+  //
+  for (int row=0; row<ring_rows(); row++) {
+      Utf8Char *u8c = u8c_ring_row(row);
+      for (int col=0; col<ring_cols(); col++,u8c++) {
           ..make use of u8c->xxx() methods..
       }
   }
@@ -1111,6 +1116,19 @@ Fl_Terminal::Utf8Char* Fl_Terminal::u8c_hist_row(int hrow)
   aren't many (or any) rows in the history buffer that have been
   populated with scrollback text yet.
 
+  Example to walk all "in use" lines of the history buffer:
+  \code
+  // Walk the entire screen history ("in use") and display to stdout
+  for (int row=0; row<hist_use(); row++) {
+      const Utf8Char *u8c = u8c_hist_use_row(row);            // first char in row
+      for (int col=0; col<=hist_cols(); col++,u8c++) {        // walk columns left-to-right
+          // ..Do things here with each u8c char..
+          ::printf("%.*s", u8c->length(), u8c->text_utf8());  // show each utf8 char to stdout
+      }
+      ::printf("\n"); // end of each line
+  }
+  \endcode
+
   \see u8c_disp_row(int) for example use.
 */
 Fl_Terminal::Utf8Char* Fl_Terminal::u8c_hist_use_row(int hurow)
@@ -1130,6 +1148,21 @@ Fl_Terminal::Utf8Char* Fl_Terminal::u8c_hist_use_row(int hurow)
         ::printf("<%.*s>", len, text);          // print potentially multibyte char
     }
     \endcode
+
+  - This can also be used to walk all rows on the display screen up to the cursor row, e.g.
+    \code
+    // Write all chars in display up to cursor row to stdout
+    for (int row=0; row<disp_rows() && row<=cursor_row(); row++) {
+        const Utf8Char *u8c = u8c_disp_row(row);                // first char in row
+        for (int col=0; col<=display_cols(); col++,u8c++) {     // walk columns left-to-right
+            // ..Do things here with each u8c char..
+            ::printf("%.*s", u8c->text_utf8(), u8c->length());  // write each utf8 char to stdout
+        }
+        ::printf("\n");
+    }
+    \endcode
+
+  \see u8c_hist_use_row() for examples of walking the screen history
 */
 Fl_Terminal::Utf8Char* Fl_Terminal::u8c_disp_row(int drow)
   { return const_cast<Utf8Char*>(const_cast<const Fl_Terminal*>(this)->u8c_disp_row(drow)); }
@@ -3430,6 +3463,7 @@ void Fl_Terminal::init_(int X,int Y,int W,int H,const char*L,int rows,int cols,i
   scrollbar = new Fl_Scrollbar(x(), y(), scrollbar_actual_size(), h());  // tmp xywh (changed later) **
   scrollbar->type(FL_VERTICAL);
   scrollbar->value(0);
+  scrollbar->linesize(3);       // consistent w/Fl_Text_Display -erco 11/17/25
   scrollbar->callback(scrollbar_cb, (void*)this);
 
   hscrollbar = new Fl_Scrollbar(x(), y(), w(), scrollbar_actual_size());  // tmp xywh (changed later) **
@@ -3440,6 +3474,7 @@ void Fl_Terminal::init_(int X,int Y,int W,int H,const char*L,int rows,int cols,i
   hscrollbar_style_ = SCROLLBAR_AUTO;
 
   resizable(0);
+  clip_children(1);           // clips scrollbars within box()
   Fl_Group::color(FL_BLACK);  // black bg by default
   update_screen(true);        // update internal vars after setting screen size/font
   clear_screen_home();        // clear screen, home cursor
@@ -3705,8 +3740,16 @@ void Fl_Terminal::draw(void) {
   Fl_Group::draw();
   // Draw that little square between the scrollbars:
   if (scrollbar->visible() && hscrollbar->visible()) {
-    fl_color(parent()->color());
-    fl_rectf(scrollbar->x(), hscrollbar->y(), scrollbar_actual_size(), scrollbar_actual_size());
+    int cx = x() + Fl::box_dx(box());
+    int cy = y() + Fl::box_dy(box());
+    int cw = w() - Fl::box_dw(box());
+    int ch = h() - Fl::box_dh(box());
+    fl_push_clip(cx,cy,cw,ch);
+    {
+      fl_color(parent()->color());
+      fl_rectf(scrollbar->x(), hscrollbar->y(), scrollbar_actual_size(), scrollbar_actual_size());
+    }
+    fl_pop_clip();
   }
   if (is_frame(box())) {
     // Is box() a frame? Fill area inside frame with rectf().
@@ -3715,19 +3758,16 @@ void Fl_Terminal::draw(void) {
     //
     fl_color(Fl_Group::color());
     // Draw flat field (inside border drawn by Fl_Group::draw() above)
-    int X = x() + Fl::box_dx(box());
-    int Y = y() + Fl::box_dy(box());
-    int W = w() - Fl::box_dw(box());
-    int H = h() - Fl::box_dh(box());
-    if (scrollbar->visible())  W -= scrollbar_actual_size();
-    if (hscrollbar->visible()) H -= scrollbar_actual_size();
-    fl_rectf(X,Y,W,H);
+    fl_rectf(scrn_.x(), scrn_.y(), scrn_.w(), scrn_.h());
   }
+
   //DEBUG  fl_color(0x80000000);     // dark red box inside margins
   //DEBUG  fl_rect(scrn_);
   fl_push_clip(scrn_.x(), scrn_.y(), scrn_.w(), scrn_.h());
+  {
     int Y = scrn_.y();
     draw_buff(Y);
+  }
   fl_pop_clip();
 }
 
@@ -3925,7 +3965,7 @@ int Fl_Terminal::handle(int e) {
 
 /**
   Return a string copy of all lines in the terminal (including history).
-  The returned string is allocated with strdup(3), which the caller must free.
+  The returned string is allocated with `strdup(3)`, which the caller must `free(3)`.
 
   If \p 'lines_below_cursor' is false (default), lines below the cursor on down
   to the bottom of the display are ignored, and not included in the returned string.

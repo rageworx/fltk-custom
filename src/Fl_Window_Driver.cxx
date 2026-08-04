@@ -2,7 +2,7 @@
 // A base class for platform specific window handling code
 // for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2022 by Bill Spitzak and others.
+// Copyright 1998-2025 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -31,6 +31,7 @@
 
 extern void fl_throw_focus(Fl_Widget *o);
 
+Fl_Menu_Button *Fl_Window_Driver::current_menu_button = NULL;
 
 /**
  Create a new Window Driver.
@@ -239,14 +240,24 @@ void Fl_Window_Driver::resize_after_scale_change(int ns, float old_f, float new_
 }
 
 void Fl_Window_Driver::reposition_menu_window(int x, int y) {
-  if (y != pWindow->y() || x != pWindow->x()) pWindow->Fl_Widget::position(x, y);
+  if (y != pWindow->y() || x != pWindow->x()) {
+    int ns = pWindow->screen_num();
+    pWindow->Fl_Widget::position(x, y);
+    Fl::check();
+    // the window move may erroneously change the window's screen number; reset it
+    if (pWindow->screen_num() != ns) screen_num(ns);
+  }
 }
 
 void Fl_Window_Driver::menu_window_area(int &X, int &Y, int &W, int &H, int nscreen) {
   int mx, my;
   Fl_Screen_Driver *scr_driver = Fl::screen_driver();
   if (nscreen < 0) nscreen = scr_driver->get_mouse(mx, my);
-  scr_driver->screen_work_area(X, Y, W, H, nscreen);
+  Fl_Window *parent = Fl_Window_Driver::menu_parent();
+  if (parent && parent->fullscreen_active())
+    scr_driver->screen_xywh(X, Y, W, H, nscreen);
+  else
+    scr_driver->screen_work_area(X, Y, W, H, nscreen);
 }
 
 /** Returns  the platform-specific reference of the given window, or NULL if that window isn't shown.
@@ -289,13 +300,13 @@ void Fl_Window_Driver::maximize() {
   int dh = (height - h() - dw);
   bool need_hide_show = maximize_needs_hide();
   if (need_hide_show) hide(); // pb may occur in subwindow without this
-  resize(X + dw/2, Y + dh + dw/2, W - dw, H - dh - dw);
+  pWindow->resize(X + dw/2, Y + dh + dw/2, W - dw, H - dh - dw);
   if (need_hide_show) show();
 }
 
 
 void Fl_Window_Driver::un_maximize() {
-  resize(*no_fullscreen_x(), *no_fullscreen_y(),
+  pWindow->resize(*no_fullscreen_x(), *no_fullscreen_y(),
          *no_fullscreen_w(), *no_fullscreen_h());
   *no_fullscreen_x() = 0;
   *no_fullscreen_y() = 0;

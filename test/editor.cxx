@@ -4,7 +4,7 @@
 // This program is described in chapter "Designing a Simple Text Editor"
 // of the FLTK Programmer's Guide.
 //
-// Copyright 1998-2024 by Bill Spitzak and others.
+// Copyright 1998-2026 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -31,6 +31,7 @@ Fl_Double_Window *app_window = NULL;
 
 void tut1_build_app_window() {
   app_window = new Fl_Double_Window(640, 480, "FLTK Editor");
+  app_window->xclass("fl_editor");
 }
 
 #endif
@@ -61,6 +62,7 @@ void update_title() {
     fname = fl_filename_name(app_filename);
   if (fname) {
     char buf[FL_PATH_MAX + 3];
+    buf[FL_PATH_MAX + 2] = '\0';   // ensure that the buffer is always terminated
     if (text_changed) {
       snprintf(buf, FL_PATH_MAX+2, "%s *", fname);
     } else {

@@ -1,5 +1,5 @@
 //
-// Copyright 2001-2023 by Bill Spitzak and others.
+// Copyright 2001-2026 by Bill Spitzak and others.
 // Original code Copyright Mark Edel.  Permission to distribute under
 // the LGPL for the FLTK library granted by Mark Edel.
 //
@@ -2075,40 +2075,69 @@ int Fl_Text_Buffer::prev_char_clipped(int pos) const
     return 0;
 
   IS_UTF8_ALIGNED2(this, (pos))
-
-  char c;
-  do {
-    pos--;
-    if (pos==0)
-      return 0;
-    c = byte_at(pos);
-  } while ( (c&0xc0) == 0x80);
-
+  const int l_t = 40;
+  char t[l_t + 1]; t[l_t] = 0;
+  int l = l_t, p = pos, ll;
+  for (int i = l_t; i > 0 && p > 0; i--) {
+    t[--l] = byte_at(--p);
+    ll = fl_utf8len(t[l]);
+    if (ll == 1 || ll == 2) break;
+  }
+  const char *previous = fl_utf8_previous_composed_char(t + l_t, t + l);
+  ll = strlen(t + l);
+  pos = (pos - ll) + (previous - (t+l));
   IS_UTF8_ALIGNED2(this, (pos))
   return pos;
 }
 
 
-/*
- Return the previous character position.
- Returns -1 if the beginning of the buffer is reached.
- */
-int Fl_Text_Buffer::prev_char(int pos) const
-{
-  if (pos==0) return -1;
+/**
+  Returns the index of the previous character.
+  This function processes an emoji sequence (see \ref fl_utf8_next_composed_char)
+  as a single character.
+  \param[in] pos index of the current character
+  \return    index of the previous character
+  \retval -1 if the beginning of the buffer is reached.
+*/
+int Fl_Text_Buffer::prev_char(int pos) const {
+  if (pos == 0)
+    return -1;
   return prev_char_clipped(pos);
 }
 
 
-/*
- Return the next character position.
- Returns length() if the end of the buffer is reached.
- */
-int Fl_Text_Buffer::next_char(int pos) const
-{
+/**
+  Returns the index of the next character.
+  This function processes an emoji sequence (see \ref fl_utf8_next_composed_char) as a single character.
+  Returns length() if the end of the buffer is reached.
+  \param[in] pos index to the current character
+*/
+int Fl_Text_Buffer::next_char(int pos) const {
   IS_UTF8_ALIGNED2(this, (pos))
-  int n = fl_utf8len1(byte_at(pos));
-  pos += n;
+  int l = fl_utf8len(byte_at(pos));
+  if (l > 0) { // test for composed character except for bad bytes
+    int p = pos, ll, b, count_points = 0;
+    char t[40]; // longest emoji sequences I know use 28 bytes in UTF8 (e.g., 🏴󠁧󠁢󠁷󠁬󠁳󠁿 "Wales flag")
+    l = 0;
+    // extract bytes after pos stopping after short codepoint or 40 bytes at most
+    while (p < mLength && l < (int)sizeof(t)) {
+      b = byte_at(p++);
+      t[l++] = b;
+      ll = fl_utf8len1(b);
+      count_points++;
+      for (int i = 1; i < ll && l < (int)sizeof(t); i++) t[l++] = byte_at(p++);
+      if (count_points > 1 && (ll == 1 || ll == 2)) {
+        // stop after short codepoint but not if it's the 1st codepoint which can be inside
+        // emoji sequence (e.g. 9️⃣ "keycap 9")
+        break;
+      }
+    }
+    // length of possibly composed character starting at pos
+    l = (l > 0 ? fl_utf8_next_composed_char(t, t + l) - t : 0);
+  } else if (l == -1) {
+    l = 1;
+  }
+  pos += l;
   if (pos>=mLength)
     return mLength;
   IS_UTF8_ALIGNED2(this, (pos))

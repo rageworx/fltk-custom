@@ -119,6 +119,8 @@ protected:
       end();
       set_modal();
       clear_border();
+      // Put it on same screen as that where Menu_Window::parent_ is.
+      screen_num(Fl_Window_Driver::menu_parent(NULL)->screen_num());
     }
 public:
   const Fl_Menu_Item* menu;
@@ -186,6 +188,12 @@ Fl_Window *Fl_Window_Driver::menu_parent(int *display_height) {
 static menuwindow *to_menuwindow(Fl_Window *win) {
   if (!Fl_Window_Driver::driver(win)->popup_window() || !win->menu_window()) return NULL;
   return ((window_with_items*)win)->as_menuwindow();
+}
+
+/** Returns whether win is from class menutitle */
+bool Fl_Window_Driver::to_menutitle(Fl_Window *win) {
+  if (!Fl_Window_Driver::driver(win)->popup_window() || !win->menu_window()) return false;
+  return !((window_with_items*)win)->as_menuwindow();
 }
 
 /** Accessor to the "origin" member variable of class menuwindow.
@@ -346,7 +354,7 @@ menuwindow::menuwindow(const Fl_Menu_Item* m, int X, int Y, int Wp, int Hp,
   menubartitle = menubar_title;
   origin = NULL;
   offset_y = 0;
-  int n = (Wp > 0 ? Fl::screen_num(X, Y) : -1);
+  int n = Fl_Window_Driver::menu_parent()->screen_num();
   Fl_Window_Driver::driver(this)->menu_window_area(scr_x, scr_y, scr_w, scr_h, n);
   if (!right_edge || right_edge > scr_x+scr_w) right_edge = scr_x+scr_w;
 
@@ -492,7 +500,7 @@ void menuwindow::autoscroll(int n) {
   int Y = y()+Fl::box_dx(box())+2+n*itemheight;
 
   int xx, ww;
-  Fl_Window_Driver::driver(this)->menu_window_area(xx, scr_y, ww, scr_h);
+  Fl_Window_Driver::driver(this)->menu_window_area(xx, scr_y, ww, scr_h, this->screen_num());
   if (n==0 && Y <= scr_y + itemheight) {
     Y = scr_y - Y + 10;
   } else if (Y <= scr_y + itemheight) {
@@ -1060,12 +1068,16 @@ const Fl_Menu_Item* Fl_Menu_Item::pulldown(
 
     if(pp.fakemenu) {delete pp.fakemenu; pp.fakemenu = 0;}
     initial_item = 0; // stop the startup code
+    if (pp.menu_number < 0 || pp.menu_number >= pp.nummenus) {
+      initial_item = 0; // turn off startup code
+      continue;
+    }
     pp.p[pp.menu_number]->autoscroll(pp.item_number);
 
   STARTUP:
     menuwindow& cw = *pp.p[pp.menu_number];
     const Fl_Menu_Item* m = pp.current_item;
-    if (!m->activevisible()) { // pointing at inactive item
+    if (!m || !m->activevisible()) { // pointing at inactive item
       cw.set_selected(-1);
       initial_item = 0; // turn off startup code
       continue;
@@ -1098,7 +1110,8 @@ const Fl_Menu_Item* Fl_Menu_Item::pulldown(
           int dy = n->y()-nY;
           int dx = n->x()-nX;
           int waX, waY, waW, waH;
-          Fl_Window_Driver::driver(n)->menu_window_area(waX, waY, waW, waH, Fl::screen_num(X, Y));
+          int ns = Fl_Window_Driver::menu_parent()->screen_num();
+          Fl_Window_Driver::driver(n)->menu_window_area(waX, waY, waW, waH, ns);
           for (int menu = 0; menu <= pp.menu_number; menu++) {
             menuwindow* tt = pp.p[menu];
             int nx = tt->x()+dx; if (nx < waX) {nx = waX; dx = -tt->x() + waX;}

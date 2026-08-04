@@ -1,7 +1,7 @@
 //
 // Implementation of the Wayland window driver.
 //
-// Copyright 1998-2024 by Bill Spitzak and others.
+// Copyright 1998-2026 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -30,6 +30,7 @@
 #include <FL/fl_ask.H>
 #include <FL/Fl.H>
 #include <FL/Fl_Image_Surface.H>
+#include <FL/Fl_Menu_Button.H>
 #include <string.h>
 #include <math.h> // for ceil()
 #include <sys/types.h> // for pid_t
@@ -354,8 +355,8 @@ void Fl_Wayland_Window_Driver::make_current() {
   }
 
   // to support progressive drawing
-  if ( (!Fl_Wayland_Window_Driver::in_flush_) && window->buffer && (!window->frame_cb)
-      && window->buffer->draw_buffer_needs_commit && (!wait_for_expose_value) ) {
+  if ( (!Fl_Wayland_Window_Driver::in_flush_) && window->buffer && (!window->frame_cb) &&
+      (!wait_for_expose_value) ) {
     Fl_Wayland_Graphics_Driver::buffer_commit(window);
   }
 
@@ -647,17 +648,6 @@ int Fl_Wayland_Window_Driver::scroll(int src_x, int src_y, int src_w, int src_h,
 }
 
 
-static void handle_error(struct libdecor *libdecor_context, enum libdecor_error error, const char *message)
-{
-  Fl::fatal("Caught error (%d): %s\n", error, message);
-}
-
-
-static struct libdecor_interface libdecor_iface = {
-  .error = handle_error,
-};
-
-
 void change_scale(Fl_Wayland_Screen_Driver::output *output, struct wld_window *window,
                   float pre_scale) {
   Fl_Wayland_Window_Driver *win_driver = Fl_Wayland_Window_Driver::driver(window->fl_win);
@@ -702,6 +692,13 @@ static void surface_enter(void *data, struct wl_surface *wl_surface,
     (Fl_Wayland_Screen_Driver::output*)wl_output_get_user_data(wl_output);
   if (output == NULL)
     return;
+  // Detect when the parent window of an active menu window enters a screen. If so, we are
+  // moving a window with active menus to a new screen. We want to close all menus.
+  if (Fl::modal() && Fl::modal()->menu_window() &&
+      Fl_Window_Driver::menu_parent() == window->fl_win) {
+    Fl::e_x_root = 1000000;
+    Fl::modal()->handle(FL_PUSH); // simulate a distant click to close menus
+  }
 
   Fl_Wayland_Window_Driver *win_driver = Fl_Wayland_Window_Driver::driver(window->fl_win);
   float pre_scale = Fl::screen_scale(win_driver->screen_num()) * win_driver->wld_scale();
@@ -715,7 +712,7 @@ static void surface_enter(void *data, struct wl_surface *wl_surface,
   while (e->next != &window->outputs) e = e->next; // move e to end of linked list
   wl_list_insert(e, &surface_output->link);
 //printf("window %p enters screen id=%d length=%d\n", window->fl_win, output->id, wl_list_length(&window->outputs));
-  if (list_was_empty) {
+  if (list_was_empty && !window->fl_win->parent() && !Fl_Window_Driver::to_menutitle(window->fl_win)) {
     change_scale(output, window, pre_scale);
   }
 }
@@ -902,16 +899,17 @@ static void handle_configure(struct libdecor_frame *frame,
   }
   window->state = window_state;
 
-  // Weston, KWin, and some versions of Mutter, on purpose, don't set the
+  // Weston, KWin, and some old versions of Mutter, on purpose, don't set the
   // window width x height when xdg_toplevel_configure runs twice
   // during resizable window creation
   // (see https://gitlab.freedesktop.org/wayland/wayland-protocols/-/issues/6).
   // Consequently, libdecor_configuration_get_content_size() may return false twice.
-  // In that case libdecor_frame_get_content_{width,height}() give the desired window size
+  // Weston and KWin, at least, don't change the window size asked by the client application
+  // which is available here in floating_{width,height}.
   if (!libdecor_configuration_get_content_size(configuration, frame, &width, &height)) {
     if (is_2nd_run) {
-      width = libdecor_frame_get_content_width(frame);
-      height = libdecor_frame_get_content_height(frame);
+      width = window->floating_width;
+      height = window->floating_height;
       if (!driver->is_resizable()) {
         libdecor_frame_set_min_content_size(frame, width, height);
         libdecor_frame_set_max_content_size(frame, width, height);
@@ -998,11 +996,12 @@ void Fl_Wayland_Window_Driver::wait_for_expose()
   Fl_Window_Driver::wait_for_expose();
   struct wld_window * xid = fl_wl_xid(pWindow);
   if (!xid) return;
+  Fl_Wayland_Screen_Driver *scr_driver = (Fl_Wayland_Screen_Driver*)Fl::screen_driver();
   if (pWindow->fullscreen_active()) {
     if (xid->kind == DECORATED) {
       while (!(xid->state & LIBDECOR_WINDOW_STATE_FULLSCREEN) ||
              !(xid->state & LIBDECOR_WINDOW_STATE_ACTIVE)) {
-        wl_display_dispatch(Fl_Wayland_Screen_Driver::wl_display);
+        libdecor_dispatch(scr_driver->libdecor_context, 0);
       }
     } else if (xid->kind == UNFRAMED) {
       wl_display_roundtrip(Fl_Wayland_Screen_Driver::wl_display);
@@ -1010,7 +1009,7 @@ void Fl_Wayland_Window_Driver::wait_for_expose()
   } else if (xid->kind == DECORATED) {
     // necessary for the windowfocus demo program with recent Wayland versions
     if (!(xid->state & LIBDECOR_WINDOW_STATE_ACTIVE)) {
-      wl_display_dispatch(Fl_Wayland_Screen_Driver::wl_display);
+      libdecor_dispatch(scr_driver->libdecor_context, 0);
     }
   }
 }
@@ -1165,6 +1164,14 @@ static void popup_configure(void *data, struct xdg_popup *xdg_popup, int32_t x, 
     window->state = (y - win_pos->y);
     // make selected item visible, if there's one
     Fl_Window_Driver::scroll_to_selected_item(window->fl_win);
+  }
+  if (Fl_Window_Driver::current_menu_button && !Fl_Window_Driver::menu_leftorigin(window->fl_win)) {
+    int X, Y;
+    Fl_Window_Driver::current_menu_button->top_window_offset(X, Y);
+    if (y < Y) {
+      Fl_Window *win = window->fl_win;
+      win->Fl_Widget::resize(win->x(), Y - win->h(), win->w(), win->h());
+    }
   }
 }
 
@@ -1322,7 +1329,18 @@ bool Fl_Wayland_Window_Driver::process_menu_or_tooltip(struct wld_window *new_wi
   struct xdg_positioner *positioner = xdg_wm_base_create_positioner(scr_driver->xdg_wm_base);
   //xdg_positioner_get_version(positioner) <== gives 1 under Debian and Sway
   int popup_x, popup_y;
-  if (Fl_Window_Driver::menu_title(pWindow) && Fl_Window_Driver::menu_bartitle(pWindow)) {
+  if (Fl_Window_Driver::current_menu_button && !Fl_Window_Driver::menu_leftorigin(pWindow)) {
+    int X, Y;
+    Fl_Window_Driver::current_menu_button->top_window_offset(X, Y);
+    xdg_positioner_set_anchor_rect(positioner, X * f, Y * f,
+                                   Fl_Window_Driver::current_menu_button->w() * f,
+                                   Fl_Window_Driver::current_menu_button->h() * f);
+    popup_x = X * f;
+    popup_y = 0;
+    if (parent_xid->kind == Fl_Wayland_Window_Driver::DECORATED && !origin_win->fullscreen_active())
+      libdecor_frame_translate_coordinate(parent_xid->frame, popup_x, popup_y, &popup_x, &popup_y);
+  } else if (Fl_Window_Driver::menu_title(pWindow) && Fl_Window_Driver::menu_bartitle(pWindow)) {
+
     xdg_positioner_set_anchor_rect(positioner, 0, 0,
                                    Fl_Window_Driver::menu_title(pWindow)->w() * f,
                                    Fl_Window_Driver::menu_title(pWindow)->h() * f);
@@ -1341,9 +1359,8 @@ bool Fl_Wayland_Window_Driver::process_menu_or_tooltip(struct wld_window *new_wi
       // prevent first popup from going above the permissible source window
       popup_y = fl_max(popup_y, - pWindow->h() * f);
     }
-    if (parent_xid->kind == Fl_Wayland_Window_Driver::DECORATED)
-      libdecor_frame_translate_coordinate(parent_xid->frame, popup_x, popup_y,
-                                          &popup_x, &popup_y);
+    if (parent_xid->kind == Fl_Wayland_Window_Driver::DECORATED && !origin_win->fullscreen_active())
+      libdecor_frame_translate_coordinate(parent_xid->frame, popup_x, popup_y, &popup_x, &popup_y);
     xdg_positioner_set_anchor_rect(positioner, popup_x, 0, 1, 1);
     popup_y++;
   }
@@ -1352,14 +1369,18 @@ bool Fl_Wayland_Window_Driver::process_menu_or_tooltip(struct wld_window *new_wi
   xdg_positioner_set_gravity(positioner, XDG_POSITIONER_GRAVITY_BOTTOM_RIGHT);
   // prevent menuwindow from expanding beyond display limits
   int constraint = 0;
+  int top_menubar = pWindow->y() -
+     (Fl_Window_Driver::menu_bartitle(pWindow) && Fl_Window_Driver::menu_title(pWindow) ?
+                                     Fl_Window_Driver::menu_title(pWindow)->h() : 0);
   if ( !(parent_win->fullscreen_active() &&
         Fl_Wayland_Screen_Driver::compositor == Fl_Wayland_Screen_Driver::MUTTER &&
         ((!Fl_Window_Driver::menu_title(pWindow) && !Fl_Window_Driver::menu_leftorigin(pWindow)) ||
-          Fl_Window_Driver::menu_bartitle(pWindow)))
+          Fl_Window_Driver::menu_bartitle(pWindow)) && top_menubar < 10 &&
+         !Fl_Window_Driver::current_menu_button)
      ) {
     // Condition above is only to bypass Mutter bug for fullscreen windows (see #1061)
     constraint |= (XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y);
-    if (Fl_Window_Driver::menu_bartitle(pWindow) && !Fl_Window_Driver::menu_leftorigin(pWindow)) {
+    if ((Fl_Window_Driver::menu_bartitle(pWindow) || Fl_Window_Driver::current_menu_button) && !Fl_Window_Driver::menu_leftorigin(pWindow)) {
       constraint |= XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y;
     }
     xdg_positioner_set_constraint_adjustment(positioner, constraint);
@@ -1434,13 +1455,11 @@ void Fl_Wayland_Window_Driver::makeWindow()
 
   } else if (pWindow->border() && !pWindow->parent() ) { // a decorated window
     new_window->kind = DECORATED;
-    if (!scr_driver->libdecor_context)
-      scr_driver->libdecor_context = libdecor_new(Fl_Wayland_Screen_Driver::wl_display,
-                                                  &libdecor_iface);
     new_window->frame = libdecor_decorate(scr_driver->libdecor_context, new_window->wl_surface,
                                           &libdecor_frame_iface, new_window);
     // appears in the Gnome desktop menu bar
-    libdecor_frame_set_app_id(new_window->frame, get_prog_name());
+    const char *appid = pWindow->xclass() ? pWindow->xclass() : get_prog_name();
+    libdecor_frame_set_app_id(new_window->frame, appid);
     libdecor_frame_set_title(new_window->frame, pWindow->label()?pWindow->label():"");
     if (!is_resizable()) {
       libdecor_frame_unset_capabilities(new_window->frame, LIBDECOR_ACTION_RESIZE);
@@ -1727,13 +1746,21 @@ int Fl_Wayland_Window_Driver::set_cursor(const Fl_RGB_Image *rgb, int hotx, int 
 int Fl_Wayland_Window_Driver::set_cursor_4args(const Fl_RGB_Image *rgb, int hotx, int hoty,
                                                bool keep_copy) {
   if (keep_copy) {
-    int ld = rgb->ld() ? rgb->ld() : rgb->data_w() * rgb->d();
-    uchar *data = new uchar[ld * rgb->data_h()];
-    memcpy(data, rgb->array, ld * rgb->data_h());
-    Fl_RGB_Image *rgb2 = new Fl_RGB_Image(data, rgb->data_w(), rgb->data_h(), rgb->d(), rgb->ld());
-    rgb2->alloc_array = 1;
-    rgb2->scale(rgb->w(), rgb->h(), 0, 1);
-    rgb = rgb2;
+    if (((Fl_RGB_Image*)rgb)->as_svg_image()) {
+      int scale = wld_scale();
+      Fl_RGB_Image *svg = (Fl_RGB_Image*)rgb->copy(rgb->w() * scale, rgb->h() * scale);
+      svg->normalize();
+      svg->scale(rgb->w(), rgb->h(), 0, 1);
+      rgb = svg;
+    } else {
+      int ld = rgb->ld() ? rgb->ld() : rgb->data_w() * rgb->d();
+      uchar *data = new uchar[ld * rgb->data_h()];
+      memcpy(data, rgb->array, ld * rgb->data_h());
+      Fl_RGB_Image *rgb2 = new Fl_RGB_Image(data, rgb->data_w(), rgb->data_h(), rgb->d(), rgb->ld());
+      rgb2->alloc_array = 1;
+      rgb2->scale(rgb->w(), rgb->h(), 0, 1);
+      rgb = rgb2;
+    }
   }
 // build a new wl_cursor and its image
   struct wld_window *xid = (struct wld_window *)Fl_Window_Driver::xid(pWindow);
@@ -1778,33 +1805,6 @@ int Fl_Wayland_Window_Driver::set_cursor_4args(const Fl_RGB_Image *rgb, int hotx
 }
 
 
-struct xid_and_rect {
-  struct wld_window *xid;
-  Fl_Window *win;
-  int X, Y, W, H;
-  bool need_resize;
-};
-
-
-static void surface_frame_done(void *data, struct wl_callback *cb, uint32_t time) {
-  struct xid_and_rect *xid_rect = (xid_and_rect *)data;
-  wl_callback_destroy(cb);
-  xid_rect->xid->frame_cb = NULL;
-  if (xid_rect->need_resize) {
-    xid_rect->win->Fl_Group::resize(xid_rect->X, xid_rect->Y, xid_rect->W, xid_rect->H);
-    xid_rect->win->redraw();
-  } else {
-    xid_rect->win->Fl_Widget::resize(xid_rect->X, xid_rect->Y, xid_rect->W, xid_rect->H);
-  }
-  delete xid_rect;
-}
-
-
-static const struct wl_callback_listener surface_frame_listener = {
-  .done = surface_frame_done,
-};
-
-
 void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
   static int depth = 0;
   struct wld_window *fl_win = fl_wl_xid(pWindow);
@@ -1813,7 +1813,7 @@ void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
   }
   int is_a_move = (X != x() || Y != y());
   bool true_rescale = Fl_Window::is_a_rescale();
-  float f = Fl::screen_scale(pWindow->screen_num());
+  float f = fl_win ? Fl::screen_scale(pWindow->screen_num()) : 1;
   if (fl_win && fl_win->buffer) {
     int scale = wld_scale();
     int stride = cairo_format_stride_for_width(
@@ -1830,105 +1830,98 @@ void Fl_Wayland_Window_Driver::resize(int X, int Y, int W, int H) {
   }
   Fl_Window *parent = this->parent() ? pWindow->window() : NULL;
   struct wld_window *parent_xid = parent ? fl_wl_xid(parent) : NULL;
-  xid_and_rect *xid_rect = NULL;
-  if (parent_xid && parent_xid->frame_cb && wl_proxy_get_listener((struct wl_proxy*)parent_xid->frame_cb) == &surface_frame_listener) {
-    xid_rect = (xid_and_rect*)wl_callback_get_user_data(parent_xid->frame_cb);
-    if (xid_rect->win != pWindow) xid_rect = NULL;
+  if (depth == 1 && fl_win && parent_xid && parent_xid->frame_cb && can_expand_outside_parent_) {
+    // When moving or resizing a subwindow independently from its parent while the parent window
+    // is being redrawn, the processing depends on whether the moved/resize window
+    // is a draggable-subwindow. For a draggable subwindow having can_expand_outside_parent_ != 0,
+    // skip the X,Y,W,H tuple to process only tuples received when parent window is ready.
+    // This smoothes the movement of the draggable subwindow.
+    // Process regular subwindows normally.
+    depth--;
+    return;
   }
-  // When moving or resizing a non-GL subwindow independently from its parent, this condition
-  // delays application of X,Y,W,H values until the compositor signals
-  // it's ready for a new frame using the frame callback mechanism.
-  if ((parent && parent->damage()) || depth > 1 || pWindow->as_gl_window() || !parent_xid ||
-      wait_for_expose_value || (parent_xid->frame_cb && !xid_rect)) {
-    if (is_a_resize) {
-      if (pWindow->parent()) {
-        if (W < 1) W = 1;
-        if (H < 1) H = 1;
-      }
-      pWindow->Fl_Group::resize(X,Y,W,H);
-      //fprintf(stderr, "resize: win=%p to %dx%d\n", pWindow, W, H);
-      if (shown()) {pWindow->redraw();}
-    } else {
+  if (is_a_resize) {
+    if (pWindow->parent()) {
+      if (W < 1) W = 1;
+      if (H < 1) H = 1;
+    }
+    pWindow->Fl_Group::resize(X,Y,W,H);
+    //fprintf(stderr, "resize: win=%p to %dx%d\n", pWindow, W, H);
+    if (shown()) {pWindow->redraw();}
+  } else {
       x(X); y(Y);
       //fprintf(stderr, "move win=%p to %dx%d\n", pWindow, X, Y);
-    }
+  }
+  if (!fl_win) {
+    depth--;
+    return;
   }
 
-  if (shown()) {
-    if (is_a_resize) {
-      if (pWindow->as_overlay_window() && other_xid) {
-        destroy_double_buffer();
+  if (is_a_resize) {
+    if (pWindow->as_overlay_window() && other_xid) {
+      destroy_double_buffer();
+    }
+    if (fl_win->kind == DECORATED) { // a decorated window
+      if (fl_win->buffer) {
+        Fl_Wayland_Graphics_Driver::buffer_release(fl_win);
       }
-      if (fl_win->kind == DECORATED) { // a decorated window
-        if (fl_win->buffer) {
-          Fl_Wayland_Graphics_Driver::buffer_release(fl_win);
-        }
-        fl_win->configured_width = W;
-        fl_win->configured_height = H;
-        if (!in_handle_configure && xdg_toplevel()) {
-          if (Fl_Window::is_a_rescale()) size_range();
-          struct libdecor_state *state = libdecor_state_new(int(W * f), int(H * f));
-          // necessary only if resize is initiated by prog
-          libdecor_frame_commit(fl_win->frame, state, NULL);
-          libdecor_state_free(state);
-          if (libdecor_frame_is_floating(fl_win->frame)) {
-            fl_win->floating_width = int(W*f);
-            fl_win->floating_height = int(H*f);
-          }
-        }
-      } else if (fl_win->kind == SUBWINDOW && fl_win->subsurface) { // a subwindow
-        wl_subsurface_set_position(fl_win->subsurface, X * f, Y * f);
-        if (!pWindow->as_gl_window()) Fl_Wayland_Graphics_Driver::buffer_release(fl_win);
-        fl_win->configured_width = W;
-        fl_win->configured_height = H;
-      } else if (fl_win->xdg_surface) { // a window without border
-        if (!pWindow->as_gl_window()) Fl_Wayland_Graphics_Driver::buffer_release(fl_win);
-        fl_win->configured_width = W;
-        fl_win->configured_height = H;
-        W *= f; H *= f;
-        if (!pWindow->fullscreen_active()) {
-          xdg_toplevel_set_min_size(fl_win->xdg_toplevel, W, H);
-          xdg_toplevel_set_max_size(fl_win->xdg_toplevel, W, H);
-        }
-        xdg_surface_set_window_geometry(fl_win->xdg_surface, 0, 0, W, H);
-        //printf("xdg_surface_set_window_geometry: %dx%d\n",W, H);
-      }
-    } else {
+      fl_win->configured_width = W;
+      fl_win->configured_height = H;
       if (!in_handle_configure && xdg_toplevel()) {
-        // Wayland doesn't seem to provide a reliable way for the app to set the
-        // window position on screen. This is functional when the move is mouse-driven.
-        Fl_Wayland_Screen_Driver *scr_driver = (Fl_Wayland_Screen_Driver*)Fl::screen_driver();
-        if (Fl::e_state == FL_BUTTON1) {
-          xdg_toplevel_move(xdg_toplevel(), scr_driver->seat->wl_seat, scr_driver->seat->serial);
-          Fl::pushed(NULL);
-          Fl::e_state = 0;
+        if (Fl_Window::is_a_rescale()) size_range();
+        struct libdecor_state *state = libdecor_state_new(int(W * f), int(H * f));
+        // necessary only if resize is initiated by prog
+        libdecor_frame_commit(fl_win->frame, state, NULL);
+        libdecor_state_free(state);
+        if (libdecor_frame_is_floating(fl_win->frame)) {
+          fl_win->floating_width = int(W*f);
+          fl_win->floating_height = int(H*f);
         }
-      } else if (pWindow->as_gl_window() && fl_win->kind == SUBWINDOW && fl_win->subsurface) {
-        wl_subsurface_set_position(fl_win->subsurface, X * f, Y * f);
       }
+    } else if (fl_win->kind == SUBWINDOW && fl_win->subsurface) { // a subwindow
+      wl_subsurface_set_position(fl_win->subsurface, X * f, Y * f);
+      if (!pWindow->as_gl_window()) Fl_Wayland_Graphics_Driver::buffer_release(fl_win);
+      fl_win->configured_width = W;
+      fl_win->configured_height = H;
+    } else if (fl_win->xdg_surface) { // a window without border
+      if (!pWindow->as_gl_window()) Fl_Wayland_Graphics_Driver::buffer_release(fl_win);
+      fl_win->configured_width = W;
+      fl_win->configured_height = H;
+      W *= f; H *= f;
+      if (!pWindow->fullscreen_active()) {
+        xdg_toplevel_set_min_size(fl_win->xdg_toplevel, W, H);
+        xdg_toplevel_set_max_size(fl_win->xdg_toplevel, W, H);
+      }
+      xdg_surface_set_window_geometry(fl_win->xdg_surface, 0, 0, W, H);
+      //printf("xdg_surface_set_window_geometry: %dx%d\n",W, H);
     }
+  } else if (!in_handle_configure && xdg_toplevel() && Fl::e_state == FL_BUTTON1) {
+    // Wayland doesn't provide a way for the app to set the window position on screen.
+    // This is functional when the move is mouse-driven.
+    Fl_Wayland_Screen_Driver *scr_driver = (Fl_Wayland_Screen_Driver*)Fl::screen_driver();
+    xdg_toplevel_move(xdg_toplevel(), scr_driver->seat->wl_seat, scr_driver->seat->serial);
+    Fl::pushed(NULL);
+    Fl::e_state = 0;
   }
 
-  if (fl_win && parent_xid) {
-    if (pWindow->as_gl_window()) {
-      if (fl_win->frame_cb) {
-        wl_callback_destroy(fl_win->frame_cb);
-        fl_win->frame_cb = NULL;
-      }
-      if (parent_xid->buffer) Fl_Wayland_Graphics_Driver::buffer_commit(parent_xid);
-    } else {
-      if (!(parent && parent->damage()) && !parent_xid->frame_cb) {
-        // use the frame callback mechanism and memorize current X,Y,W,H values
-        xid_rect = new xid_and_rect;
-        xid_rect->xid = parent_xid;
-        xid_rect->win = pWindow;
-        parent_xid->frame_cb = wl_surface_frame(parent_xid->wl_surface);
-        wl_callback_add_listener(parent_xid->frame_cb, &surface_frame_listener, xid_rect);
-        xid_rect->X = X; xid_rect->Y = Y; xid_rect->W = W; xid_rect->H = H;
-        xid_rect->need_resize = is_a_resize;
+  if (parent_xid) {
+    if (depth > 1) {
+      if (fl_win->subsurface) {
         wl_subsurface_set_position(fl_win->subsurface, X * f, Y * f);
         wl_surface_commit(parent_xid->wl_surface);
-      } else if (!xid_rect) {
+      }
+    } else if (parent_xid->buffer && is_a_move) {
+      if (fl_win->subsurface) wl_subsurface_set_position(fl_win->subsurface, X * f, Y * f);
+      if (!parent_xid->buffer->wl_buffer || parent_xid->buffer->draw_buffer_needs_commit) {
+        if (!parent_xid->frame_cb) Fl_Wayland_Graphics_Driver::buffer_commit(parent_xid);
+        else wl_surface_commit(parent_xid->wl_surface);
+      } else {
+        if (!parent_xid->frame_cb) {
+          // Use the frame callback mechanism applied to the object's parent window
+          parent_xid->frame_cb = wl_surface_frame(parent_xid->wl_surface);
+          wl_callback_add_listener(parent_xid->frame_cb,
+                                   Fl_Wayland_Graphics_Driver::p_surface_frame_listener, parent_xid);
+        }
         wl_surface_commit(parent_xid->wl_surface);
       }
     }
@@ -2114,7 +2107,7 @@ void Fl_Wayland_Window_Driver::menu_window_area(int &X, int &Y, int &W, int &H, 
 
 
 int Fl_Wayland_Window_Driver::wld_scale() {
-  Fl_X *flx = Fl_X::flx(pWindow);
+  Fl_X *flx = Fl_X::flx(pWindow->top_window());
   struct wld_window *xid = (flx ? (struct wld_window *)flx->xid : NULL);
   if (!xid || wl_list_empty(&xid->outputs)) {
     int scale = 1;

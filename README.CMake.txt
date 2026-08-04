@@ -260,6 +260,9 @@ FLTK_OPTION_SVG - default ON
     FLTK has a built-in SVG library and can create (write) SVG image files.
     Turning this option off disables SVG (read and write) support.
 
+FLTK_USE_DBUS - default ON (Wayland only).
+    Meaningful only under Wayland. Allows FLTK to detect the current cursor theme.
+
 FLTK_USE_LIBDECOR_GTK - default ON (Wayland only).
     Meaningful only under Wayland and if FLTK_USE_SYSTEM_LIBDECOR is 'OFF'.
     Allows to use libdecor's GTK plugin to draw window titlebars. Otherwise
@@ -923,7 +926,7 @@ it with the ususal CMake GUI interfaces (ccmake, cmake-gui) or on the
 CMake commandline (-D FLTK_DIR=...).
 
 The find_package command tells CMake to find the package FLTK, '1.4' says
-that we want FLTK 1.4.x: any patch version of 1.4 will march. 'REQUIRED'
+that we want FLTK 1.4.x: any patch version of 1.4 will match. 'REQUIRED'
 means that it is an error if it's not found. 'CONFIG' tells it to search
 only for the FLTKConfig.cmake file, not using the FindFLTK.cmake "module"
 supplied with CMake, which doesn't work with this version of FLTK. Since

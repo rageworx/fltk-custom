@@ -2,7 +2,7 @@
 // Definition of Apple Cocoa window driver
 // for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2010-2022 by Bill Spitzak and others.
+// Copyright 2010-2025 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -97,7 +97,7 @@ public:
   NSCursor *cursor;
   static void q_release_context(Fl_Cocoa_Window_Driver *x = 0); // free all resources associated with gc
   static void clip_to_rounded_corners(CGContextRef gc, int w, int h);
-  static CGImageRef capture_decorated_window_10_6(NSWindow *nswin);
+  static CGImageRef capture_decorated_window_10_5(NSWindow *nswin);
   void set_key_window();
   bool mapped_to_retina();      // is window mapped to retina display?
   void mapped_to_retina(bool);  // sets whether window is mapped to retina display
@@ -133,6 +133,7 @@ public:
   void unmap() FL_OVERRIDE;
   void fullscreen_on() FL_OVERRIDE;
   void fullscreen_off(int X, int Y, int W, int H) FL_OVERRIDE;
+  void fullscreen_screens(bool on_off) FL_OVERRIDE;
   void maximize() FL_OVERRIDE;
   void un_maximize() FL_OVERRIDE;
   void use_border() FL_OVERRIDE;

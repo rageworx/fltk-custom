@@ -605,7 +605,7 @@ void Fl_Text_Display::recalc_display() {
       /* Decide if the vertical scrollbar needs to be visible */
       if (!mVScrollBar->visible() &&
           scrollbar_align() & (FL_ALIGN_LEFT|FL_ALIGN_RIGHT) &&
-          mNBufferLines >= mNVisibleLines-(mContinuousWrap?0:1))
+          mNBufferLines >= mNVisibleLines - ((mContinuousWrap && mWrapMarginPix) ? 0 : 1))
       {
         mVScrollBar->set_visible();
         text_area.w -= scrollsize;
@@ -2302,7 +2302,8 @@ int Fl_Text_Display::find_x(const char *s, int len, int style, int x) const {
   int i = 0;
   int last_w = 0;       // STR #2788
   while (i<len) {
-    int cl = fl_utf8len1(s[i]);
+    const char *next = fl_utf8_next_composed_char(s + i, s + len);
+    int cl = next - (s+i);
     int w = int( string_width(s, i+cl, style) );
     if (w>x) {
       if (cursor_pos && (w-x < x-last_w)) return i+cl; // STR #2788
@@ -3169,7 +3170,8 @@ void Fl_Text_Display::update_v_scrollbar() {
          mTopLineNum, mNVisibleLines, mNBufferLines);
 #endif // DEBUG
 
-  mVScrollBar->value(mTopLineNum, mNVisibleLines, 1, mNBufferLines+1+(mContinuousWrap?0:1));
+  mVScrollBar->value(mTopLineNum, mNVisibleLines, 1, mNBufferLines+1+
+                     ((mContinuousWrap && mWrapMarginPix) ? 0 : 1));
   mVScrollBar->linesize(3);
 }
 

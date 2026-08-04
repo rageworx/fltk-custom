@@ -1,7 +1,7 @@
 //
 // Definition of Windows system driver for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2023 by Bill Spitzak and others.
+// Copyright 1998-2025 by Bill Spitzak and others.
 //
 // This library is free software. Distribution and use rights are outlined in
 // the file "COPYING" which should have been included with this file.  If this
@@ -19,10 +19,10 @@
 #include "Fl_WinAPI_System_Driver.H"
 #include <FL/Fl.H>
 #include <FL/fl_utf8.h>
-#include <FL/fl_string_functions.h>  // fl_strdup()
 #include <FL/filename.H>
 #include <FL/Fl_File_Browser.H>
 #include <FL/Fl_File_Icon.H>
+#include "../../Fl_String.H"
 #include "../../flstring.h"
 #include <stdio.h>
 #include <stdarg.h>
@@ -63,6 +63,18 @@ typedef RPC_STATUS (WINAPI *uuid_func)(UUID __RPC_FAR *Uuid);
 #ifdef __CYGWIN__
 #  include <mntent.h>
 #endif
+
+// Optional helper function to debug Fl_WinAPI_System_Driver::home_directory_name()
+#ifndef DEBUG_HOME_DIRECTORY_NAME
+#define DEBUG_HOME_DIRECTORY_NAME 0
+#endif
+#if DEBUG_HOME_DIRECTORY_NAME
+static void print_env(const char *ev) {
+  const char *val = getenv(ev);
+  printf("%-30.30s = \"%s\"\n", ev, val ? val : "<null>");
+  fflush(stdout);
+}
+#endif // DEBUG_HOME_DIRECTORY_NAME
 
 static inline int isdirsep(char c) { return c == '/' || c == '\\'; }
 
@@ -568,7 +580,7 @@ int Fl_WinAPI_System_Driver::filename_expand(char *to, int tolen, const char *fr
     switch (*a) {
       case '~': // a home directory name
         if (e <= a+1) { // current user's directory
-          value = getenv("HOME");
+          value = home_directory_name();
         }
         break;
       case '$':         /* an environment variable */
@@ -612,8 +624,8 @@ Fl_WinAPI_System_Driver::filename_relative(char *to,    // O - Relative filename
   }
 
   // if there is a drive letter, make sure both paths use the same drive
-  if (   base_dir[0] < 128 && isalpha(base_dir[0]) && base_dir[1] == ':'
-      && dest_dir[0] < 128 && isalpha(dest_dir[0]) && dest_dir[1] == ':') {
+  if (   (unsigned)base_dir[0] < 128 && isalpha(base_dir[0]) && base_dir[1] == ':'
+      && (unsigned)dest_dir[0] < 128 && isalpha(dest_dir[0]) && dest_dir[1] == ':') {
     if (tolower(base_dir[0]) != tolower(dest_dir[0])) {
       strlcpy(to, dest_dir, tolen);
       return 0;
@@ -985,11 +997,64 @@ int Fl_WinAPI_System_Driver::file_type(const char *filename)
   return filetype;
 }
 
+// Note: the result is cached in a static variable
 const char *Fl_WinAPI_System_Driver::home_directory_name()
 {
-  const char *h = getenv("HOME");
-  if (!h) h = getenv("UserProfile");
-  return h;
+  static Fl_String home;
+  if (!home.empty())
+    return home.c_str();
+
+#if (DEBUG_HOME_DIRECTORY_NAME)
+  print_env("HOMEDRIVE");
+  print_env("HOMEPATH");
+  print_env("UserProfile");
+  print_env("HOME");
+#endif
+
+  // Implement various ways to retrieve the HOME path.
+  // Note, from `man getenv`:
+  //  "The implementation of getenv() is not required to be reentrant.
+  //   The string pointed to by the return value of getenv() may be statically
+  //   allocated, and can be modified by a subsequent call to getenv()...".
+  // Tests show that this is the case in some MinGW implementations.
+
+  if (home.empty()) {
+    const char *home_drive = getenv("HOMEDRIVE");
+    if (home_drive) {
+      home = home_drive; // copy *before* calling getenv() again, see above
+      const char *home_path = getenv("HOMEPATH");
+      if (home_path) {
+        home.append(home_path);
+      } else {
+        home.clear(); // reset
+      } // home_path
+    } // home_drive
+  } // empty()
+
+  if (home.empty()) {
+    const char *h = getenv("UserProfile");
+    if (h)
+      home = h;
+  }
+
+  if (home.empty()) {
+    const char *h = getenv("HOME");
+    if (h)
+      home = h;
+  }
+  if (home.empty()) {
+    home = "~/"; // last resort
+  }
+  // Make path canonical.
+  for (int i = 0; i < home.size(); ++i) {
+    if (home[i] == '\\')
+      home[i] = '/';
+  }
+#if (DEBUG_HOME_DIRECTORY_NAME)
+  printf("home_directory_name() returns \"%s\"\n", home.c_str());
+  fflush(stdout);
+#endif
+  return home.c_str();
 }
 
 void Fl_WinAPI_System_Driver::gettime(time_t *sec, int *usec) {

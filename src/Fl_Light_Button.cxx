@@ -76,12 +76,7 @@ void Fl_Light_Button::draw() {
       case _FL_ROUND_DOWN_BOX :
       case _FL_ROUND_UP_BOX :
         // Radio button...
-#ifdef FLTK_EXT_VERSION        
-        // rageworx fix : why background color always set to FL_BACKGROUND2_COLOR ?
-        draw_box(down_box(), x()+dx, y()+dy, W, W, color() );
-#else
         draw_box(down_box(), x()+dx, y()+dy, W, W, FL_BACKGROUND2_COLOR);
-#endif /// of FLTK_EXT_VERSION
         if (value()) {
 
           // Draw round check mark of radio button

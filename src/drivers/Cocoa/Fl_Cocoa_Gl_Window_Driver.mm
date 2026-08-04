@@ -315,6 +315,7 @@ void Fl_Cocoa_Gl_Window_Driver::make_current_before() {
     d->changed_resolution(false);
     pWindow->invalidate();
     [(NSOpenGLContext*)pWindow->context() update];
+    if (gl1ctxt) [gl1ctxt update];
   }
 }
 
@@ -452,6 +453,23 @@ static uchar *convert_BGRA_to_RGB(uchar *baseAddress, int w, int h, int mByteWid
   return newimg;
 }
 
+
+static Fl_RGB_Image *cgimage_to_rgb4(CGImageRef img) {
+  int w = (int)CGImageGetWidth(img);
+  int h = (int)CGImageGetHeight(img);
+  CGColorSpaceRef cspace = CGColorSpaceCreateDeviceRGB();
+  uchar *rgba = new uchar[4 * w * h];
+  CGContextRef auxgc = CGBitmapContextCreate(rgba, w, h, 8, 4 * w, cspace,
+                                             kCGImageAlphaPremultipliedLast);
+  CGColorSpaceRelease(cspace);
+  CGContextDrawImage(auxgc, CGRectMake(0, 0, w, h), img);
+  CGContextRelease(auxgc);
+  Fl_RGB_Image *rgb = new Fl_RGB_Image(rgba, w, h, 4);
+  rgb->alloc_array = 1;
+  return rgb;
+}
+
+
 Fl_RGB_Image* Fl_Cocoa_Gl_Window_Driver::capture_gl_rectangle(int x, int y, int w, int h)
 {
   Fl_Gl_Window* glw = pWindow;
@@ -459,6 +477,20 @@ Fl_RGB_Image* Fl_Cocoa_Gl_Window_Driver::capture_gl_rectangle(int x, int y, int 
   if (factor != 1) {
     w *= factor; h *= factor; x *= factor; y *= factor;
   }
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5
+  if (fl_mac_os_version >= 100500) {
+    NSWindow *nswin = (NSWindow*)fl_mac_xid(pWindow);
+    CGImageRef img_full = Fl_Cocoa_Window_Driver::capture_decorated_window_10_5(nswin);
+    int bt =  [nswin frame].size.height - [[nswin contentView] frame].size.height;
+    bt *= (factor / Fl_Graphics_Driver::default_driver().scale());
+    CGRect cgr = CGRectMake(x, y + bt, w, h); // add vertical offset to bypass titlebar
+    CGImageRef cgimg = CGImageCreateWithImageInRect(img_full, cgr); // 10.4
+    CGImageRelease(img_full);
+    Fl_RGB_Image *rgb = cgimage_to_rgb4(cgimg);
+    CGImageRelease(cgimg);
+    return rgb;
+  }
+#endif
   [(NSOpenGLContext*)glw->context() makeCurrentContext];
 // to capture also the overlay and for directGL demo
   [(NSOpenGLContext*)glw->context() flushBuffer];

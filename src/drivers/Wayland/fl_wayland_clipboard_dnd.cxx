@@ -294,7 +294,8 @@ static void data_offer_handle_offer(void *data, struct wl_data_offer *offer,
   } else if (strcmp(mime_type, "text/uri-list") == 0 && !fl_selection_type[1]) {
     fl_selection_type[1] = Fl::clipboard_plain_text;
     fl_selection_offer_type = "text/uri-list";
-  } else if (strcmp(mime_type, wld_plain_text_clipboard) == 0 && !fl_selection_type[1]) {
+  } else if (strcmp(mime_type, wld_plain_text_clipboard) == 0 &&
+             (!fl_selection_type[1] || !strcmp(fl_selection_offer_type, "text/plain"))) {
     fl_selection_type[1] = Fl::clipboard_plain_text;
     fl_selection_offer_type = wld_plain_text_clipboard;
   } else if (strcmp(mime_type, "text/plain") == 0 && !fl_selection_type[1]) {
@@ -405,15 +406,14 @@ static void get_clipboard_or_dragged_text(struct wl_data_offer *offer) {
     fl_selection_buffer_length[1] = rest+1000;
   }
   from = fl_selection_buffer[1];
-  while (true) {
+  while (rest > 0) {
     ssize_t n = read(fds[0], from, rest);
-    if (n <= 0) {
-      close(fds[0]);
-      break;
-    }
+    if (n <= 0) break;
     n = Fl_Screen_Driver::convert_crlf(from, n);
     from += n;
+    rest -= n;
   }
+  close(fds[0]);
   fl_selection_length[1] = from - fl_selection_buffer[1];
   fl_selection_buffer[1][fl_selection_length[1]] = 0;
 way_out:

@@ -27,12 +27,10 @@ Fl_Wayland_Image_Surface_Driver::Fl_Wayland_Image_Surface_Driver(int w, int h,
   int d = 1;
   if (!off) {
     fl_open_display();
-    if (Fl_Wayland_Window_Driver::wld_window) {
-      d = Fl_Wayland_Window_Driver::driver(
-            Fl_Wayland_Window_Driver::wld_window->fl_win
-                                           )->wld_scale();
+    if (Fl::first_window()) {
+      d = Fl_Wayland_Window_Driver::driver(Fl::first_window())->wld_scale();
     }
-    s = fl_graphics_driver->scale();
+    s =  Fl_Graphics_Driver::default_driver().scale();
     if (d*s != 1 && high_res) {
       w = int(w * s) * d;
       h = int(h * s) * d;
@@ -78,7 +76,8 @@ Fl_Wayland_Image_Surface_Driver::~Fl_Wayland_Image_Surface_Driver() {
 
 void Fl_Wayland_Image_Surface_Driver::set_current() {
   Fl_Surface_Device::set_current();
-  ((Fl_Wayland_Graphics_Driver*)fl_graphics_driver)->set_cairo((cairo_t*)offscreen);
+  Fl_Cairo_Graphics_Driver *dr = (Fl_Cairo_Graphics_Driver*)driver();
+  if (!dr->cr()) dr->set_cairo((cairo_t*)offscreen);
   pre_window = Fl_Wayland_Window_Driver::wld_window;
   Fl_Wayland_Window_Driver::wld_window = NULL;
   fl_window = 0;
