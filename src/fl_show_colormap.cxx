@@ -72,13 +72,22 @@ void ColorMenu::draw() {
 
 int ColorMenu::handle(int e) {
   Fl_Color c = which;
+  int exx = Fl::event_x_root();
+  int exy = Fl::event_y_root();
+  /* --- need to get workspace area coordinations at mouse cursor ?
+  int scn = Fl::screen_num( exx, exy );
+  int scx, scy, scw, sch;
+  Fl::screen_work_area( scx, scy, scw, sch, scn );
+  int scxw = scw - ( scw - scx );
+  int scyh = sch - ( sch - scy );
+  */
   switch (e) {
   case FL_PUSH:
   case FL_DRAG: {
-    int X = (Fl::event_x_root() - x() - BORDER);
-    if (X >= 0) X = X/BOXSIZE;
-    int Y = (Fl::event_y_root() - y() - BORDER);
-    if (Y >= 0) Y = Y/BOXSIZE;
+    int X = (exx - x() - BORDER);
+    int Y = (exy - y() - BORDER);
+    if (X >= 0) X = X/BOXSIZE; else X = -X/BOXSIZE;
+    if (Y >= 0) Y = Y/BOXSIZE; else Y = -Y/BOXSIZE;
     if (X >= 0 && X < 8 && Y >= 0 && Y < 32)
       c = 8*Y + X;
     else
@@ -104,19 +113,22 @@ int ColorMenu::handle(int e) {
   }
   if (c != which) {
     which = (Fl_Color)c; damage(FL_DAMAGE_CHILD);
+    /* -- why doing this again ? -- 
     int bx = (c%8)*BOXSIZE+BORDER;
     int by = (c/8)*BOXSIZE+BORDER;
     int px = x();
     int py = y();
-    int scr_x, scr_y, scr_w, scr_h;
-    Fl::screen_xywh(scr_x, scr_y, scr_w, scr_h);
-    if (px < scr_x) px = scr_x;
-    if (px+bx+BOXSIZE+BORDER >= scr_x+scr_w) px = scr_x+scr_w-bx-BOXSIZE-BORDER;
-    if (py < scr_y) py = scr_y;
-    if (py+by+BOXSIZE+BORDER >= scr_y+scr_h) py = scr_y+scr_h-by-BOXSIZE-BORDER;
+    if (px < scx) px = scx;
+    if (scx < 0) scx = -scx;
+    if (scy < 0) scy = -scy;
+    if (px+bx+BOXSIZE+BORDER >= scx+scw) px = scx+scw-bx-BOXSIZE-BORDER;
+    if (py < scy) py = scy;
+    if (py+by+BOXSIZE+BORDER >= scy+sch) py = scy+sch-by-BOXSIZE-BORDER;
     if (px+bx < BORDER) px = BORDER-bx;
     if (py+by < BORDER) py = BORDER-by;
-    position(px,py);
+    position(px, py);
+    -- */
+    position(x(),y());
   }
   return 1;
 }

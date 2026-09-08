@@ -16,6 +16,6 @@ if [[ "$1"=="debug" ]];then
     DBGOPT+="--enable-debug"
 fi
 
-EFLAGS="--enable-localjpeg --enable-localzlib --enable-localpng"
+EFLAGS="--enable-localjpeg --enable-localzlib --enable-localpng --enable-cairo"
 BSYS="--build=x86_64-w64-mingw32"
 ./configure ${BSYS} ${EFLAGS} ${DBGOPT}
